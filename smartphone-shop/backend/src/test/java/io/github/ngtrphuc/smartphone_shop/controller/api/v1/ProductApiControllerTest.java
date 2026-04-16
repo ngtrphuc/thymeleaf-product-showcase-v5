@@ -15,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
@@ -51,7 +51,7 @@ class ProductApiControllerTest {
         when(productRepository.findAllNamesOrdered())
                 .thenReturn(List.of("Apple iPhone 17 Pro", "Samsung Galaxy S26 Ultra"));
 
-        ApiDtos.CatalogPageResponse response = controller.products(
+        CatalogPageResponse response = controller.products(
                 null, null, "Apple", null, null, null, null, null, null, null, 9, 0, null);
 
         assertEquals(1, response.products().size());
@@ -60,3 +60,4 @@ class ProductApiControllerTest {
         assertTrue(response.totalPages() >= 1);
     }
 }
+

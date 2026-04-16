@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
@@ -46,7 +46,7 @@ public class ProductApiController {
     }
 
     @GetMapping
-    public ApiDtos.CatalogPageResponse products(
+    public CatalogPageResponse products(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) String brand,
@@ -145,7 +145,7 @@ public class ProductApiController {
 
         List<String> brands = resolveAvailableBrands();
         Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
-        return new ApiDtos.CatalogPageResponse(
+        return new CatalogPageResponse(
                 products.stream()
                         .map(product -> apiMapper.toProductSummary(
                                 product,
@@ -161,18 +161,18 @@ public class ProductApiController {
     }
 
     @GetMapping("/{id}")
-    public ApiDtos.ProductDetailResponse product(@PathVariable long id, Authentication authentication) {
+    public ProductDetailResponse product(@PathVariable long id, Authentication authentication) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
         Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
         boolean wishlisted = wishlistedProductIds.contains(id);
-        List<ApiDtos.ProductSummary> recommendedProducts = resolveRecommendedProducts(product).stream()
+        List<ProductSummary> recommendedProducts = resolveRecommendedProducts(product).stream()
                 .map(recommended -> apiMapper.toProductSummary(
                         recommended,
                         recommended != null && recommended.getId() != null
                                 && wishlistedProductIds.contains(recommended.getId())))
                 .toList();
-        return new ApiDtos.ProductDetailResponse(
+        return new ProductDetailResponse(
                 apiMapper.toProductSummary(product, wishlisted),
                 recommendedProducts,
                 wishlisted);
@@ -374,3 +374,4 @@ public class ProductApiController {
     private record FilteredScanResult(List<Product> pageItems, long totalMatched) {
     }
 }
+

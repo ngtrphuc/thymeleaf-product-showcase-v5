@@ -1,6 +1,8 @@
 package io.github.ngtrphuc.smartphone_shop.service;
 
-public class OrderValidationException extends RuntimeException {
+import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
+
+public class OrderValidationException extends ValidationException {
 
     public OrderValidationException(String message) {
         super(message);

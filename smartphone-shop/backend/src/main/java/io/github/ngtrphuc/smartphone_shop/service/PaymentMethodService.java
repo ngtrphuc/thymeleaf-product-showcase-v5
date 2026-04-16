@@ -7,6 +7,8 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.ResourceNotFoundException;
+import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.model.PaymentMethod;
 import io.github.ngtrphuc.smartphone_shop.repository.PaymentMethodRepository;
 
@@ -44,10 +46,10 @@ public class PaymentMethodService {
     public PaymentMethod addPaymentMethod(String email, PaymentMethod.Type type, String detail, boolean setAsDefault) {
         String normalizedEmail = normalize(email);
         if (type == null) {
-            throw new IllegalArgumentException("Payment method type is required.");
+            throw new ValidationException("Payment method type is required.");
         }
         if (UNSUPPORTED_TYPES.contains(type)) {
-            throw new IllegalArgumentException("This payment method is no longer supported.");
+            throw new ValidationException("This payment method is no longer supported.");
         }
 
         long count = paymentMethodRepository.countActiveByUser(normalizedEmail);
@@ -73,12 +75,12 @@ public class PaymentMethodService {
     @Transactional
     public void setDefault(String email, Long paymentMethodId) {
         if (paymentMethodId == null) {
-            throw new IllegalArgumentException("Payment method not found.");
+            throw new ResourceNotFoundException("Payment method not found.");
         }
         String normalizedEmail = normalize(email);
         PaymentMethod paymentMethod = paymentMethodRepository.findById(paymentMethodId)
                 .filter(pm -> pm.isActive() && normalizedEmail.equals(pm.getUserEmail()))
-                .orElseThrow(() -> new IllegalArgumentException("Payment method not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment method not found."));
 
         paymentMethodRepository.clearDefaultForUser(normalizedEmail);
         paymentMethod.setDefault(true);
@@ -88,12 +90,12 @@ public class PaymentMethodService {
     @Transactional
     public void remove(String email, Long paymentMethodId) {
         if (paymentMethodId == null) {
-            throw new IllegalArgumentException("Payment method not found.");
+            throw new ResourceNotFoundException("Payment method not found.");
         }
         String normalizedEmail = normalize(email);
         PaymentMethod paymentMethod = paymentMethodRepository.findById(paymentMethodId)
                 .filter(pm -> normalizedEmail.equals(pm.getUserEmail()))
-                .orElseThrow(() -> new IllegalArgumentException("Payment method not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment method not found."));
 
         paymentMethod.setActive(false);
         if (paymentMethod.isDefault()) {
@@ -117,10 +119,10 @@ public class PaymentMethodService {
         }
         String normalized = detail == null ? "" : detail.trim().replaceAll("\\s+", " ");
         if (normalized.isBlank()) {
-            throw new IllegalArgumentException("Bank account details are required for Bank Transfer.");
+            throw new ValidationException("Bank account details are required for Bank Transfer.");
         }
         if (normalized.length() > MAX_DETAIL_LENGTH) {
-            throw new IllegalArgumentException("Bank account details are too long.");
+            throw new ValidationException("Bank account details are too long.");
         }
         return normalized;
     }
@@ -128,7 +130,7 @@ public class PaymentMethodService {
     private String normalize(String email) {
         String normalized = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
         if (normalized.isBlank()) {
-            throw new IllegalArgumentException("User email is required.");
+            throw new ValidationException("User email is required.");
         }
         return normalized;
     }

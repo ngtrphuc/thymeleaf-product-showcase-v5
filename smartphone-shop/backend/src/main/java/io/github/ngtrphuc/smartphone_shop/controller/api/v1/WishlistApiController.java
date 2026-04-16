@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.WishlistItem;
 import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
@@ -30,12 +30,12 @@ public class WishlistApiController {
     }
 
     @GetMapping
-    public ApiDtos.WishlistResponse wishlist(Authentication authentication) {
+    public WishlistResponse wishlist(Authentication authentication) {
         return currentWishlist(authentication);
     }
 
     @PostMapping("/items")
-    public ApiDtos.WishlistResponse add(@RequestBody WishlistAddRequest request, Authentication authentication) {
+    public WishlistResponse add(@RequestBody WishlistAddRequest request, Authentication authentication) {
         Long productId = request.productId();
         if (productId == null) {
             throw new IllegalArgumentException("Product ID is required.");
@@ -51,7 +51,7 @@ public class WishlistApiController {
     }
 
     @DeleteMapping("/items/{id}")
-    public ApiDtos.WishlistResponse remove(@PathVariable long id, Authentication authentication) {
+    public WishlistResponse remove(@PathVariable long id, Authentication authentication) {
         boolean removed = wishlistService.removeItem(authentication.getName(), id);
         if (!removed) {
             throw new NoSuchElementException("This product is not in your wishlist.");
@@ -64,9 +64,9 @@ public class WishlistApiController {
         return wishlistService.countWishlist(authentication.getName());
     }
 
-    private ApiDtos.WishlistResponse currentWishlist(Authentication authentication) {
+    private WishlistResponse currentWishlist(Authentication authentication) {
         List<WishlistItem> items = wishlistService.getWishlist(authentication.getName());
-        return new ApiDtos.WishlistResponse(
+        return new WishlistResponse(
                 items.stream().map(apiMapper::toWishlistItemResponse).toList(),
                 items.size());
     }
@@ -74,3 +74,4 @@ public class WishlistApiController {
     private record WishlistAddRequest(Long productId) {
     }
 }
+

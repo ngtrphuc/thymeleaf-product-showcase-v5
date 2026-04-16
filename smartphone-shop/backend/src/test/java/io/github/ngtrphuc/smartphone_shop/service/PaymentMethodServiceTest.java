@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.model.PaymentMethod;
 import io.github.ngtrphuc.smartphone_shop.repository.PaymentMethodRepository;
 
@@ -52,7 +53,7 @@ class PaymentMethodServiceTest {
     void addPaymentMethod_shouldRejectBankTransferWithoutDetail() {
         when(paymentMethodRepository.countActiveByUser("user@example.com")).thenReturn(1L);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> paymentMethodService.addPaymentMethod(
+        ValidationException exception = assertThrows(ValidationException.class, () -> paymentMethodService.addPaymentMethod(
                 "user@example.com",
                 PaymentMethod.Type.BANK_TRANSFER,
                 "   ",

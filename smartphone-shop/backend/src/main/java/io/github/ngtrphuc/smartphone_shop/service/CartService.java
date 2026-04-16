@@ -142,21 +142,7 @@ public class CartService {
 
     @Transactional(readOnly = true)
     public List<CartItem> getDbCart(String email) {
-        List<CartItemEntity> entities = cartItemRepository.findByUserEmail(email);
-        if (entities.isEmpty()) {
-            return List.of();
-        }
-
-        List<Long> productIds = entities.stream().map(CartItemEntity::getProductId).toList();
-        Map<Long, Product> productMap = productRepository.findAllByIdIn(productIds)
-                .stream()
-                .filter(p -> p.getId() != null)
-                .collect(Collectors.toMap(Product::getId, p -> p));
-
-        return entities.stream()
-                .map(e -> toCartItem(e, productMap.get(e.getProductId())))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        return getDbCartSnapshot(email);
     }
 
     @Transactional(readOnly = true)

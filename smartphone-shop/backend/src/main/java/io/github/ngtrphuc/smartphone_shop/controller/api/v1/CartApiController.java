@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.service.CartService;
 import jakarta.servlet.http.HttpSession;
@@ -29,12 +29,12 @@ public class CartApiController {
     }
 
     @GetMapping
-    public ApiDtos.CartResponse cart(Authentication authentication, HttpSession session) {
+    public CartResponse cart(Authentication authentication, HttpSession session) {
         return currentCart(authentication, session);
     }
 
     @PostMapping("/items")
-    public ApiDtos.CartResponse addItem(@RequestBody AddItemRequest request,
+    public CartResponse addItem(@RequestBody AddItemRequest request,
             Authentication authentication,
             HttpSession session) {
         Long productId = request.productId();
@@ -54,33 +54,33 @@ public class CartApiController {
     }
 
     @PostMapping("/items/{id}/increase")
-    public ApiDtos.CartResponse increase(@PathVariable long id, Authentication authentication, HttpSession session) {
+    public CartResponse increase(@PathVariable long id, Authentication authentication, HttpSession session) {
         cartService.increaseItem(resolveEmail(authentication), session, id);
         cartService.syncCartCount(session, resolveEmail(authentication));
         return currentCart(authentication, session);
     }
 
     @PostMapping("/items/{id}/decrease")
-    public ApiDtos.CartResponse decrease(@PathVariable long id, Authentication authentication, HttpSession session) {
+    public CartResponse decrease(@PathVariable long id, Authentication authentication, HttpSession session) {
         cartService.decreaseItem(resolveEmail(authentication), session, id);
         cartService.syncCartCount(session, resolveEmail(authentication));
         return currentCart(authentication, session);
     }
 
     @DeleteMapping("/items/{id}")
-    public ApiDtos.CartResponse remove(@PathVariable long id, Authentication authentication, HttpSession session) {
+    public CartResponse remove(@PathVariable long id, Authentication authentication, HttpSession session) {
         cartService.removeItem(resolveEmail(authentication), session, id);
         cartService.syncCartCount(session, resolveEmail(authentication));
         return currentCart(authentication, session);
     }
 
     @DeleteMapping
-    public ApiDtos.CartResponse clear(Authentication authentication, HttpSession session) {
+    public CartResponse clear(Authentication authentication, HttpSession session) {
         cartService.clearCart(resolveEmail(authentication), session);
         return currentCart(authentication, session);
     }
 
-    private ApiDtos.CartResponse currentCart(Authentication authentication, HttpSession session) {
+    private CartResponse currentCart(Authentication authentication, HttpSession session) {
         String email = resolveEmail(authentication);
         return apiMapper.toCartResponse(
                 cartService.getCart(email, session),
@@ -101,3 +101,4 @@ public class CartApiController {
     private record AddItemRequest(Long productId, Integer quantity) {
     }
 }
+

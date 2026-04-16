@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;
 import io.github.ngtrphuc.smartphone_shop.model.ChatMessage;
 import io.github.ngtrphuc.smartphone_shop.model.Order;
@@ -17,11 +18,11 @@ import io.github.ngtrphuc.smartphone_shop.support.StorefrontSupport;
 @Component
 public class ApiMapper {
 
-    public ApiDtos.ProductSummary toProductSummary(Product product, boolean wishlisted) {
+    public ProductSummary toProductSummary(Product product, boolean wishlisted) {
         if (product == null) {
             return null;
         }
-        return new ApiDtos.ProductSummary(
+        return new ProductSummary(
                 product.getId(),
                 product.getName(),
                 StorefrontSupport.extractBrand(product.getName()),
@@ -38,11 +39,11 @@ public class ApiMapper {
                 wishlisted);
     }
 
-    public ApiDtos.CartItemResponse toCartItemResponse(CartItem item) {
+    public CartItemResponse toCartItemResponse(CartItem item) {
         if (item == null) {
             return null;
         }
-        return new ApiDtos.CartItemResponse(
+        return new CartItemResponse(
                 item.getId(),
                 item.getName(),
                 item.getPrice(),
@@ -54,8 +55,8 @@ public class ApiMapper {
                 item.getAvailabilityLabel());
     }
 
-    public ApiDtos.CartResponse toCartResponse(List<CartItem> items, boolean authenticated) {
-        List<ApiDtos.CartItemResponse> mappedItems = items.stream()
+    public CartResponse toCartResponse(List<CartItem> items, boolean authenticated) {
+        List<CartItemResponse> mappedItems = items.stream()
                 .map(this::toCartItemResponse)
                 .toList();
         int itemCount = items.stream()
@@ -64,14 +65,14 @@ public class ApiMapper {
         double totalAmount = items.stream()
                 .mapToDouble(CartItem::getLineTotal)
                 .sum();
-        return new ApiDtos.CartResponse(mappedItems, totalAmount, itemCount, authenticated);
+        return new CartResponse(mappedItems, totalAmount, itemCount, authenticated);
     }
 
-    public ApiDtos.WishlistItemResponse toWishlistItemResponse(WishlistItem item) {
+    public WishlistItemResponse toWishlistItemResponse(WishlistItem item) {
         if (item == null) {
             return null;
         }
-        return new ApiDtos.WishlistItemResponse(
+        return new WishlistItemResponse(
                 item.getProductId(),
                 item.getName(),
                 item.getPrice(),
@@ -80,11 +81,11 @@ public class ApiMapper {
                 item.getAddedAt());
     }
 
-    public ApiDtos.PaymentMethodResponse toPaymentMethodResponse(PaymentMethod paymentMethod) {
+    public PaymentMethodResponse toPaymentMethodResponse(PaymentMethod paymentMethod) {
         if (paymentMethod == null) {
             return null;
         }
-        return new ApiDtos.PaymentMethodResponse(
+        return new PaymentMethodResponse(
                 paymentMethod.getId(),
                 paymentMethod.getType() != null ? paymentMethod.getType().name() : null,
                 paymentMethod.getDisplayName(),
@@ -94,14 +95,14 @@ public class ApiMapper {
                 paymentMethod.getCreatedAt());
     }
 
-    public ApiDtos.OrderResponse toOrderResponse(Order order) {
+    public OrderResponse toOrderResponse(Order order) {
         if (order == null) {
             return null;
         }
-        List<ApiDtos.OrderItemResponse> items = order.getItems().stream()
+        List<OrderItemResponse> items = order.getItems().stream()
                 .map(this::toOrderItemResponse)
                 .toList();
-        return new ApiDtos.OrderResponse(
+        return new OrderResponse(
                 order.getId(),
                 order.getOrderCode(),
                 order.getStatus(),
@@ -120,18 +121,18 @@ public class ApiMapper {
                 items);
     }
 
-    public ApiDtos.OrderItemResponse toOrderItemResponse(OrderItem item) {
+    public OrderItemResponse toOrderItemResponse(OrderItem item) {
         if (item == null) {
             return null;
         }
-        return new ApiDtos.OrderItemResponse(
+        return new OrderItemResponse(
                 item.getProductId(),
                 item.getProductName(),
                 item.getPrice(),
                 item.getQuantity());
     }
 
-    public ApiDtos.ProfileResponse toProfileResponse(User user,
+    public ProfileResponse toProfileResponse(User user,
             List<Order> orders,
             List<CartItem> cartItems,
             List<PaymentMethod> paymentMethods) {
@@ -144,7 +145,7 @@ public class ApiMapper {
         int cartItemCount = cartItems.stream()
                 .mapToInt(CartItem::getQuantity)
                 .sum();
-        return new ApiDtos.ProfileResponse(
+        return new ProfileResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getFullName(),
@@ -156,18 +157,18 @@ public class ApiMapper {
                 paymentMethods.stream().map(this::toPaymentMethodResponse).toList());
     }
 
-    public ApiDtos.AuthMeResponse toAuthMeResponse(User user) {
+    public AuthMeResponse toAuthMeResponse(User user) {
         if (user == null) {
-            return new ApiDtos.AuthMeResponse(false, null, null, null);
+            return new AuthMeResponse(false, null, null, null);
         }
-        return new ApiDtos.AuthMeResponse(true, user.getEmail(), user.getRole(), user.getFullName());
+        return new AuthMeResponse(true, user.getEmail(), user.getRole(), user.getFullName());
     }
 
-    public ApiDtos.ChatMessageResponse toChatMessageResponse(ChatMessage message) {
+    public ChatMessageResponse toChatMessageResponse(ChatMessage message) {
         if (message == null) {
             return null;
         }
-        return new ApiDtos.ChatMessageResponse(
+        return new ChatMessageResponse(
                 message.getId(),
                 message.getUserEmail(),
                 message.getContent(),
@@ -175,3 +176,4 @@ public class ApiMapper {
                 message.getCreatedAt());
     }
 }
+

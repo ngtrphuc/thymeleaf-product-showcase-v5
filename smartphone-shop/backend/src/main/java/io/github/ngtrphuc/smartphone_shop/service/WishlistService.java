@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.model.WishlistItem;
 import io.github.ngtrphuc.smartphone_shop.model.WishlistItemEntity;
@@ -151,13 +152,13 @@ public class WishlistService {
     private String normalizeEmail(String email) {
         String normalized = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
         if (normalized.isBlank()) {
-            throw new IllegalArgumentException("User email cannot be empty.");
+            throw new ValidationException("User email cannot be empty.");
         }
         if (normalized.length() > MAX_EMAIL_LENGTH) {
-            throw new IllegalArgumentException("User email is too long.");
+            throw new ValidationException("User email is too long.");
         }
         if (!EMAIL_PATTERN.matcher(normalized).matches()) {
-            throw new IllegalArgumentException("User email is invalid.");
+            throw new ValidationException("User email is invalid.");
         }
         return normalized;
     }

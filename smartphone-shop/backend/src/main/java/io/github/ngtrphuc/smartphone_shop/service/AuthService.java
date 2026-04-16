@@ -8,6 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 
@@ -33,22 +34,22 @@ public class AuthService {
         String normalizedPassword = normalizePassword(rawPassword);
 
         if (normalizedEmail.length() > MAX_EMAIL_LENGTH) {
-            throw new IllegalArgumentException("Email is too long.");
+            throw new ValidationException("Email is too long.");
         }
         if (!EMAIL_PATTERN.matcher(normalizedEmail).matches()) {
-            throw new IllegalArgumentException("Please enter a valid email address.");
+            throw new ValidationException("Please enter a valid email address.");
         }
         if (normalizedFullName.length() < 2) {
-            throw new IllegalArgumentException("Full name must be at least 2 characters.");
+            throw new ValidationException("Full name must be at least 2 characters.");
         }
         if (normalizedFullName.length() > MAX_FULL_NAME_LENGTH) {
-            throw new IllegalArgumentException("Full name is too long.");
+            throw new ValidationException("Full name is too long.");
         }
         if (normalizedPassword.length() < 6) {
-            throw new IllegalArgumentException("Password must be at least 6 characters.");
+            throw new ValidationException("Password must be at least 6 characters.");
         }
         if (normalizedPassword.length() > MAX_PASSWORD_LENGTH) {
-            throw new IllegalArgumentException("Password is too long.");
+            throw new ValidationException("Password is too long.");
         }
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             return false;

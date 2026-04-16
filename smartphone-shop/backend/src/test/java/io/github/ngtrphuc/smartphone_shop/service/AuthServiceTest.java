@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 
@@ -54,7 +55,7 @@ class AuthServiceTest {
 
     @Test
     void register_shouldRejectInvalidEmail() {
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(ValidationException.class,
                 () -> authService.register("not-an-email", "Tester", "secret123"));
         verifyNoInteractions(userRepository, passwordEncoder);
     }
@@ -63,7 +64,7 @@ class AuthServiceTest {
     void register_shouldRejectPasswordsLongerThanBcryptLimit() {
         String tooLongPassword = "a".repeat(73);
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(ValidationException.class,
                 () -> authService.register("user@example.com", "Tester", tooLongPassword));
         verifyNoInteractions(userRepository, passwordEncoder);
     }

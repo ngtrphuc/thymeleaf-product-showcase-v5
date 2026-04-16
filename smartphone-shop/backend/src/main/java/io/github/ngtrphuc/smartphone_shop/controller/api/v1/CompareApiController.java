@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
@@ -39,12 +39,12 @@ public class CompareApiController {
     }
 
     @GetMapping
-    public ApiDtos.CompareResponse compare(Authentication authentication, HttpSession session) {
+    public CompareResponse compare(Authentication authentication, HttpSession session) {
         return currentCompare(authentication, session);
     }
 
     @PostMapping("/items")
-    public ApiDtos.CompareResponse add(@RequestBody CompareAddRequest request,
+    public CompareResponse add(@RequestBody CompareAddRequest request,
             Authentication authentication,
             HttpSession session) {
         Long productId = request.productId();
@@ -65,21 +65,21 @@ public class CompareApiController {
     }
 
     @DeleteMapping("/items/{id}")
-    public ApiDtos.CompareResponse remove(@PathVariable long id, Authentication authentication, HttpSession session) {
+    public CompareResponse remove(@PathVariable long id, Authentication authentication, HttpSession session) {
         compareService.removeItem(resolveEmail(authentication), session, id);
         return currentCompare(authentication, session);
     }
 
     @DeleteMapping
-    public ApiDtos.CompareResponse clear(Authentication authentication, HttpSession session) {
+    public CompareResponse clear(Authentication authentication, HttpSession session) {
         compareService.clear(resolveEmail(authentication), session);
         return currentCompare(authentication, session);
     }
 
-    private ApiDtos.CompareResponse currentCompare(Authentication authentication, HttpSession session) {
+    private CompareResponse currentCompare(Authentication authentication, HttpSession session) {
         List<Long> ids = compareService.getCompareIds(resolveEmail(authentication), session);
         List<Product> products = resolveOrderedProducts(ids);
-        return new ApiDtos.CompareResponse(
+        return new CompareResponse(
                 products.stream().map(product -> apiMapper.toProductSummary(product, false)).toList(),
                 ids,
                 compareService.getMaxCompare());
@@ -116,3 +116,4 @@ public class CompareApiController {
     private record CompareAddRequest(Long productId) {
     }
 }
+

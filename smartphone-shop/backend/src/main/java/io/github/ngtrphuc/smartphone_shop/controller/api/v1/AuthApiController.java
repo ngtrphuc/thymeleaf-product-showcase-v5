@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
@@ -31,23 +31,23 @@ public class AuthApiController {
     }
 
     @GetMapping("/me")
-    public ApiDtos.AuthMeResponse me(Authentication authentication) {
+    public AuthMeResponse me(Authentication authentication) {
         if (!isAuthenticatedUser(authentication)) {
-            return new ApiDtos.AuthMeResponse(false, null, null, null);
+            return new AuthMeResponse(false, null, null, null);
         }
         User user = userRepository.findByEmailIgnoreCase(authentication.getName()).orElse(null);
         return apiMapper.toAuthMeResponse(user);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiDtos.OperationStatusResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<OperationStatusResponse> register(@RequestBody RegisterRequest request) {
         boolean success = authService.register(request.email(), request.fullName(), request.password());
         if (!success) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new ApiDtos.OperationStatusResponse(false, "Email already exists."));
+                    .body(new OperationStatusResponse(false, "Email already exists."));
         }
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiDtos.OperationStatusResponse(true, "Registration successful."));
+                .body(new OperationStatusResponse(true, "Registration successful."));
     }
 
     private boolean isAuthenticatedUser(Authentication authentication) {
@@ -59,3 +59,4 @@ public class AuthApiController {
     record RegisterRequest(String email, String fullName, String password) {
     }
 }
+

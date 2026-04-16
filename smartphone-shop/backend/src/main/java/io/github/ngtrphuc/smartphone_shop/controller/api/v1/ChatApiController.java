@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.ChatMessage;
 import io.github.ngtrphuc.smartphone_shop.service.ChatService;
@@ -28,7 +28,7 @@ public class ChatApiController {
     }
 
     @GetMapping("/history")
-    public List<ApiDtos.ChatMessageResponse> history(Authentication authentication) {
+    public List<ChatMessageResponse> history(Authentication authentication) {
         return chatService.getHistory(authentication.getName()).stream()
                 .map(apiMapper::toChatMessageResponse)
                 .toList();
@@ -40,7 +40,7 @@ public class ChatApiController {
     }
 
     @PostMapping("/messages")
-    public ApiDtos.ChatMessageResponse send(Authentication authentication, @RequestBody ChatSendRequest request) {
+    public ChatMessageResponse send(Authentication authentication, @RequestBody ChatSendRequest request) {
         ChatMessage saved = chatService.saveUserMessage(authentication.getName(), request.content());
         return apiMapper.toChatMessageResponse(saved);
     }
@@ -51,11 +51,12 @@ public class ChatApiController {
     }
 
     @PostMapping("/read")
-    public ApiDtos.OperationStatusResponse markRead(Authentication authentication) {
+    public OperationStatusResponse markRead(Authentication authentication) {
         chatService.markReadByUser(authentication.getName());
-        return new ApiDtos.OperationStatusResponse(true, "Conversation marked as read.");
+        return new OperationStatusResponse(true, "Conversation marked as read.");
     }
 
     private record ChatSendRequest(String content) {
     }
 }
+

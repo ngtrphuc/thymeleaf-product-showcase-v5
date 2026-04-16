@@ -2,6 +2,24 @@
 
 A smartphone e-commerce web application built with Spring Boot + Thymeleaf, including customer and admin flows.
 
+## Modern Migration Track (Overnight Bootstrap)
+
+A new full-stack workspace is now available at [`modern-stack`](./modern-stack) with:
+
+- Next.js App Router frontend (`apps/web`)
+- NestJS + Fastify backend (`apps/api`)
+- Shared contracts package (`packages/shared`)
+- Docker Compose runtime with PostgreSQL + Redis (`infra/docker-compose.yml`)
+
+Quick start:
+
+```powershell
+cd modern-stack
+npm install
+npm run dev:api
+npm run dev:web
+```
+
 ## Key Features
 
 - Sign up / sign in with `ROLE_USER` and `ROLE_ADMIN`
@@ -37,9 +55,20 @@ smartphone-shop/
 │       │   │           └── ngtrphuc/
 │       │   │               └── smartphone_shop/
 │       │   │                   ├── api/
-│       │   │                   │   ├── ApiDtos.java
+│       │   │                   │   ├── dto/
+│       │   │                   │   │   ├── AuthMeResponse.java
+│       │   │                   │   │   ├── CatalogPageResponse.java
+│       │   │                   │   │   ├── CartResponse.java
+│       │   │                   │   │   ├── ErrorResponse.java
+│       │   │                   │   │   ├── ... (other API DTO records)
 │       │   │                   │   ├── ApiExceptionHandler.java
 │       │   │                   │   └── ApiMapper.java
+│       │   │                   ├── common/
+│       │   │                   │   └── exception/
+│       │   │                   │       ├── BusinessException.java
+│       │   │                   │       ├── ResourceNotFoundException.java
+│       │   │                   │       ├── UnauthorizedActionException.java
+│       │   │                   │       └── ValidationException.java
 │       │   │                   ├── config/
 │       │   │                   │   ├── AdminAccountInitializer.java
 │       │   │                   │   ├── DataInitializer.java

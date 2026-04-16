@@ -8,38 +8,61 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import io.github.ngtrphuc.smartphone_shop.api.dto.ErrorResponse;
+import io.github.ngtrphuc.smartphone_shop.common.exception.ResourceNotFoundException;
+import io.github.ngtrphuc.smartphone_shop.common.exception.UnauthorizedActionException;
+import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.service.OrderValidationException;
 
 @RestControllerAdvice(basePackages = "io.github.ngtrphuc.smartphone_shop.controller.api")
 public class ApiExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiDtos.ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest()
-                .body(new ApiDtos.ErrorResponse("BAD_REQUEST", ex.getMessage()));
+                .body(new ErrorResponse("BAD_REQUEST", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(ValidationException ex) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("VALIDATION_FAILED", ex.getMessage()));
     }
 
     @ExceptionHandler(OrderValidationException.class)
-    public ResponseEntity<ApiDtos.ErrorResponse> handleOrderValidation(OrderValidationException ex) {
+    public ResponseEntity<ErrorResponse> handleOrderValidation(OrderValidationException ex) {
         return ResponseEntity.badRequest()
-                .body(new ApiDtos.ErrorResponse("ORDER_VALIDATION_FAILED", ex.getMessage()));
+                .body(new ErrorResponse("ORDER_VALIDATION_FAILED", ex.getMessage()));
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ApiDtos.ErrorResponse> handleIllegalState(IllegalStateException ex) {
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ApiDtos.ErrorResponse("CONFLICT", ex.getMessage()));
+                .body(new ErrorResponse("CONFLICT", ex.getMessage()));
     }
 
     @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<ApiDtos.ErrorResponse> handleNotFound(NoSuchElementException ex) {
+    public ResponseEntity<ErrorResponse> handleNotFound(NoSuchElementException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(new ApiDtos.ErrorResponse("NOT_FOUND", ex.getMessage()));
+                .body(new ErrorResponse("NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnauthorizedActionException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedAction(UnauthorizedActionException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse("FORBIDDEN", ex.getMessage()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiDtos.ErrorResponse> handleUnreadableBody() {
+    public ResponseEntity<ErrorResponse> handleUnreadableBody() {
         return ResponseEntity.badRequest()
-                .body(new ApiDtos.ErrorResponse("INVALID_BODY", "Request body is missing or invalid."));
+                .body(new ErrorResponse("INVALID_BODY", "Request body is missing or invalid."));
     }
 }
+

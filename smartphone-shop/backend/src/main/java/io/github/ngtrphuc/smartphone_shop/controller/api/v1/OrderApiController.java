@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 
@@ -26,17 +26,18 @@ public class OrderApiController {
     }
 
     @GetMapping
-    public List<ApiDtos.OrderResponse> orders(Authentication authentication) {
+    public List<OrderResponse> orders(Authentication authentication) {
         return orderService.getOrdersByUser(authentication.getName()).stream()
                 .map(apiMapper::toOrderResponse)
                 .toList();
     }
 
     @PostMapping("/{id}/cancel")
-    public ApiDtos.OperationStatusResponse cancel(@PathVariable Long id, Authentication authentication) {
+    public OperationStatusResponse cancel(@PathVariable Long id, Authentication authentication) {
         boolean success = orderService.cancelOrder(id, authentication.getName());
-        return new ApiDtos.OperationStatusResponse(
+        return new OperationStatusResponse(
                 success,
                 success ? "Order cancelled successfully." : "Cannot cancel this order.");
     }
 }
+

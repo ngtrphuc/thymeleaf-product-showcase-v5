@@ -14,7 +14,7 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.AuthorityUtils;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
@@ -33,7 +33,7 @@ class AuthApiControllerTest {
     void me_shouldReturnAnonymousPayloadWhenNotLoggedIn() {
         AuthApiController controller = new AuthApiController(authService, userRepository, new ApiMapper());
 
-        ApiDtos.AuthMeResponse response = controller.me(
+        AuthMeResponse response = controller.me(
                 new AnonymousAuthenticationToken("key", "anonymousUser", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
 
         assertEquals(false, response.authenticated());
@@ -45,11 +45,11 @@ class AuthApiControllerTest {
         AuthApiController controller = new AuthApiController(authService, userRepository, new ApiMapper());
         when(authService.register("user@example.com", "Tester", "secret123")).thenReturn(false);
 
-        ResponseEntity<ApiDtos.OperationStatusResponse> response = controller.register(
+        ResponseEntity<OperationStatusResponse> response = controller.register(
                 new AuthApiController.RegisterRequest("user@example.com", "Tester", "secret123"));
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
-        ApiDtos.OperationStatusResponse body = response.getBody();
+        OperationStatusResponse body = response.getBody();
         assertNotNull(body);
         assertEquals(false, body.success());
     }
@@ -63,7 +63,7 @@ class AuthApiControllerTest {
         user.setRole("ROLE_USER");
         when(userRepository.findByEmailIgnoreCase("user@example.com")).thenReturn(java.util.Optional.of(user));
 
-        ApiDtos.AuthMeResponse response = controller.me(
+        AuthMeResponse response = controller.me(
                 new UsernamePasswordAuthenticationToken("user@example.com", "password",
                         AuthorityUtils.createAuthorityList("ROLE_USER")));
 
@@ -72,3 +72,4 @@ class AuthApiControllerTest {
     }
 
 }
+

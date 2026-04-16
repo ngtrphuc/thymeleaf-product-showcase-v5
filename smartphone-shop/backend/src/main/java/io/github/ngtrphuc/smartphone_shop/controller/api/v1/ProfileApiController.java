@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiDtos;
+import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;
 import io.github.ngtrphuc.smartphone_shop.model.Order;
@@ -47,12 +47,12 @@ public class ProfileApiController {
     }
 
     @GetMapping
-    public ApiDtos.ProfileResponse profile(Authentication authentication, HttpSession session) {
+    public ProfileResponse profile(Authentication authentication, HttpSession session) {
         return currentProfile(authentication, session);
     }
 
     @PutMapping
-    public ApiDtos.ProfileResponse update(@RequestBody UpdateProfileRequest request,
+    public ProfileResponse update(@RequestBody UpdateProfileRequest request,
             Authentication authentication,
             HttpSession session) {
         String normalizedFullName = normalizeRequiredField(
@@ -75,7 +75,7 @@ public class ProfileApiController {
         return currentProfile(authentication, session);
     }
 
-    private ApiDtos.ProfileResponse currentProfile(Authentication authentication, HttpSession session) {
+    private ProfileResponse currentProfile(Authentication authentication, HttpSession session) {
         String email = authentication.getName();
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found."));
@@ -110,3 +110,4 @@ public class ProfileApiController {
     private record UpdateProfileRequest(String fullName, String phoneNumber, String defaultAddress) {
     }
 }
+
