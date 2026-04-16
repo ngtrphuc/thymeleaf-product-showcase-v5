@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "smartphone-shop-v5",
+      "path": "smartphone-shop"
+    }
+  ],
+  "settings": {
+    "window.title": "smartphone-shop v5",
+    "git.openRepositoryInParentFolders": "never",
+    "java.configuration.updateBuildConfiguration": "automatic"
+  }
+}
