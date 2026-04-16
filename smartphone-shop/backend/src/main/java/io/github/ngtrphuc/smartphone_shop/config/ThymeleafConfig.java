@@ -17,7 +17,7 @@ public class ThymeleafConfig {
     @Bean
     public SpringResourceTemplateResolver customerTemplateResolver() {
         SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
-        resolver.setPrefix("classpath:/frontend/templates/customer/");
+        resolver.setPrefix("classpath:/templates/customer/");
         resolver.setSuffix(".html");
         resolver.setCharacterEncoding("UTF-8");
         resolver.setTemplateMode("HTML");
@@ -30,7 +30,7 @@ public class ThymeleafConfig {
     @Bean
     public SpringResourceTemplateResolver adminTemplateResolver() {
         SpringResourceTemplateResolver resolver = new SpringResourceTemplateResolver();
-        resolver.setPrefix("classpath:/frontend/templates/admin/");
+        resolver.setPrefix("classpath:/templates/admin/");
         resolver.setSuffix(".html");
         resolver.setCharacterEncoding("UTF-8");
         resolver.setTemplateMode("HTML");

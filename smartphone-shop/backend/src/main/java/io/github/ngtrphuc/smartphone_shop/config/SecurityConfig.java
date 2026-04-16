@@ -2,6 +2,8 @@ package io.github.ngtrphuc.smartphone_shop.config;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
+import java.io.IOException;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -39,8 +41,21 @@ public class SecurityConfig {
         http
                 .userDetailsService(userDetailsService)
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/css/**", "/images/**", "/js/**", "/fonts/**", "/svg/**", "/actuator/health", "/favicon.ico").permitAll()
+                .requestMatchers(
+                        "/customer/css/**",
+                        "/admin/css/**",
+                        "/customer/js/**",
+                        "/admin/js/**",
+                        "/images/**",
+                        "/fonts/**",
+                        "/svg/**",
+                        "/actuator/health",
+                        "/favicon.ico").permitAll()
                 .requestMatchers("/", "/product/**", "/register", "/login", "/error", "/admin/access-denied-admin", "/cart/**", "/compare/**").permitAll()
+                .requestMatchers("/api/v1/products/**", "/api/v1/cart/**", "/api/v1/compare/**", "/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/profile/**", "/api/v1/payment-methods/**", "/api/v1/orders/**",
+                        "/api/v1/wishlist/**", "/api/v1/chat/**").hasRole("USER")
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/profile/**", "/my-orders/**", "/chat/**", "/wishlist/**").hasRole("USER")
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
@@ -59,8 +74,25 @@ public class SecurityConfig {
                 .permitAll()
                 )
                 .exceptionHandling(exception -> exception
+                .authenticationEntryPoint((request, response, authException) -> {
+                    if (isApiRequest(request.getRequestURI())) {
+                        writeApiError(response, 401, "UNAUTHORIZED", "Authentication is required.");
+                    } else {
+                        response.sendRedirect("/login");
+                    }
+                })
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
                     Authentication currentAuth = SecurityContextHolder.getContext().getAuthentication();
+                    if (isApiRequest(request.getRequestURI())) {
+                        if (currentAuth == null
+                                || currentAuth instanceof AnonymousAuthenticationToken
+                                || !currentAuth.isAuthenticated()) {
+                            writeApiError(response, 401, "UNAUTHORIZED", "Authentication is required.");
+                        } else {
+                            writeApiError(response, 403, "FORBIDDEN", "You do not have permission to access this resource.");
+                        }
+                        return;
+                    }
                     if (currentAuth == null
                             || currentAuth instanceof AnonymousAuthenticationToken
                             || !currentAuth.isAuthenticated()) {
@@ -100,5 +132,28 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    private boolean isApiRequest(String requestUri) {
+        return requestUri != null && requestUri.startsWith("/api/");
+    }
+
+    private void writeApiError(jakarta.servlet.http.HttpServletResponse response,
+            int status,
+            String code,
+            String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"code\":\"" + code + "\",\"message\":\"" + escapeJson(message) + "\"}");
+    }
+
+    private String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
     }
 }

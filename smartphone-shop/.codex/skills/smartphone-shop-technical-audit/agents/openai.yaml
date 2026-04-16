@@ -1,4 +1,0 @@
-interface:
-  display_name: "Smartphone Shop Audit"
-  short_description: "Deep audit for risks, duplication, and roadmap"
-  default_prompt: "Audit this smartphone-shop repo for bugs, logic issues, security risks, duplicate skill scope, and repo-aligned improvement plans."

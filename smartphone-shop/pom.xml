@@ -114,7 +114,10 @@
             </resource>
             <resource>
                 <directory>frontend</directory>
-                <targetPath>frontend</targetPath>
+                <includes>
+                    <include>templates/**</include>
+                    <include>static/**</include>
+                </includes>
             </resource>
         </resources>
         <testResources>

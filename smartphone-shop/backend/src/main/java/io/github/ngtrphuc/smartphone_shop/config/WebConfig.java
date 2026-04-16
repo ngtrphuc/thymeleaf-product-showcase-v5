@@ -10,18 +10,20 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/css/**")
-                .addResourceLocations(
-                        "classpath:/frontend/static/customer/css/",
-                        "classpath:/frontend/static/admin/css/"
-                );
+        registry.addResourceHandler("/customer/css/**")
+                .addResourceLocations("classpath:/static/customer/css/");
+        registry.addResourceHandler("/admin/css/**")
+                .addResourceLocations("classpath:/static/admin/css/");
+
+        registry.addResourceHandler("/customer/js/**")
+                .addResourceLocations("classpath:/static/customer/js/");
+        registry.addResourceHandler("/admin/js/**")
+                .addResourceLocations("classpath:/static/admin/js/");
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("classpath:/frontend/static/customer/images/");
+                .addResourceLocations("classpath:/static/customer/images/");
         registry.addResourceHandler("/fonts/**")
-                .addResourceLocations("classpath:/frontend/static/customer/fonts/");
-        registry.addResourceHandler("/js/**")
-                .addResourceLocations("classpath:/frontend/static/js/");
+                .addResourceLocations("classpath:/static/customer/fonts/");
         registry.addResourceHandler("/svg/**")
-                .addResourceLocations("classpath:/frontend/static/svg/");
+                .addResourceLocations("classpath:/static/svg/");
     }
 }

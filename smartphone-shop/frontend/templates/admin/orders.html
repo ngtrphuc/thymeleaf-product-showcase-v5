@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Order Management</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-    <script defer th:src="@{/js/admin-shell.js}"></script>
+    <link rel="stylesheet" th:href="@{/admin/css/style.css}">
+    <script defer th:src="@{/admin/js/admin-shell.js}"></script>
     <style>
         .chat-badge {
             display: none;
@@ -214,7 +214,7 @@
                     </div>
                     <div style="text-align:right;">
                         <div th:if="${order.status == 'cancelled'}" class="badge badge-cancelled">
-                            ✕ CANCELLED
+                            âœ• CANCELLED
                         </div>
                         <form th:unless="${order.status == 'cancelled'}" method="post"
                             th:action="@{/admin/orders/{id}/status(id=${order.id})}">
@@ -240,7 +240,7 @@
                 <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:15px;">
                     <div th:each="item : ${order.items}"
                         style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
-                        <span th:text="${item.productName} + ' × ' + ${item.quantity}"></span>
+                        <span th:text="${item.productName} + ' Ã— ' + ${item.quantity}"></span>
                         <span style="font-family:'Syne',sans-serif;color:var(--accent);"
                             th:text="${#numbers.formatDecimal(item.price * item.quantity,0,'COMMA',0,'POINT')} + ' JPY'"></span>
                     </div>
