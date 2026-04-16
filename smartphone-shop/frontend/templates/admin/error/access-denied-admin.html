@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Access Denied</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="home-animated"><span class="icon-svg icon-home" aria-hidden="true"></span> HOME</a>
+    </div>
+
+    <div class="error-box">
+        <div class="error-icon"><span class="icon-svg icon-ban" aria-hidden="true"></span></div>
+        <h2 style="color:var(--accent3);font-family:'Syne',sans-serif;font-weight:800;margin-bottom:12px;">Access Restricted</h2>
+        <p style="color:var(--text-muted);font-size:14px;line-height:1.7;">You cannot access this page because you are logged in as an <strong style="color:var(--text);">Administrator (Admin)</strong>.</p>
+        <div class="error-btn-group">
+            <a href="/" class="home-animated"><span class="icon-svg icon-home" aria-hidden="true"></span> HOME</a>
+            <a href="/admin" class="error-btn-admin"><span class="icon-svg icon-admin" aria-hidden="true"></span> Admin Panel</a>
+        </div>
+    </div>
+
+    <footer>
+        <div th:text="${shopname}" style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:2px;"></div>
+    </footer>
+</body>
+</html>
+

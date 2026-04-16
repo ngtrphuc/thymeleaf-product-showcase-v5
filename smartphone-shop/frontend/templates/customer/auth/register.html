@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script defer th:src="@{/js/auth-password-toggle.js}"></script>
+</head>
+<body class="auth-neo-page">
+    <main class="auth-neo-shell">
+        <nav class="auth-neo-nav">
+            <a href="/" class="auth-neo-brand"><span class="icon-svg icon-spark" aria-hidden="true"></span> Smartphone Shop</a>
+            <div class="auth-neo-switch">
+                <a href="/login" class="auth-neo-switch__btn auth-neo-switch__btn--left">
+                    <span class="auth-neo-switch__label">Log In</span>
+                </a>
+                <a href="/register" class="auth-neo-switch__btn auth-neo-switch__btn--right is-active">
+                    <span class="auth-neo-switch__label">Sign Up</span>
+                </a>
+            </div>
+        </nav>
+
+        <section class="auth-neo-card">
+            <h1 class="auth-neo-title">Create Account</h1>
+            <p class="auth-neo-subtitle">Set up your profile and start your purchase flow.</p>
+
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <form method="post" th:action="@{/register}" class="auth-neo-form">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <label class="auth-neo-label" for="register-full-name">Full Name</label>
+                <input id="register-full-name" type="text" name="fullName" placeholder="John Doe" required minlength="2" th:value="${fullName}">
+
+                <label class="auth-neo-label" for="register-email">Email</label>
+                <input id="register-email" type="email" name="email" placeholder="info@gmail.com" required th:value="${email}">
+
+                <label class="auth-neo-label" for="register-password">Password</label>
+                <div class="auth-neo-password-wrap">
+                    <input id="register-password" type="password" name="password" placeholder="At least 6 characters" required minlength="6">
+                    <span class="auth-pass-toggle" role="button" tabindex="0"
+                        aria-label="Show password" aria-controls="register-password" aria-pressed="false"
+                        data-target="register-password">
+                        <span class="auth-pass-toggle__when-hidden icon-svg icon-eye" aria-hidden="true"></span>
+                        <span class="auth-pass-toggle__when-visible icon-svg icon-eye-off" aria-hidden="true"></span>
+                    </span>
+                </div>
+
+                <button type="submit" class="auth-neo-submit">
+                    <span>Create Account</span>
+                    <span class="auth-neo-submit-icon icon-svg icon-arrow-right" aria-hidden="true"></span>
+                </button>
+            </form>
+
+            <p class="auth-neo-note">
+                Already have an account? <a href="/login">Log in</a>
+            </p>
+        </section>
+    </main>
+</body>
+</html>
+
+
+

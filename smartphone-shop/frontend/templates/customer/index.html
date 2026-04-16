@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Smartphone Shop</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .filter-section {
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .filter-section:last-of-type {
+            border-bottom: none;
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filter-header:hover .filter-title {
+            color: var(--accent);
+        }
+
+        .filter-title {
+            margin-bottom: 0;
+            transition: color 0.2s;
+        }
+
+        .filter-chevron {
+            font-size: 10px;
+            color: var(--text-muted);
+            transition: transform 0.25s ease;
+            flex-shrink: 0;
+        }
+
+        .filter-section.open .filter-chevron {
+            transform: rotate(180deg);
+        }
+
+        .filter-body {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding-bottom: 0;
+        }
+
+        .filter-section.open .filter-body {
+            max-height: 400px;
+            padding-bottom: 14px;
+        }
+
+        .filter-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        #selectLabel {
+            color: var(--text);
+            font-weight: 700;
+        }
+
+        .custom-option.active {
+            background: rgba(111, 90, 69, 0.12);
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .custom-option:not(.active):hover {
+            background: rgba(111, 90, 69, 0.18);
+            color: var(--text);
+            transform: translateY(-3px);
+            box-shadow: inset 0 0 0 1px rgba(111, 90, 69, 0.38), 0 10px 20px rgba(111, 90, 69, 0.14);
+        }
+
+        .custom-option.active:hover {
+            background: rgba(111, 90, 69, 0.12);
+            color: var(--accent);
+            transform: none;
+            box-shadow: none;
+        }
+
+        html.is-paginating .pagination-wrapper a {
+            pointer-events: none;
+        }
+
+        html {
+            overflow-y: scroll;
+        }
+
+        .main-layout {
+            width: 100%;
+            max-width: 1460px;
+        }
+
+        .catalog-panel {
+            --catalog-gap: 22px;
+            --catalog-card-height: 350px;
+            --catalog-rows: 3;
+            flex: 1 1 0;
+            width: 100%;
+            max-width: 1088px;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .catalog-page {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            padding: 24px;
+            min-height: calc((var(--catalog-card-height) * var(--catalog-rows)) + (var(--catalog-gap) * (var(--catalog-rows) - 1)) + 48px);
+            border-radius: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            overflow: hidden;
+            isolation: isolate;
+        }
+
+        .catalog-page::before {
+            content: none;
+        }
+
+        .catalog-page::after {
+            content: none;
+        }
+
+        .catalog-grid {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: var(--catalog-card-height);
+            gap: var(--catalog-gap);
+            align-items: start;
+            align-content: start;
+            min-width: 0;
+        }
+
+        @media (max-width: 1100px) {
+            .catalog-panel {
+                --catalog-gap: 18px;
+                --catalog-card-height: 340px;
+                --catalog-rows: 4;
+                max-width: none;
+            }
+
+            .catalog-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 700px) {
+            .catalog-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .catalog-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .book-flip-stage {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            isolation: isolate;
+        }
+
+        .book-flip-stage::before {
+            content: none;
+        }
+
+        .book-flip-underlay,
+        .book-flip-sheet {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            border-radius: 0;
+            display: block;
+        }
+
+        .book-flip-underlay {
+            z-index: 1;
+            opacity: 1;
+            will-change: transform, opacity;
+        }
+
+        .book-flip-underlay::after {
+            content: none;
+        }
+
+        .book-flip-sheet {
+            content: "";
+            z-index: 2;
+            will-change: opacity, transform;
+        }
+
+        .book-flip-underlay .catalog-page,
+        .book-flip-sheet .catalog-page {
+            width: 100%;
+            min-width: 100%;
+            max-width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .book-flip-underlay .catalog-grid,
+        .book-flip-sheet .catalog-grid {
+            width: 100%;
+        }
+
+        .book-flip-underlay .card-wrapper,
+        .book-flip-sheet .card-wrapper {
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            will-change: auto;
+        }
+
+        .book-flip-stage.is-active .book-flip-underlay,
+        .book-flip-stage.is-active .book-flip-sheet,
+        .book-flip-stage.is-active .book-flip-underlay .card-wrapper,
+        .book-flip-stage.is-active .book-flip-sheet .card-wrapper {
+            will-change: transform, opacity;
+        }
+
+        .book-flip-stage .book-flip-underlay .card-wrapper,
+        .book-flip-stage .book-flip-sheet .card-wrapper {
+            transform-origin: center center;
+        }
+
+        .book-flip-stage.forward .book-flip-underlay .card-wrapper {
+            opacity: 0;
+            transform: perspective(1000px) rotateY(-78deg) scale(0.96);
+        }
+
+        .book-flip-stage.backward .book-flip-underlay .card-wrapper {
+            opacity: 0;
+            transform: perspective(1000px) rotateY(78deg) scale(0.96);
+        }
+
+        .book-flip-sheet .card-wrapper {
+            opacity: 1;
+            transform: perspective(1000px) rotateY(0deg) scale(1);
+        }
+
+        .book-flip-stage.forward.is-active .book-flip-sheet .card-wrapper {
+            animation: catalogCardFlipOutForward 320ms cubic-bezier(0.23, 0.72, 0.28, 1) forwards;
+            animation-delay: calc(var(--flip-order, 0) * 18ms);
+        }
+
+        .book-flip-stage.backward.is-active .book-flip-sheet .card-wrapper {
+            animation: catalogCardFlipOutBackward 320ms cubic-bezier(0.23, 0.72, 0.28, 1) forwards;
+            animation-delay: calc(var(--flip-order, 0) * 18ms);
+        }
+
+        .book-flip-stage.forward.is-active .book-flip-underlay .card-wrapper {
+            animation: catalogCardFlipInForward 420ms cubic-bezier(0.2, 0.76, 0.24, 1) forwards;
+            animation-delay: calc(90ms + (var(--flip-order, 0) * 18ms));
+        }
+
+        .book-flip-stage.backward.is-active .book-flip-underlay .card-wrapper {
+            animation: catalogCardFlipInBackward 420ms cubic-bezier(0.2, 0.76, 0.24, 1) forwards;
+            animation-delay: calc(90ms + (var(--flip-order, 0) * 18ms));
+        }
+
+        .book-flip-stage.is-active .book-flip-sheet {
+            animation: none;
+        }
+
+        .book-flip-stage.is-active .book-flip-underlay {
+            animation: none;
+        }
+
+        @keyframes catalogLayerSettle {
+            0% {
+                opacity: 0.72;
+                transform: translateY(4px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes catalogLayerFadeOut {
+            0% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.14;
+            }
+        }
+
+        @keyframes catalogCardFlipOutForward {
+            0% {
+                opacity: 1;
+                transform: perspective(1000px) rotateY(0deg) scale(1);
+            }
+
+            55% {
+                opacity: 1;
+                transform: perspective(1000px) rotateY(52deg) scale(0.985);
+            }
+
+            100% {
+                opacity: 0;
+                transform: perspective(1000px) rotateY(78deg) scale(0.96);
+            }
+        }
+
+        @keyframes catalogCardFlipInForward {
+            0% {
+                opacity: 0;
+                transform: perspective(1000px) rotateY(-78deg) scale(0.96);
+            }
+
+            55% {
+                opacity: 1;
+                transform: perspective(1000px) rotateY(16deg) scale(0.99);
+            }
+
+            100% {
+                opacity: 1;
+                transform: perspective(1000px) rotateY(0deg) scale(1);
+            }
+        }
+
+        @keyframes catalogCardFlipOutBackward {
+            0% {
+                opacity: 1;
+                transform: perspective(1000px) rotateY(0deg) scale(1);
+            }
+
+            55% {
+                opacity: 1;
+                transform: perspective(1000px) rotateY(-52deg) scale(0.985);
+            }
+
+            100% {
+                opacity: 0;
+                transform: perspective(1000px) rotateY(-78deg) scale(0.96);
+            }
+        }
+
+        @keyframes catalogCardFlipInBackward {
+            0% {
+                opacity: 0;
+                transform: perspective(1000px) rotateY(78deg) scale(0.96);
+            }
+
+            55% {
+                opacity: 1;
+                transform: perspective(1000px) rotateY(-16deg) scale(0.99);
+            }
+
+            100% {
+                opacity: 1;
+                transform: perspective(1000px) rotateY(0deg) scale(1);
+            }
+        }
+
+        .catalog-grid>.card-wrapper {
+            height: var(--catalog-card-height);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: 18px 18px 16px;
+            box-sizing: border-box;
+            background: var(--surface) !important;
+            border: 1px solid var(--glass-border) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 14px 28px rgba(111, 90, 69, 0.1) !important;
+        }
+
+        .wishlist-inline-form {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 3;
+            margin: 0;
+        }
+
+        .wishlist-icon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.88);
+            color: var(--text-muted);
+            font-size: 18px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+        }
+
+        .wishlist-icon-btn:hover {
+            transform: translateY(-1px);
+            color: var(--accent);
+            box-shadow: 0 8px 18px rgba(111, 90, 69, 0.18);
+        }
+
+        .wishlist-icon-btn.active {
+            color: var(--accent);
+            border-color: rgba(111, 90, 69, 0.32);
+        }
+
+        .wishlist-icon-btn .wishlist-heart-icon {
+            width: 16px;
+            height: 16px;
+            --icon-mask: url('/svg/griddy/heart-outline.svg');
+        }
+
+        .wishlist-icon-btn.active .wishlist-heart-icon {
+            --icon-mask: url('/svg/griddy/heart-filled.svg');
+        }
+
+        .catalog-grid>.card-wrapper>a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1 1 0;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .catalog-grid>.card-wrapper img {
+            flex-shrink: 0;
+            height: 150px;
+            width: 100%;
+            object-fit: contain;
+            margin-bottom: 12px;
+        }
+
+        .catalog-grid>.card-wrapper h3 {
+            flex-shrink: 0;
+            min-height: 38px;
+            font-size: 14px;
+            line-height: 1.35;
+            margin: 0;
+            display: -webkit-box;
+            line-clamp: 2;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            width: 100%;
+            text-align: center;
+        }
+
+        .catalog-grid>.card-wrapper .price {
+            flex-shrink: 0;
+            font-size: 17px;
+            line-height: 1.2;
+            margin: 6px 0 0;
+        }
+
+        .catalog-grid>.card-wrapper .view-details {
+            display: inline-block;
+            margin: auto 0 0;
+            padding-top: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+
+        .catalog-grid>.card-wrapper::before {
+            content: none;
+        }
+
+        .catalog-grid>.card-wrapper:hover {
+            border-color: rgba(111, 90, 69, 0.36) !important;
+            box-shadow: 0 18px 34px rgba(111, 90, 69, 0.18) !important;
+        }
+
+        .shop-intro {
+            max-width: 900px;
+            margin: 12px auto 0;
+            padding: 0 20px 8px;
+            text-align: center;
+        }
+
+        .shop-intro__eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .shop-intro__lead {
+            margin: 14px auto 0;
+            max-width: 720px;
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .shop-intro__metrics {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .shop-intro__metric {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.82);
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .shop-intro__metric strong {
+            color: #111111;
+        }
+
+        .catalog-card-topline {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 8px;
+            min-height: 28px;
+            padding-right: 84px;
+        }
+
+        .catalog-card-brand,
+        .catalog-card-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .catalog-card-brand {
+            background: rgba(0, 0, 0, 0.05);
+            color: #111111;
+        }
+
+        .catalog-card-status {
+            background: rgba(34, 197, 94, 0.14);
+            color: #166534;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .catalog-card-status--low {
+            background: rgba(245, 158, 11, 0.16);
+            color: #b45309;
+        }
+
+        .catalog-card-status--out {
+            background: rgba(239, 68, 68, 0.14);
+            color: #b91c1c;
+        }
+
+        .catalog-card-finance {
+            width: 100%;
+            margin: 4px 0 0;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .catalog-card-meta {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .catalog-card-meta span {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.04);
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .catalog-pagination.pagination-wrapper {
+            grid-column: auto;
+            margin: 0;
+            align-self: center;
+            padding: 0 8px;
+        }
+
+        .catalog-pagination .disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .catalog-pagination .slot-empty {
+            opacity: 0.3;
+        }
+    </style>
+    <script th:inline="none">
+        function syncCustomRanges() {
+            var mappings = [
+                ['f_priceMin', 's_priceMin'],
+                ['f_priceMax', 's_priceMax'],
+                ['f_batteryMin', 's_batteryMin'],
+                ['f_batteryMax', 's_batteryMax']
+            ];
+            mappings.forEach(function (pair) {
+                var hidden = document.getElementById(pair[0]);
+                var source = document.getElementById(pair[1]);
+                if (hidden && source) hidden.value = source.value;
+            });
+        }
+        function syncAndSubmit(hiddenId, value) {
+            var el = document.getElementById(hiddenId);
+            if (el) { el.value = value; syncCustomRanges(); document.getElementById('mainForm').submit(); }
+        }
+        function applyFilters() { syncCustomRanges(); document.getElementById('mainForm').submit(); }
+        function toggleSection(el) { el.closest('.filter-section').classList.toggle('open'); }
+    </script>
+</head>
+
+<body>
+    <div id="page-config" th:attr="data-current-page=${currentPage},data-page-size=${pageSize}"></div>
+    <div class="header">
+        <a href="/" class="home-animated"><span class="icon-svg icon-home" aria-hidden="true"></span> HOME</a>
+        <div class="header-actions">
+            <a sec:authorize="!isAuthenticated()" href="/login" class="btn-header header-action header-action--login">
+                <span class="header-action__icon header-action__icon--login icon-svg icon-login" aria-hidden="true"></span>
+                <span class="header-action__label">Log In</span>
+            </a>
+            <a sec:authorize="!hasRole('ADMIN')" href="/compare" class="btn-header header-action header-action--neutral">
+                <span class="header-action__icon icon-svg icon-clipboard" aria-hidden="true"></span>
+                <span class="header-action__label">Compare</span>
+            </a>
+            <a sec:authorize="hasRole('USER')" href="/cart" class="btn-header header-action header-action--neutral">
+                <span class="header-action__icon icon-svg icon-cart" aria-hidden="true"></span>
+                <span class="header-action__label">Cart (<span th:text="${session.cartCount != null ? session.cartCount : 0}">0</span>)</span>
+            </a>
+            <th:block sec:authorize="isAuthenticated()">
+                <a sec:authorize="hasRole('USER')" href="/my-orders" class="btn-header header-action header-action--neutral">
+                    <span class="header-action__icon icon-svg icon-orders" aria-hidden="true"></span>
+                    <span class="header-action__label">Orders</span>
+                </a>
+                <a sec:authorize="hasRole('USER')" href="/wishlist" class="btn-header header-action header-action--neutral">
+                    <span class="header-action__icon icon-svg icon-wishlist" aria-hidden="true"></span>
+                    <span class="header-action__label">Wishlist</span>
+                </a>
+                <a sec:authorize="hasRole('USER')" th:href="@{/profile}" class="btn-header header-action header-action--profile">
+                    <span class="header-action__icon icon-svg icon-user" aria-hidden="true"></span>
+                    <span class="header-action__label" sec:authentication="name"></span>
+                </a>
+                <a sec:authorize="hasRole('ADMIN')" href="/admin" class="btn-header header-action header-action--accent">
+                    <span class="header-action__icon icon-svg icon-admin" aria-hidden="true"></span>
+                    <span class="header-action__label">Admin</span>
+                </a>
+                <form th:action="@{/logout}" method="post" style="display:inline;margin:0;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" class="btn-logout-link header-action header-action--danger">
+                        <span class="header-action__icon icon-svg icon-logout" aria-hidden="true"></span>
+                        <span class="header-action__label">Log Out</span>
+                    </button>
+                </form>
+            </th:block>
+        </div>
+    </div>
+
+    <div class="shop-title-container">
+        <h1 class="shop-name" th:text="${shopname}">SHOP NAME</h1>
+        <div class="shop-intro">
+            <span class="shop-intro__eyebrow">Curated flagship storefront for Japan</span>
+            <p class="shop-intro__lead">
+                Discover premium smartphones with compare mode, live support, saved payment methods, and a checkout flow that behaves more like a real commerce site.
+            </p>
+            <div class="shop-intro__metrics">
+                <span class="shop-intro__metric"><strong th:text="${totalElements}">0</strong> models matched</span>
+                <span class="shop-intro__metric"><strong th:text="${brandCount}">0</strong> brands available</span>
+                <span class="shop-intro__metric" th:if="${hasActiveFilters}"><strong th:text="${activeFilterCount}">0</strong> filters active</span>
+                <span class="shop-intro__metric" th:unless="${hasActiveFilters}">Free shipping and secure checkout included</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <form method="get" action="/" id="mainForm">
+            <input type="text" name="keyword" placeholder="Search smartphones..." th:value="${keyword}">
+            <input type="hidden" name="brand" id="f_brand" th:value="${brand}">
+            <input type="hidden" name="priceRange" id="f_priceRange" th:value="${priceRange}">
+            <input type="hidden" name="priceMin" id="f_priceMin" th:value="${priceMin}">
+            <input type="hidden" name="priceMax" id="f_priceMax" th:value="${priceMax}">
+            <input type="hidden" name="batteryRange" id="f_batteryRange" th:value="${batteryRange}">
+            <input type="hidden" name="batteryMin" id="f_batteryMin" th:value="${batteryMin}">
+            <input type="hidden" name="batteryMax" id="f_batteryMax" th:value="${batteryMax}">
+            <input type="hidden" name="screenSize" id="f_screenSize" th:value="${screenSize}">
+            <input type="hidden" name="pageSize" id="pageSizeValue" th:value="${pageSize}">
+            <input type="hidden" name="sort" id="sortValue" th:value="${sort}">
+            <div class="custom-select" id="customSelect">
+                <div class="custom-select__trigger" id="selectTrigger">
+                    <span id="selectLabel">
+                        <span th:switch="${sort}">
+                            <span th:case="'name_asc'">Name A to Z</span>
+                            <span th:case="'name_desc'">Name Z to A</span>
+                            <span th:case="'price_asc'">Price Low to High</span>
+                            <span th:case="'price_desc'">Price High to Low</span>
+                            <span th:case="*">Name A to Z</span>
+                        </span>
+                    </span>
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="custom-options" id="customOptions">
+                    <div class="custom-option" data-value="name_asc">Name A to Z (Default)</div>
+                    <div class="custom-option" data-value="name_desc">Name Z to A</div>
+                    <div class="custom-option" data-value="price_asc">Price Low to High</div>
+                    <div class="custom-option" data-value="price_desc">Price High to Low</div>
+                </div>
+            </div>
+            <button type="submit" class="btn-search"><span class="btn-search__label">Search</span></button>
+        </form>
+    </div>
+
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="filter-section" th:classappend="${brand != null and !#strings.isEmpty(brand)} ? ' open' : ''">
+                <div class="filter-header" onclick="toggleSection(this)">
+                    <h4 class="filter-title">
+                        Brand
+                        <span th:if="${brand != null and !#strings.isEmpty(brand)}" class="filter-dot"></span>
+                    </h4>
+                    <span class="filter-chevron">&#9660;</span>
+                </div>
+                <div class="filter-body">
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <input type="radio" name="brand" value=""
+                                th:checked="${brand == null or #strings.isEmpty(brand)}"
+                                onchange="syncAndSubmit('f_brand', '')"> All
+                        </label>
+                        <label th:each="b : ${brands}" class="filter-label">
+                            <input type="radio" name="brand" th:value="${b}" th:checked="${brand == b}"
+                                th:attr="onchange='syncAndSubmit(\'f_brand\', \'' + ${b} + '\')'">
+                            <span th:text="${b}"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-section"
+                th:classappend="${(priceRange != null and !#strings.isEmpty(priceRange)) or priceMin != null or priceMax != null} ? ' open' : ''">
+                <div class="filter-header" onclick="toggleSection(this)">
+                    <h4 class="filter-title">
+                        Price (JPY)
+                        <span
+                            th:if="${(priceRange != null and !#strings.isEmpty(priceRange)) or priceMin != null or priceMax != null}"
+                            class="filter-dot"></span>
+                    </h4>
+                    <span class="filter-chevron">&#9660;</span>
+                </div>
+                <div class="filter-body">
+                    <div class="filter-group">
+                        <p class="filter-sub">Quick select</p>
+                        <label class="filter-label">
+                            <input type="radio" name="priceRange" value=""
+                                th:checked="${priceRange == null or priceRange == ''}"
+                                onchange="syncAndSubmit('f_priceRange', '')"> All
+                        </label>
+                        <label class="filter-label">
+                            <input type="radio" name="priceRange" value="under150"
+                                th:checked="${priceRange == 'under150'}"
+                                onchange="syncAndSubmit('f_priceRange', 'under150')"> Under 150,000
+                        </label>
+                        <label class="filter-label">
+                            <input type="radio" name="priceRange" value="150to200"
+                                th:checked="${priceRange == '150to200'}"
+                                onchange="syncAndSubmit('f_priceRange', '150to200')"> 150,000 - 200,000
+                        </label>
+                        <label class="filter-label">
+                            <input type="radio" name="priceRange" value="200to250"
+                                th:checked="${priceRange == '200to250'}"
+                                onchange="syncAndSubmit('f_priceRange', '200to250')"> 200,000 - 250,000
+                        </label>
+                        <label class="filter-label">
+                            <input type="radio" name="priceRange" value="over250"
+                                th:checked="${priceRange == 'over250'}"
+                                onchange="syncAndSubmit('f_priceRange', 'over250')"> Over 250,000
+                        </label>
+                    </div>
+                    <div class="filter-group">
+                        <p class="filter-sub">Custom range</p>
+                        <div class="filter-inputs">
+                            <input type="number" id="s_priceMin" placeholder="Min" th:value="${priceMin}"
+                                class="filter-input">
+                            <input type="number" id="s_priceMax" placeholder="Max" th:value="${priceMax}"
+                                class="filter-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-section"
+                th:classappend="${(batteryRange != null and !#strings.isEmpty(batteryRange)) or batteryMin != null or batteryMax != null} ? ' open' : ''">
+                <div class="filter-header" onclick="toggleSection(this)">
+                    <h4 class="filter-title">
+                        Battery (mAh)
+                        <span
+                            th:if="${(batteryRange != null and !#strings.isEmpty(batteryRange)) or batteryMin != null or batteryMax != null}"
+                            class="filter-dot"></span>
+                    </h4>
+                    <span class="filter-chevron">&#9660;</span>
+                </div>
+                <div class="filter-body">
+                    <div class="filter-group">
+                        <p class="filter-sub">Quick select</p>
+                        <label class="filter-label">
+                            <input type="radio" name="batteryRange" value=""
+                                th:checked="${batteryRange == null or batteryRange == ''}"
+                                onchange="syncAndSubmit('f_batteryRange', '')"> All
+                        </label>
+                        <label class="filter-label">
+                            <input type="radio" name="batteryRange" value="under5000"
+                                th:checked="${batteryRange == 'under5000'}"
+                                onchange="syncAndSubmit('f_batteryRange', 'under5000')"> Under 5,000
+                        </label>
+                        <label class="filter-label">
+                            <input type="radio" name="batteryRange" value="over5000"
+                                th:checked="${batteryRange == 'over5000'}"
+                                onchange="syncAndSubmit('f_batteryRange', 'over5000')"> Over 5,000
+                        </label>
+                    </div>
+                    <div class="filter-group">
+                        <p class="filter-sub">Custom range</p>
+                        <div class="filter-inputs">
+                            <input type="number" id="s_batteryMin" placeholder="Min" th:value="${batteryMin}"
+                                class="filter-input">
+                            <input type="number" id="s_batteryMax" placeholder="Max" th:value="${batteryMax}"
+                                class="filter-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filter-section"
+                th:classappend="${screenSize != null and !#strings.isEmpty(screenSize)} ? ' open' : ''">
+                <div class="filter-header" onclick="toggleSection(this)">
+                    <h4 class="filter-title">
+                        Screen Size
+                        <span th:if="${screenSize != null and !#strings.isEmpty(screenSize)}" class="filter-dot"></span>
+                    </h4>
+                    <span class="filter-chevron">&#9660;</span>
+                </div>
+                <div class="filter-body">
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <input type="radio" name="screenSize" value=""
+                                th:checked="${screenSize == null or screenSize == ''}"
+                                onchange="syncAndSubmit('f_screenSize', '')"> All
+                        </label>
+                        <label class="filter-label">
+                            <input type="radio" name="screenSize" value="under6.5"
+                                th:checked="${screenSize == 'under6.5'}"
+                                onchange="syncAndSubmit('f_screenSize', 'under6.5')"> Under 6.5"
+                        </label>
+                        <label class="filter-label">
+                            <input type="radio" name="screenSize" value="6.5to6.8"
+                                th:checked="${screenSize == '6.5to6.8'}"
+                                onchange="syncAndSubmit('f_screenSize', '6.5to6.8')"> 6.5" - 6.8"
+                        </label>
+                        <label class="filter-label">
+                            <input type="radio" name="screenSize" value="over6.8"
+                                th:checked="${screenSize == 'over6.8'}"
+                                onchange="syncAndSubmit('f_screenSize', 'over6.8')"> Over 6.8"
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding-top:14px;">
+                <button type="button" class="btn-apply" onclick="applyFilters()">Apply Filter</button>
+                <a href="/" class="btn-reset">Reset</a>
+            </div>
+        </div>
+
+        <div class="catalog-panel">
+            <div class="catalog-page">
+                <div class="catalog-grid">
+                    <div th:each="p : ${products}" class="card card-wrapper"
+                        th:classappend="${p.stock != null and p.stock <= 0} ? ' out-of-stock' : ''"
+                        th:with="isWishlisted=${wishlistedProductIds != null and #sets.contains(wishlistedProductIds, p.id)}">
+                        <span th:if="${p.stock != null and p.stock <= 0}" class="badge-out-of-stock">Out of Stock</span>
+                        <form sec:authorize="hasRole('USER')" method="post"
+                            th:action="${isWishlisted} ? @{/wishlist/remove} : @{/wishlist/add}"
+                            class="wishlist-inline-form" style="right:52px;">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="id" th:value="${p.id}">
+                            <input type="hidden" name="redirect"
+                                th:value="@{/(page=${currentPage}, pageSize=${pageSize}, keyword=${keyword}, sort=${sort}, brand=${brand}, priceRange=${priceRange}, priceMin=${priceMin}, priceMax=${priceMax}, batteryRange=${batteryRange}, batteryMin=${batteryMin}, batteryMax=${batteryMax}, screenSize=${screenSize})}">
+                            <button type="submit" class="wishlist-icon-btn"
+                                th:classappend="${isWishlisted} ? ' active' : ''"
+                                th:attr="aria-label=${isWishlisted} ? 'Remove from wishlist' : 'Add to wishlist'">
+                                <span class="icon-svg wishlist-heart-icon" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                        <form action="/compare/add" method="post" class="wishlist-inline-form" style="right:10px;">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <input type="hidden" name="id" th:value="${p.id}">
+                            <input type="hidden" name="redirect"
+                                th:value="@{/(page=${currentPage}, pageSize=${pageSize}, keyword=${keyword}, sort=${sort}, brand=${brand}, priceRange=${priceRange}, priceMin=${priceMin}, priceMax=${priceMax}, batteryRange=${batteryRange}, batteryMin=${batteryMin}, batteryMax=${batteryMax}, screenSize=${screenSize})}">
+                            <button type="submit" class="wishlist-icon-btn" aria-label="Add to compare">
+                                <span class="icon-svg icon-clipboard" style="width:15px;height:15px;" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                        <a th:href="@{/product/{id}(id=${p.id}, page=${currentPage}, pageSize=${pageSize}, keyword=${keyword}, sort=${sort}, brand=${brand}, priceRange=${priceRange}, priceMin=${priceMin}, priceMax=${priceMax}, batteryRange=${batteryRange}, batteryMin=${batteryMin}, batteryMax=${batteryMax}, screenSize=${screenSize})}"
+                            style="text-decoration:none;color:inherit;">
+                            <div class="catalog-card-topline">
+                                <span class="catalog-card-status"
+                                    th:classappend="${!p.available} ? ' catalog-card-status--out' : (${p.lowStock} ? ' catalog-card-status--low' : '')"
+                                    th:text="${p.availabilityLabel}">
+                                    In stock
+                                </span>
+                            </div>
+                            <img th:src="@{${p.imageUrl}}" alt="phone">
+                            <h3 th:text="${p.name}"></h3>
+                            <p class="price"
+                                th:text="${p.price != null ? #numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT') : '0'} + ' JPY'">
+                            </p>
+                            <p class="catalog-card-finance"
+                                th:text="${'From ' + #numbers.formatDecimal(p.monthlyInstallmentAmount, 0, 'COMMA', 0, 'POINT') + ' JPY / month'}">
+                                Financing hint
+                            </p>
+                            <div class="catalog-card-meta">
+                                <span th:text="${p.storage}">512 GB</span>
+                                <span th:text="${p.ram}">12 GB</span>
+                                <span th:text="${p.size}">6.7 inch</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pagination-wrapper catalog-pagination" th:if="${totalPages != null and totalPages > 1}"
+                th:with="startPage=${T(java.lang.Math).max(0, T(java.lang.Math).min(currentPage - 1, totalPages - 3))}">
+                <a th:if="${currentPage > 0}"
+                    th:href="@{/(page=${currentPage - 1}, pageSize=${pageSize}, keyword=${keyword}, sort=${sort}, brand=${brand}, priceRange=${priceRange}, priceMin=${priceMin}, priceMax=${priceMax}, batteryRange=${batteryRange}, batteryMin=${batteryMin}, batteryMax=${batteryMax}, screenSize=${screenSize})}">&#8249;</a>
+                <span th:unless="${currentPage > 0}" class="disabled">&#8249;</span>
+
+                <th:block th:each="offset : ${#numbers.sequence(0, 2)}" th:with="i=${startPage + offset}">
+                    <span th:if="${i >= totalPages}" class="disabled slot-empty">&#160;</span>
+                    <span th:if="${i < totalPages and i == currentPage}" class="active" th:text="${i + 1}"></span>
+                    <a th:if="${i < totalPages and i != currentPage}"
+                        th:href="@{/(page=${i}, pageSize=${pageSize}, keyword=${keyword}, sort=${sort}, brand=${brand}, priceRange=${priceRange}, priceMin=${priceMin}, priceMax=${priceMax}, batteryRange=${batteryRange}, batteryMin=${batteryMin}, batteryMax=${batteryMax}, screenSize=${screenSize})}"
+                        th:text="${i + 1}"></a>
+                </th:block>
+
+                <a th:if="${currentPage < totalPages - 1}"
+                    th:href="@{/(page=${currentPage + 1}, pageSize=${pageSize}, keyword=${keyword}, sort=${sort}, brand=${brand}, priceRange=${priceRange}, priceMin=${priceMin}, priceMax=${priceMax}, batteryRange=${batteryRange}, batteryMin=${batteryMin}, batteryMax=${batteryMax}, screenSize=${screenSize})}">&#8250;</a>
+                <span th:unless="${currentPage < totalPages - 1}" class="disabled">&#8250;</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" th:if="${toast}">
+        <div class="toast" th:text="${toast}"></div>
+    </div>
+
+    <footer th:replace="~{fragments/footer :: customerFooter}"></footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const desktopPageSize = 9;
+            const compactPageSize = 8;
+            const compactBreakpoint = 1100;
+            const pageConfig = document.getElementById('page-config');
+            const pageSizeInput = document.getElementById('pageSizeValue');
+            const trigger = document.getElementById('selectTrigger');
+            const sortInput = document.getElementById('sortValue');
+            const selectLabel = document.getElementById('selectLabel');
+            const customSelect = document.getElementById('customSelect');
+            let currentPage = pageConfig ? Number(pageConfig.dataset.currentPage || '0') : 0;
+            let currentPageSize = pageConfig ? Number(pageConfig.dataset.pageSize || desktopPageSize) : desktopPageSize;
+
+            function desiredPageSize() {
+                return window.innerWidth <= compactBreakpoint ? compactPageSize : desktopPageSize;
+            }
+
+            function syncResponsivePageSize() {
+                const nextPageSize = desiredPageSize();
+                if (pageSizeInput) {
+                    pageSizeInput.value = String(nextPageSize);
+                }
+                if (nextPageSize === currentPageSize) {
+                    return;
+                }
+                const params = new URLSearchParams(window.location.search);
+                const itemOffset = currentPage * currentPageSize;
+                params.set('pageSize', String(nextPageSize));
+                params.set('page', String(Math.floor(itemOffset / nextPageSize)));
+                window.location.replace(`${window.location.pathname}?${params.toString()}`);
+            }
+
+            if (trigger && sortInput && customSelect) {
+                const syncActiveSortOption = (value) => {
+                    document.querySelectorAll('.custom-option').forEach(option => {
+                        option.classList.toggle('active', (option.dataset.value || '') === value);
+                    });
+                };
+
+                syncActiveSortOption(sortInput.value || '');
+                trigger.addEventListener('click', () => customSelect.classList.toggle('open'));
+                document.querySelectorAll('.custom-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        const selectedValue = option.dataset.value || '';
+                        selectLabel.textContent = option.textContent.trim();
+                        sortInput.value = selectedValue;
+                        syncActiveSortOption(selectedValue);
+                        customSelect.classList.remove('open');
+                        document.getElementById('mainForm').submit();
+                    });
+                });
+                document.addEventListener('click', (e) => {
+                    if (!customSelect.contains(e.target)) customSelect.classList.remove('open');
+                });
+            }
+
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            let isNavigating = false;
+
+            const pageFromHref = (href) => {
+                try {
+                    const url = new URL(href, window.location.origin);
+                    const parsed = Number(url.searchParams.get('page') || '0');
+                    return Number.isFinite(parsed) ? parsed : 0;
+                } catch (_) {
+                    return 0;
+                }
+            };
+
+            const syncCatalogPageHeight = () => {
+                const panel = document.querySelector('.catalog-panel');
+                const page = panel ? panel.querySelector('.catalog-page') : null;
+                if (!page) {
+                    return;
+                }
+
+                page.style.height = '';
+                page.style.minHeight = '';
+                const computedPage = window.getComputedStyle(page);
+                const cardHeight = parseFloat(computedPage.getPropertyValue('--catalog-card-height')) || 316;
+                const rows = parseFloat(computedPage.getPropertyValue('--catalog-rows')) || 3;
+                const rowGap = parseFloat(computedPage.getPropertyValue('--catalog-gap')) || 22;
+                const verticalPadding = (parseFloat(computedPage.paddingTop) || 0) + (parseFloat(computedPage.paddingBottom) || 0);
+                const targetHeight = (rows * cardHeight) + (Math.max(0, rows - 1) * rowGap) + verticalPadding;
+                page.style.minHeight = `${Math.ceil(targetHeight)}px`;
+                page.style.height = `${Math.ceil(targetHeight)}px`;
+            };
+
+            const playBookFlipTransition = (currentLayout, nextLayout, direction) => {
+                return new Promise((resolve) => {
+                    const parent = currentLayout.parentElement;
+                    if (!parent) {
+                        resolve(false);
+                        return;
+                    }
+
+                    const stage = document.createElement('div');
+                    stage.className = `book-flip-stage ${direction}`;
+                    const stageRect = currentLayout.getBoundingClientRect();
+                    const stageHeight = stageRect.height;
+                    stage.style.height = `${Math.ceil(stageHeight)}px`;
+                    stage.style.width = '100%';
+                    stage.style.maxWidth = '100%';
+                    parent.replaceChild(stage, currentLayout);
+
+                    const underlay = document.createElement('div');
+                    underlay.className = 'book-flip-underlay';
+
+                    const sheet = document.createElement('div');
+                    sheet.className = 'book-flip-sheet';
+
+                    const assignFlipOrder = (layout) => {
+                        const cards = Array.from(layout.querySelectorAll('.card-wrapper'));
+                        const orderedCards = direction === 'backward' ? [...cards].reverse() : cards;
+                        orderedCards.forEach((card, index) => {
+                            card.style.setProperty('--flip-order', String(index));
+                        });
+                        return cards.length;
+                    };
+
+                    currentLayout.style.width = '100%';
+                    currentLayout.style.minWidth = '100%';
+                    currentLayout.style.height = '100%';
+                    nextLayout.style.width = '100%';
+                    nextLayout.style.minWidth = '100%';
+                    nextLayout.style.height = '100%';
+                    nextLayout.style.minHeight = currentLayout.style.minHeight || `${stageHeight}px`;
+
+                    const outgoingCardCount = assignFlipOrder(currentLayout);
+                    const incomingCardCount = assignFlipOrder(nextLayout);
+
+                    underlay.appendChild(nextLayout);
+                    sheet.appendChild(currentLayout);
+                    stage.appendChild(underlay);
+                    stage.appendChild(sheet);
+
+                    let cleaned = false;
+                    const cleanup = () => {
+                        if (cleaned) return;
+                        cleaned = true;
+                        currentLayout.style.width = '';
+                        currentLayout.style.minWidth = '';
+                        currentLayout.style.height = '';
+                        nextLayout.style.width = '';
+                        nextLayout.style.minWidth = '';
+                        nextLayout.style.height = '';
+                        Array.from(nextLayout.querySelectorAll('.card-wrapper')).forEach(card => {
+                            card.style.removeProperty('--flip-order');
+                        });
+                        stage.replaceWith(nextLayout);
+                        resolve(true);
+                    };
+
+                    const totalCards = Math.max(outgoingCardCount, incomingCardCount);
+                    const totalDuration = 620 + (Math.max(0, totalCards - 1) * 18);
+
+                    underlay.addEventListener('animationend', cleanup, { once: true });
+                    requestAnimationFrame(() => stage.classList.add('is-active'));
+                    setTimeout(cleanup, totalDuration);
+                });
+            };
+
+            const applyPaginatedContent = async (href, direction) => {
+                if (prefersReducedMotion) {
+                    window.location.href = href;
+                    return;
+                }
+
+                const currentLayout = document.querySelector('.catalog-panel .catalog-page');
+                if (!currentLayout) {
+                    window.location.href = href;
+                    return;
+                }
+
+                const lockedHeight = currentLayout.getBoundingClientRect().height;
+                currentLayout.style.minHeight = `${Math.ceil(lockedHeight)}px`;
+                currentLayout.style.height = `${Math.ceil(lockedHeight)}px`;
+
+                const response = await fetch(href, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) {
+                    throw new Error(`Failed to load page ${response.status}`);
+                }
+
+                const html = await response.text();
+                const parsed = new DOMParser().parseFromString(html, 'text/html');
+                const incomingLayoutSource = parsed.querySelector('.catalog-panel .catalog-page');
+                if (!incomingLayoutSource) {
+                    throw new Error('Missing catalog page in response');
+                }
+                const incomingLayout = document.importNode(incomingLayoutSource, true);
+                const incomingPaginationSource = parsed.querySelector('.catalog-panel .pagination-wrapper');
+
+                await playBookFlipTransition(currentLayout, incomingLayout, direction);
+                incomingLayout.style.height = '';
+                incomingLayout.style.minHeight = '';
+
+                const incomingConfig = parsed.getElementById('page-config');
+                if (pageConfig && incomingConfig) {
+                    if (incomingConfig.dataset.currentPage != null) {
+                        pageConfig.dataset.currentPage = incomingConfig.dataset.currentPage;
+                        const parsedPage = Number(incomingConfig.dataset.currentPage || '0');
+                        currentPage = Number.isFinite(parsedPage) ? parsedPage : currentPage;
+                    }
+                    if (incomingConfig.dataset.pageSize != null) {
+                        pageConfig.dataset.pageSize = incomingConfig.dataset.pageSize;
+                        const parsedPageSize = Number(incomingConfig.dataset.pageSize || String(desktopPageSize));
+                        currentPageSize = Number.isFinite(parsedPageSize) ? parsedPageSize : currentPageSize;
+                    }
+                }
+
+                const currentPagination = document.querySelector('.catalog-panel .pagination-wrapper');
+                if (incomingPaginationSource) {
+                    const incomingPagination = document.importNode(incomingPaginationSource, true);
+                    if (currentPagination) {
+                        currentPagination.replaceWith(incomingPagination);
+                    } else {
+                        document.querySelector('.catalog-panel')?.appendChild(incomingPagination);
+                    }
+                } else if (currentPagination) {
+                    currentPagination.remove();
+                }
+
+                syncCatalogPageHeight();
+                history.pushState({ page: currentPage }, '', href);
+                bindPaginationFlip();
+            };
+
+            window.addEventListener('popstate', () => {
+                window.location.reload();
+            });
+
+            const bindPaginationFlip = () => {
+                document.querySelectorAll('.catalog-panel .pagination-wrapper a[href]').forEach(link => {
+                    if (link.dataset.flipBound === '1') {
+                        return;
+                    }
+                    link.dataset.flipBound = '1';
+                    link.addEventListener('click', async (event) => {
+                        if (isNavigating || event.defaultPrevented) return;
+                        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                        if (link.target && link.target.toLowerCase() === '_blank') return;
+
+                        const href = link.getAttribute('href');
+                        if (!href || href.startsWith('#')) return;
+
+                        event.preventDefault();
+                        isNavigating = true;
+                        document.documentElement.classList.add('is-paginating');
+                        const targetPage = pageFromHref(href);
+                        const direction = targetPage >= currentPage ? 'forward' : 'backward';
+
+                        try {
+                            await applyPaginatedContent(href, direction);
+                        } catch (_) {
+                            window.location.href = href;
+                            return;
+                        } finally {
+                            isNavigating = false;
+                            document.documentElement.classList.remove('is-paginating');
+                        }
+                    });
+                });
+            };
+
+            bindPaginationFlip();
+            syncCatalogPageHeight();
+            syncResponsivePageSize();
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    syncCatalogPageHeight();
+                    syncResponsivePageSize();
+                }, 180);
+            });
+            setTimeout(() => document.querySelectorAll('.toast').forEach(t => t.remove()), 3200);
+        });
+    </script>
+    <div th:replace="~{fragments/compare-bar :: compareBar}"></div>
+    <div th:replace="~{fragments/chat-widget :: chatWidget}"></div>
+</body>
+
+</html>
+
+

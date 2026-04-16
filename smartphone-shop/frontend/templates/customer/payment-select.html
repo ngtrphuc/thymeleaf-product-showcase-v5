@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Select Payment Method</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="header">
+        <div class="header-actions">
+            <a href="/cart" class="btn-header header-action header-action--neutral header-action--back">
+                <span class="header-action__icon icon-svg icon-arrow-left" aria-hidden="true"></span>
+                <span class="header-action__label">Back to Cart</span>
+            </a>
+        </div>
+        <span style="color:var(--text-muted);font-size:13px;">Checkout Step 1 of 3</span>
+    </div>
+
+    <div class="container" style="max-width:760px;">
+        <h2 style="text-align:center;margin-bottom:18px;font-family:'Syne',sans-serif;font-weight:700;">Payment Method</h2>
+        <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:28px;">
+            Choose your payment method before entering shipping details.
+        </p>
+
+        <form th:action="@{/cart/select-payment}" method="post" id="payment-form"
+            th:attr="data-total-amount=${totalAmount != null ? totalAmount : 0}"
+            style="max-width:520px;margin:0 auto;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:18px 16px 14px;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" name="savedPaymentMethodId" id="savedPaymentMethodId">
+            <input type="hidden" name="paymentType" id="paymentType">
+            <input type="hidden" name="paymentPlan" id="paymentPlan"
+                th:value="${selectedPaymentPlan != null ? selectedPaymentPlan : 'FULL_PAYMENT'}">
+            <input type="hidden" name="installmentMonths" id="installmentMonths"
+                th:value="${selectedInstallmentMonths != null ? selectedInstallmentMonths : ''}">
+
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">
+                Payment Plan
+            </div>
+
+            <label class="payment-option-card payment-plan-card" data-plan="FULL_PAYMENT">
+                <input type="radio" name="paymentPlanChoice" value="FULL_PAYMENT"
+                    th:checked="${selectedPaymentPlan == null or selectedPaymentPlan != 'INSTALLMENT'}">
+                <div>
+                    <div style="font-weight:700;font-size:14px;">Full Payment</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Pay the full total at checkout.</div>
+                </div>
+            </label>
+
+            <label class="payment-option-card payment-plan-card" data-plan="INSTALLMENT">
+                <input type="radio" name="paymentPlanChoice" value="INSTALLMENT"
+                    th:checked="${selectedPaymentPlan == 'INSTALLMENT'}">
+                <div>
+                    <div style="font-weight:700;font-size:14px;">Installment</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Choose installment term in the popup dialog.</div>
+                </div>
+            </label>
+
+            <div id="installment-summary"
+                style="display:none;margin:12px 0 16px;padding:12px;border-radius:12px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.08);">
+                <div style="font-size:11px;font-weight:700;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">
+                    Installment details
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                    <span>Term</span>
+                    <strong id="installment-term-display"
+                        th:text="${selectedInstallmentMonths != null ? selectedInstallmentMonths + ' months' : '24 months'}">
+                        24 months
+                    </strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                    <span>Estimated monthly</span>
+                    <strong id="installment-monthly-display"
+                        th:text="${totalAmount != null and selectedInstallmentMonths != null ? #numbers.formatDecimal(totalAmount / selectedInstallmentMonths, 0, 'COMMA', 0, 'POINT') + ' JPY / month' : '-'}">
+                        -
+                    </strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;">
+                    <span>Interest rate</span>
+                    <strong>0%</strong>
+                </div>
+                <button type="button" id="change-installment-term" class="btn-edit-link"
+                    style="margin-top:8px;padding:0;border:none;background:none;cursor:pointer;">
+                    Change installment term
+                </button>
+            </div>
+            <div id="installment-cod-note"
+                style="display:none;margin:-6px 0 14px;padding:10px 12px;border-radius:10px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.08);font-size:12px;color:var(--text-muted);">
+                Installment is not available with Cash on Delivery. Please choose Bank Transfer, PayPay, or MasterCard.
+            </div>
+
+            <dialog id="installment-dialog" class="installment-dialog" aria-labelledby="installment-dialog-title">
+                <div class="installment-dialog__panel" role="document">
+                    <h3 id="installment-dialog-title" style="margin:0 0 6px;font-family:'Syne',sans-serif;">Choose Installment Term</h3>
+                    <p style="margin:0 0 12px;color:var(--text-muted);font-size:13px;">
+                        Select your installment period before continuing.
+                    </p>
+                    <div class="installment-dialog__options">
+                        <label th:each="months : ${installmentOptions}" class="installment-dialog__option">
+                            <input type="radio" name="installmentMonthsDialog" th:value="${months}">
+                            <span>
+                                <strong th:text="${months + ' months'}">12 months</strong>
+                                <small th:if="${totalAmount != null}"
+                                    th:text="${#numbers.formatDecimal(totalAmount / months, 0, 'COMMA', 0, 'POINT') + ' JPY / month'}">
+                                    Monthly amount
+                                </small>
+                            </span>
+                        </label>
+                    </div>
+                    <p id="installment-dialog-error"
+                        style="display:none;margin:10px 0 0;color:#B42318;font-size:12px;">
+                        Please choose an installment term.
+                    </p>
+                    <div class="installment-dialog__actions">
+                        <button type="button" class="installment-dialog__btn installment-dialog__btn--secondary"
+                            data-installment-dialog-close>
+                            Cancel
+                        </button>
+                        <button type="button" id="installment-confirm-btn"
+                            class="installment-dialog__btn installment-dialog__btn--primary">
+                            Confirm
+                        </button>
+                    </div>
+                </div>
+            </dialog>
+
+            <div th:if="${!#lists.isEmpty(savedPaymentMethods)}" style="margin-bottom:16px;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">
+                    Saved Methods
+                </div>
+                <label th:each="pm : ${savedPaymentMethods}" class="payment-option-card payment-method-card" th:attr="data-mode='saved',data-id=${pm.id}">
+                    <input type="radio" name="paymentChoice" th:value="'saved:' + ${pm.id}" th:checked="${pm.default}"
+                        th:attr="data-payment-type=${pm.type.name()}">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;width:100%;">
+                        <div>
+                            <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;">
+                                <img th:if="${pm.type.name() == 'CASH_ON_DELIVERY'}" th:src="@{/images/cash-on-delivery-icon.svg}" alt="Cash on Delivery"
+                                    class="payment-method-icon-inline">
+                                <img th:if="${pm.type.name() == 'BANK_TRANSFER'}" th:src="@{/images/bank-transfer-icon.svg}" alt="Bank Transfer"
+                                    class="payment-method-icon-inline">
+                                <img th:if="${pm.type.name() == 'PAYPAY'}" th:src="@{/images/paypay-icon.svg}" alt="PayPay"
+                                    class="paypay-icon-inline">
+                                <img th:if="${pm.type.name() == 'MASTERCARD'}" th:src="@{/images/mastercard-icon.svg}" alt="MasterCard"
+                                    class="payment-method-icon-inline">
+                                <span th:text="${pm.displayName}"></span>
+                            </div>
+                            <div th:if="${pm.maskedDetail != null}" style="font-size:12px;color:var(--text-muted);margin-top:2px;" th:text="${pm.maskedDetail}"></div>
+                        </div>
+                        <span th:if="${pm.default}" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--glass-border);background:rgba(0,0,0,0.08);">
+                            Default
+                        </span>
+                    </div>
+                </label>
+                <div class="payment-method-divider" style="display:flex;align-items:center;gap:12px;color:var(--text-muted);font-size:12px;margin:12px 0;">
+                    <div style="height:1px;background:var(--glass-border);flex:1;"></div>
+                    <span>Or choose another method</span>
+                    <div style="height:1px;background:var(--glass-border);flex:1;"></div>
+                </div>
+            </div>
+
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">
+                Other Methods
+            </div>
+
+            <label class="payment-option-card payment-method-card" data-mode="new" data-type="CASH_ON_DELIVERY"
+                th:if="${selectedDefaultPaymentType == null or selectedDefaultPaymentType != 'CASH_ON_DELIVERY'}">
+                <input type="radio" name="paymentChoice" value="new:CASH_ON_DELIVERY" data-payment-type="CASH_ON_DELIVERY">
+                <div>
+                    <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;">
+                        <img th:src="@{/images/cash-on-delivery-icon.svg}" alt="Cash on Delivery" class="payment-method-icon-inline">
+                        <span>Cash on Delivery</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Pay when package arrives.</div>
+                </div>
+            </label>
+
+            <label class="payment-option-card payment-method-card" data-mode="new" data-type="BANK_TRANSFER"
+                th:if="${selectedDefaultPaymentType == null or selectedDefaultPaymentType != 'BANK_TRANSFER'}">
+                <input type="radio" name="paymentChoice" value="new:BANK_TRANSFER" data-payment-type="BANK_TRANSFER">
+                <div>
+                    <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;">
+                        <img th:src="@{/images/bank-transfer-icon.svg}" alt="Bank Transfer" class="payment-method-icon-inline">
+                        <span>Bank Transfer</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Provide account details for transfer.</div>
+                </div>
+            </label>
+
+            <div id="bank-detail-wrap" style="display:none;margin:10px 0 16px;">
+                <label for="bank-detail" style="display:block;font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">
+                    Bank Name and Account Number
+                </label>
+                <input id="bank-detail" name="bankDetail" type="text" maxlength="200"
+                    placeholder="e.g. Mizuho Bank - 1234567890"
+                    style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--glass-border);background:var(--surface-soft);color:var(--text);">
+            </div>
+
+            <label class="payment-option-card payment-method-card" data-mode="new" data-type="PAYPAY"
+                th:if="${selectedDefaultPaymentType == null or selectedDefaultPaymentType != 'PAYPAY'}">
+                <input type="radio" name="paymentChoice" value="new:PAYPAY" data-payment-type="PAYPAY">
+                <div>
+                    <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;">
+                        <img th:src="@{/images/paypay-icon.svg}" alt="PayPay" class="paypay-icon-inline">
+                        <span>PayPay</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Complete payment via PayPay after placing order.</div>
+                </div>
+            </label>
+
+            <label class="payment-option-card payment-method-card" data-mode="new" data-type="MASTERCARD"
+                th:if="${selectedDefaultPaymentType == null or selectedDefaultPaymentType != 'MASTERCARD'}">
+                <input type="radio" name="paymentChoice" value="new:MASTERCARD" data-payment-type="MASTERCARD">
+                <div>
+                    <div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;">
+                        <img th:src="@{/images/mastercard-icon.svg}" alt="MasterCard" class="payment-method-icon-inline">
+                        <span>MasterCard</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Use your MasterCard for checkout.</div>
+                </div>
+            </label>
+
+            <div class="payment-method-note" style="margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.06);font-size:12px;line-height:1.7;color:var(--text-muted);">
+                Saved payment details are masked in the storefront and only the minimum data required for checkout is reused.
+            </div>
+
+            <div class="payment-submit-wrap">
+                <button type="submit" id="payment-submit" class="btn-submit" style="width:min(100%,420px);" disabled>
+                    Continue to Shipping
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="toast-container" th:if="${toast}">
+        <div class="toast" th:text="${toast}"></div>
+    </div>
+
+    <style>
+        .payment-option-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 11px 12px;
+            width: min(100%, 488px);
+            margin: 0 auto 10px;
+            background: var(--surface-soft);
+            cursor: pointer;
+        }
+        .payment-option-card.active {
+            border-color: rgba(0, 0, 0, 0.42);
+            background: rgba(0, 0, 0, 0.06);
+        }
+        .payment-option-card input[type="radio"] {
+            margin-top: 2px;
+            accent-color: var(--accent);
+        }
+        .payment-option-card.is-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: rgba(0, 0, 0, 0.03);
+        }
+        .payment-option-card.is-disabled input[type="radio"] {
+            cursor: not-allowed;
+        }
+        .installment-dialog {
+            border: none;
+            padding: 0;
+            margin: 0;
+            background: transparent;
+        }
+        .installment-dialog[open] {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            max-height: none;
+            display: grid;
+            place-items: center;
+        }
+        .installment-dialog::backdrop {
+            background: rgba(15, 23, 42, 0.45);
+        }
+        .installment-dialog__panel {
+            margin: 0;
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+            padding: 16px;
+            width: min(460px, calc(100vw - 40px));
+            display: flex;
+            flex-direction: column;
+        }
+        .installment-dialog__options {
+            display: grid;
+            gap: 8px;
+            max-height: min(44vh, 320px);
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+        .installment-dialog__option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 9px 10px;
+            cursor: pointer;
+            transition: border-color 0.18s ease, background-color 0.18s ease;
+        }
+        .installment-dialog__option input {
+            margin-top: 1px;
+            accent-color: #e11d48;
+        }
+        .installment-dialog__option span {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .installment-dialog__option small {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .installment-dialog__actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .installment-dialog__btn {
+            min-width: 120px;
+            border-radius: 10px;
+            border: 1px solid;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.18s ease, color 0.18s ease;
+        }
+        .installment-dialog__btn--secondary {
+            background: #ffffff !important;
+            color: #111111 !important;
+            border-color: rgba(0, 0, 0, 0.24) !important;
+        }
+        .installment-dialog__btn--secondary:hover {
+            background: #f2f2f2 !important;
+        }
+        .installment-dialog__btn--primary {
+            background: #111111 !important;
+            color: #ffffff !important;
+            border-color: #111111 !important;
+        }
+        .installment-dialog__btn--primary:hover {
+            background: #000000 !important;
+        }
+        #installment-summary,
+        #installment-cod-note,
+        #bank-detail-wrap,
+        .payment-method-divider,
+        .payment-method-note {
+            width: min(100%, 488px);
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+        .payment-submit-wrap {
+            display: flex;
+            justify-content: center;
+            margin-top: 14px;
+        }
+        @media (max-width: 640px) {
+            .installment-dialog__panel {
+                width: calc(100vw - 24px);
+                padding: 14px;
+            }
+            .installment-dialog__actions {
+                justify-content: stretch;
+            }
+            .installment-dialog__actions > * {
+                flex: 1;
+                min-width: 0;
+            }
+        }
+    </style>
+
+    <script>
+        const form = document.getElementById('payment-form');
+        const submitButton = document.getElementById('payment-submit');
+        const savedInput = document.getElementById('savedPaymentMethodId');
+        const paymentTypeInput = document.getElementById('paymentType');
+        const paymentPlanInput = document.getElementById('paymentPlan');
+        const installmentMonthsInput = document.getElementById('installmentMonths');
+        const bankWrap = document.getElementById('bank-detail-wrap');
+        const bankInput = document.getElementById('bank-detail');
+        const installmentSummary = document.getElementById('installment-summary');
+        const installmentCodNote = document.getElementById('installment-cod-note');
+        const installmentTermDisplay = document.getElementById('installment-term-display');
+        const installmentMonthlyDisplay = document.getElementById('installment-monthly-display');
+        const installmentDialog = document.getElementById('installment-dialog');
+        const installmentConfirmBtn = document.getElementById('installment-confirm-btn');
+        const installmentDialogError = document.getElementById('installment-dialog-error');
+        const changeInstallmentTermBtn = document.getElementById('change-installment-term');
+        const installmentDialogCloseButtons = document.querySelectorAll('[data-installment-dialog-close]');
+        const installmentDialogRadios = document.querySelectorAll('input[name="installmentMonthsDialog"]');
+        const totalAmount = Number.parseFloat(form.dataset.totalAmount || '0');
+        const fullPlanRadio = document.querySelector('input[name="paymentPlanChoice"][value="FULL_PAYMENT"]');
+
+        let selectedMethod = null;
+
+        function setActiveMethodCard(radio) {
+            document.querySelectorAll('.payment-method-card').forEach(card => card.classList.remove('active'));
+            const card = radio ? radio.closest('.payment-option-card') : null;
+            if (card) {
+                card.classList.add('active');
+            }
+        }
+
+        function setActivePlanCard(radio) {
+            document.querySelectorAll('.payment-plan-card').forEach(card => card.classList.remove('active'));
+            const card = radio ? radio.closest('.payment-option-card') : null;
+            if (card) {
+                card.classList.add('active');
+            }
+        }
+
+        function getCurrentInstallmentMonths() {
+            const parsed = Number.parseInt(installmentMonthsInput.value, 10);
+            if (!Number.isFinite(parsed) || parsed <= 0) {
+                return null;
+            }
+            return parsed;
+        }
+
+        function getDialogInstallmentMonths() {
+            const checked = document.querySelector('input[name="installmentMonthsDialog"]:checked');
+            if (!checked) {
+                return null;
+            }
+            const parsed = Number.parseInt(checked.value, 10);
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+
+        function getFirstInstallmentOption() {
+            const first = document.querySelector('input[name="installmentMonthsDialog"]');
+            if (!first) {
+                return null;
+            }
+            const parsed = Number.parseInt(first.value, 10);
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+
+        function setDialogInstallmentMonths(months) {
+            installmentDialogRadios.forEach(radio => {
+                const value = Number.parseInt(radio.value, 10);
+                radio.checked = Number.isFinite(value) && value === months;
+            });
+        }
+
+        function openInstallmentDialog() {
+            if (!installmentDialog) {
+                return;
+            }
+            const fallbackMonths = getCurrentInstallmentMonths() || getFirstInstallmentOption();
+            if (fallbackMonths) {
+                setDialogInstallmentMonths(fallbackMonths);
+            }
+            if (installmentDialogError) {
+                installmentDialogError.style.display = 'none';
+            }
+            if (typeof installmentDialog.showModal === 'function') {
+                if (!installmentDialog.open) {
+                    installmentDialog.showModal();
+                }
+            }
+        }
+
+        function closeInstallmentDialog(returnValue) {
+            if (!installmentDialog || !installmentDialog.open) {
+                return;
+            }
+            installmentDialog.close(returnValue);
+        }
+
+        function refreshSubmitState() {
+            const hasInstallmentMonths = paymentPlanInput.value !== 'INSTALLMENT' || getCurrentInstallmentMonths() !== null;
+            submitButton.disabled = !selectedMethod || !hasInstallmentMonths;
+        }
+
+        function clearSelectedMethod() {
+            selectedMethod = null;
+            savedInput.value = '';
+            paymentTypeInput.value = '';
+            bankWrap.style.display = 'none';
+            bankInput.required = false;
+            setActiveMethodCard(null);
+            refreshSubmitState();
+        }
+
+        function formatJPY(value) {
+            const rounded = Math.round(value);
+            return `${new Intl.NumberFormat('en-US').format(rounded)} JPY`;
+        }
+
+        function updateInstallmentSummary(months) {
+            if (!installmentSummary) {
+                return;
+            }
+            if (!months) {
+                installmentSummary.style.display = 'none';
+                return;
+            }
+            installmentSummary.style.display = 'block';
+            if (installmentTermDisplay) {
+                installmentTermDisplay.textContent = `${months} months`;
+            }
+            if (installmentMonthlyDisplay) {
+                if (Number.isFinite(totalAmount) && totalAmount > 0) {
+                    installmentMonthlyDisplay.textContent = `${formatJPY(totalAmount / months)} / month`;
+                } else {
+                    installmentMonthlyDisplay.textContent = '-';
+                }
+            }
+        }
+
+        function updateMethodAvailabilityForPlan() {
+            const isInstallmentPlan = paymentPlanInput.value === 'INSTALLMENT';
+            let shouldClearSelectedMethod = false;
+
+            document.querySelectorAll('input[name="paymentChoice"]').forEach(radio => {
+                const type = (radio.dataset.paymentType || '').toUpperCase();
+                const disableForInstallment = isInstallmentPlan && type === 'CASH_ON_DELIVERY';
+                radio.disabled = disableForInstallment;
+                const card = radio.closest('.payment-option-card');
+                if (card) {
+                    card.classList.toggle('is-disabled', disableForInstallment);
+                }
+                if (disableForInstallment && radio.checked) {
+                    radio.checked = false;
+                    if (selectedMethod === radio.value) {
+                        shouldClearSelectedMethod = true;
+                    }
+                }
+            });
+
+            if (shouldClearSelectedMethod) {
+                clearSelectedMethod();
+            }
+            if (installmentCodNote) {
+                installmentCodNote.style.display = isInstallmentPlan ? 'block' : 'none';
+            }
+        }
+
+        function applyMethodSelection(value) {
+            const selectedRadio = value
+                ? document.querySelector(`input[name="paymentChoice"][value="${CSS.escape(value)}"]`)
+                : null;
+            if (selectedRadio && selectedRadio.disabled) {
+                clearSelectedMethod();
+                return;
+            }
+
+            selectedMethod = value || null;
+            bankWrap.style.display = 'none';
+            bankInput.required = false;
+            savedInput.value = '';
+            paymentTypeInput.value = '';
+
+            if (value && value.startsWith('saved:')) {
+                savedInput.value = value.slice(6);
+            } else if (value && value.startsWith('new:')) {
+                const type = value.slice(4);
+                paymentTypeInput.value = type;
+                if (type === 'BANK_TRANSFER') {
+                    bankWrap.style.display = 'block';
+                    bankInput.required = true;
+                }
+            }
+
+            setActiveMethodCard(selectedRadio);
+            refreshSubmitState();
+        }
+
+        function applyPlanSelection(value, shouldOpenDialog) {
+            const effectiveValue = value === 'INSTALLMENT' ? 'INSTALLMENT' : 'FULL_PAYMENT';
+            if (effectiveValue === 'INSTALLMENT') {
+                paymentPlanInput.value = 'INSTALLMENT';
+                const currentMonths = getCurrentInstallmentMonths();
+                updateInstallmentSummary(currentMonths);
+                if (shouldOpenDialog) {
+                    openInstallmentDialog();
+                }
+            } else {
+                paymentPlanInput.value = 'FULL_PAYMENT';
+                installmentMonthsInput.value = '';
+                updateInstallmentSummary(null);
+            }
+
+            const selectedRadio = document.querySelector(
+                `input[name="paymentPlanChoice"][value="${CSS.escape(effectiveValue)}"]`);
+            setActivePlanCard(selectedRadio);
+            updateMethodAvailabilityForPlan();
+            refreshSubmitState();
+        }
+
+        document.querySelectorAll('input[name="paymentChoice"]').forEach(radio => {
+            radio.addEventListener('change', () => applyMethodSelection(radio.value));
+        });
+
+        document.querySelectorAll('.payment-method-card').forEach(card => {
+            card.addEventListener('click', event => {
+                if (event.target instanceof HTMLInputElement && event.target.type === 'radio') {
+                    return;
+                }
+                const radio = card.querySelector('input[name="paymentChoice"]');
+                if (!radio || radio.disabled) {
+                    return;
+                }
+                radio.checked = true;
+                applyMethodSelection(radio.value);
+            });
+        });
+
+        document.querySelectorAll('input[name="paymentPlanChoice"]').forEach(radio => {
+            radio.addEventListener('change', () => applyPlanSelection(radio.value, radio.value === 'INSTALLMENT'));
+        });
+
+        document.querySelectorAll('.payment-plan-card').forEach(card => {
+            card.addEventListener('click', event => {
+                if (event.target instanceof HTMLInputElement && event.target.type === 'radio') {
+                    return;
+                }
+                const radio = card.querySelector('input[name="paymentPlanChoice"]');
+                if (!radio) {
+                    return;
+                }
+                radio.checked = true;
+                applyPlanSelection(radio.value, radio.value === 'INSTALLMENT');
+            });
+        });
+
+        installmentDialogCloseButtons.forEach(button => {
+            button.addEventListener('click', () => closeInstallmentDialog('cancel'));
+        });
+
+        if (installmentConfirmBtn) {
+            installmentConfirmBtn.addEventListener('click', () => {
+                const selectedMonths = getDialogInstallmentMonths();
+                if (!selectedMonths) {
+                    if (installmentDialogError) {
+                        installmentDialogError.style.display = 'block';
+                    }
+                    return;
+                }
+                installmentMonthsInput.value = String(selectedMonths);
+                updateInstallmentSummary(selectedMonths);
+                if (installmentDialogError) {
+                    installmentDialogError.style.display = 'none';
+                }
+                closeInstallmentDialog('confirm');
+                refreshSubmitState();
+            });
+        }
+
+        if (changeInstallmentTermBtn) {
+            changeInstallmentTermBtn.addEventListener('click', () => openInstallmentDialog());
+        }
+
+        if (installmentDialog) {
+            installmentDialog.addEventListener('click', event => {
+                if (event.target === installmentDialog) {
+                    closeInstallmentDialog('cancel');
+                }
+            });
+            installmentDialog.addEventListener('close', () => {
+                const confirmed = installmentDialog.returnValue === 'confirm';
+                if (!confirmed && paymentPlanInput.value === 'INSTALLMENT' && !getCurrentInstallmentMonths()) {
+                    paymentPlanInput.value = 'FULL_PAYMENT';
+                    if (fullPlanRadio) {
+                        fullPlanRadio.checked = true;
+                        setActivePlanCard(fullPlanRadio);
+                    }
+                    installmentMonthsInput.value = '';
+                    updateInstallmentSummary(null);
+                    updateMethodAvailabilityForPlan();
+                }
+                refreshSubmitState();
+            });
+        }
+
+        const checkedPlanRadio = document.querySelector('input[name="paymentPlanChoice"]:checked')
+            || document.querySelector('input[name="paymentPlanChoice"]');
+        if (checkedPlanRadio) {
+            checkedPlanRadio.checked = true;
+            applyPlanSelection(checkedPlanRadio.value, false);
+        } else {
+            applyPlanSelection('FULL_PAYMENT', false);
+        }
+
+        const checkedMethodRadio = document.querySelector('input[name="paymentChoice"]:checked');
+        if (checkedMethodRadio) {
+            checkedMethodRadio.checked = true;
+            applyMethodSelection(checkedMethodRadio.value);
+        } else {
+            applyMethodSelection(null);
+        }
+
+        form.addEventListener('submit', event => {
+            if (submitButton.disabled) {
+                event.preventDefault();
+                return;
+            }
+            if (paymentPlanInput.value === 'INSTALLMENT' && !getCurrentInstallmentMonths()) {
+                event.preventDefault();
+                openInstallmentDialog();
+                return;
+            }
+            if (paymentTypeInput.value === 'BANK_TRANSFER' && !bankInput.value.trim()) {
+                event.preventDefault();
+                bankInput.focus();
+                bankInput.style.borderColor = 'red';
+                setTimeout(() => {
+                    bankInput.style.borderColor = '';
+                }, 1800);
+            }
+        });
+
+        setTimeout(() => document.querySelectorAll('.toast').forEach(t => t.remove()), 3200);
+    </script>
+
+    <footer th:replace="~{fragments/footer :: customerFooter}"></footer>
+    <div th:replace="~{fragments/compare-bar :: compareBar}"></div>
+    <div th:replace="~{fragments/chat-widget :: chatWidget}"></div>
+</body>
+</html>

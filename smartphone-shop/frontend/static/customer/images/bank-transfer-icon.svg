@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Bank Transfer">
+  <path d="M20 48 64 24l44 24v8H20z" fill="none" stroke="#000000" stroke-width="6" stroke-linejoin="round"/>
+  <rect x="24" y="54" width="80" height="8" rx="3" fill="#000000"/>
+  <rect x="28" y="62" width="10" height="24" rx="3" fill="#000000"/>
+  <rect x="46" y="62" width="10" height="24" rx="3" fill="#000000"/>
+  <rect x="64" y="62" width="10" height="24" rx="3" fill="#000000"/>
+  <rect x="82" y="62" width="10" height="24" rx="3" fill="#000000"/>
+  <rect x="24" y="90" width="80" height="8" rx="3" fill="#000000"/>
+  <path d="M92 74v30M82 94h20M92 104l12-12M92 104 80 92" fill="none" stroke="#000000" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

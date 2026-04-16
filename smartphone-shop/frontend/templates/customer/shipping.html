@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Shipping Details</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="header">
+        <div class="header-actions">
+            <a href="/cart/payment" class="btn-header header-action header-action--neutral header-action--back">
+                <span class="header-action__icon icon-svg icon-arrow-left" aria-hidden="true"></span>
+                <span class="header-action__label">Back to Payment</span>
+            </a>
+        </div>
+        <span style="color:var(--text-muted);font-size:13px;">Checkout Step 2 of 3</span>
+    </div>
+
+    <div class="container">
+        <div style="display:flex;gap:6px;margin:0 auto 24px;max-width:440px;">
+            <div style="flex:1;height:3px;border-radius:99px;background:var(--accent);"></div>
+            <div style="flex:1;height:3px;border-radius:99px;background:var(--accent);opacity:0.5;"></div>
+            <div style="flex:1;height:3px;border-radius:99px;background:var(--glass-border);"></div>
+        </div>
+
+        <h2 style="text-align:center;margin-bottom:32px;font-family:'Syne',sans-serif;font-weight:700;">Shipping Details</h2>
+
+        <form th:action="@{/cart/process-shipping}" method="post" style="text-align:center;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <div class="shipping-form-group">
+                <label>Full Name</label>
+                <input type="text" name="customerName" th:value="${user != null ? user.fullName : ''}" placeholder="e.g. John Doe" required minlength="2">
+            </div>
+            <div class="shipping-form-group">
+                <label>Phone Number</label>
+                <input type="tel" name="phoneNumber" th:value="${user != null ? user.phoneNumber : ''}" placeholder="e.g. 08012345678" required pattern="[0-9]{10,11}">
+            </div>
+
+            <div th:if="${savedAddress != null and !#strings.isEmpty(savedAddress)}" style="max-width:440px;margin:0 auto 20px;">
+                <p style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);text-align:left;margin-bottom:12px;">Shipping Address</p>
+                <label class="option-card">
+                    <input type="radio" name="addressOption" value="saved" checked onchange="toggleAddress(this.value)">
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">Use saved address</div>
+                        <div style="color:var(--text-muted);font-size:13px;margin-top:4px;" th:text="${savedAddress}"></div>
+                    </div>
+                </label>
+                <label class="option-card">
+                    <input type="radio" name="addressOption" value="new" onchange="toggleAddress(this.value)">
+                    <div style="font-weight:600;font-size:14px;">Ship to a new address</div>
+                </label>
+                <input type="hidden" name="savedAddress" th:value="${savedAddress}">
+            </div>
+
+            <div th:if="${savedAddress == null or #strings.isEmpty(savedAddress)}" class="shipping-form-group">
+                <label>Shipping Address</label>
+                <input type="text" name="address" placeholder="Street, City, Province..." required minlength="10">
+            </div>
+
+            <div id="newAddressFields" class="shipping-form-group" style="display:none;">
+                <label>New Shipping Address</label>
+                <input type="text" id="newAddressInput" name="address" placeholder="Street, City, Province..." minlength="10">
+            </div>
+
+            <button type="submit" class="btn-submit">Continue to Review &rarr;</button>
+        </form>
+    </div>
+
+    <script>
+        function toggleAddress(val) {
+            const newFields = document.getElementById('newAddressFields');
+            const newInput = document.getElementById('newAddressInput');
+            if (!newFields || !newInput) return;
+            if (val === 'new') {
+                newFields.style.display = 'block';
+                newInput.required = true;
+            } else {
+                newFields.style.display = 'none';
+                newInput.required = false;
+                newInput.value = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const selected = document.querySelector('input[name="addressOption"]:checked');
+            if (selected) {
+                toggleAddress(selected.value);
+            }
+        });
+    </script>
+
+    <div class="toast-container" th:if="${toast}">
+        <div class="toast" th:text="${toast}"></div>
+    </div>
+    <script>
+        setTimeout(() => { document.querySelectorAll('.toast').forEach(t => t.remove()); }, 3200);
+    </script>
+
+    <footer th:replace="~{fragments/footer :: customerFooter}"></footer>
+    <div th:replace="~{fragments/compare-bar :: compareBar}"></div>
+    <div th:replace="~{fragments/chat-widget :: chatWidget}"></div>
+</body>
+</html>

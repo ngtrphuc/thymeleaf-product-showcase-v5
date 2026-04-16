@@ -1,0 +1,5 @@
+﻿{
+  "gitlens.gitkraken.cli.integration.enabled": false,
+  "gitlens.gitkraken.cli.insiders.enabled": false,
+  "gitlens.gitkraken.mcp.autoEnabled": false
+}

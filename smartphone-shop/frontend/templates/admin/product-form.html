@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Product</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script defer th:src="@{/js/admin-shell.js}"></script>
+    <style>
+        .form-card input[type="number"]::-webkit-outer-spin-button,
+        .form-card input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .form-card input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .product-form-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .product-form-actions .btn-cart {
+            justify-content: center;
+        }
+
+        .product-form-actions .btn-cart,
+        .product-form-actions .btn-back {
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease, color 0.22s ease !important;
+        }
+
+        .product-form-actions .btn-cart:hover,
+        .product-form-actions .btn-cart:focus-visible,
+        .product-form-actions .btn-back:hover,
+        .product-form-actions .btn-back:focus-visible {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 12px 24px rgba(111, 90, 69, 0.14) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-layout">
+        <div class="sidebar-admin">
+            <div class="brand"><span class="icon-svg icon-admin" aria-hidden="true"></span> Admin Panel</div>
+            <a href="/admin" class="admin-nav-link">
+                <span class="admin-nav-icon"><span class="icon-svg icon-dashboard" aria-hidden="true"></span></span>
+                <span class="admin-nav-body"><span class="admin-nav-label">Dashboard</span></span>
+            </a>
+            <a th:href="@{/admin/products(page=${currentPage}, keyword=${keyword}, brand=${brand}, stock=${stock}, sort=${sort})}"
+                class="admin-nav-link active">
+                <span class="admin-nav-icon admin-nav-icon--svg" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                        <rect x="7" y="2.75" width="10" height="18.5" rx="2.8"></rect>
+                        <path d="M10 5.75h4"></path>
+                        <path d="M10.25 17.5h3.5"></path>
+                        <circle cx="12" cy="19.2" r="0.7" fill="currentColor" stroke="none"></circle>
+                    </svg>
+                </span>
+                <span class="admin-nav-body"><span class="admin-nav-label">Products</span></span>
+            </a>
+            <a href="/admin/orders" class="admin-nav-link">
+                <span class="admin-nav-icon"><span class="icon-svg icon-orders" aria-hidden="true"></span></span>
+                <span class="admin-nav-body"><span class="admin-nav-label">Orders</span></span>
+            </a>
+            <a href="/admin/chat" class="admin-nav-link">
+                <span class="admin-nav-icon"><span class="icon-svg icon-chat" aria-hidden="true"></span></span>
+                <span class="admin-nav-body"><span class="admin-nav-label">Chat</span></span>
+            </a>
+            <a href="/" class="home-animated" style="margin-top:auto;border-top:1px solid var(--glass-border);padding-top:16px;"><span class="icon-svg icon-home" aria-hidden="true"></span> HOME</a>
+        </div>
+
+        <div class="admin-content">
+            <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:22px;margin-bottom:22px;"
+                th:text="${product.id != null} ? 'Edit Product' : 'Add New Product'"></h2>
+
+            <div class="form-card">
+                <form method="post" th:action="@{/admin/products/save}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="hidden" name="id" th:value="${product.id}">
+                    <input type="hidden" name="returnUrl" th:value="${returnUrl}">
+                    <input type="hidden" name="returnPage" th:value="${currentPage}">
+                    <input type="hidden" name="returnKeyword" th:value="${keyword}">
+                    <input type="hidden" name="returnBrand" th:value="${brand}">
+                    <input type="hidden" name="returnStock" th:value="${stock}">
+                    <input type="hidden" name="returnSort" th:value="${sort}">
+                    <div class="fg">
+                        <label>Product Name</label>
+                        <input type="text" name="name" th:value="${product.name}" required>
+                    </div>
+                    <div class="row2">
+                        <div class="fg">
+                            <label>Price (JPY)</label>
+                            <input type="number" name="price" th:value="${product.price}" required>
+                        </div>
+                        <div class="fg">
+                            <label>Stock</label>
+                            <input type="number" name="stock" th:value="${product.stock}" required>
+                        </div>
+                    </div>
+                    <div class="fg">
+                        <label>Image URL</label>
+                        <input type="text" name="imageUrl" th:value="${product.imageUrl}" placeholder="/images/...">
+                    </div>
+                    <div class="row2">
+                        <div class="fg"><label>OS</label><input type="text" name="os" th:value="${product.os}"></div>
+                        <div class="fg"><label>RAM</label><input type="text" name="ram" th:value="${product.ram}"></div>
+                        <div class="fg"><label>Chipset</label><input type="text" name="chipset" th:value="${product.chipset}"></div>
+                        <div class="fg"><label>Frequency</label><input type="text" name="speed"
+                                th:value="${product.speed}"></div>
+                        <div class="fg"><label>Storage</label><input type="text" name="storage"
+                                th:value="${product.storage}"></div>
+                        <div class="fg"><label>Screen Size</label><input type="text" name="size"
+                                th:value="${product.size}"></div>
+                        <div class="fg"><label>Resolution</label><input type="text" name="resolution"
+                                th:value="${product.resolution}"></div>
+                        <div class="fg"><label>Battery</label><input type="text" name="battery"
+                                th:value="${product.battery}"></div>
+                        <div class="fg"><label>Charging Power</label><input type="text" name="charging"
+                                th:value="${product.charging}"></div>
+                    </div>
+                    <div class="fg">
+                        <label>Description</label>
+                        <textarea name="description" rows="3" th:text="${product.description}"></textarea>
+                    </div>
+                    <div class="product-form-actions">
+                        <button type="submit" class="btn-cart">Save</button>
+                        <a th:href="${cancelUrl}"
+                            class="btn-back">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" th:if="${toast}">
+        <div class="toast" th:text="${toast}"></div>
+    </div>
+    <script>
+        setTimeout(() => { document.querySelectorAll('.toast').forEach(t => t.remove()); }, 3200);
+    </script>
+</body>
+
+</html>
+
+
+

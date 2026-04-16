@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>My Wishlist</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="home-animated"><span class="icon-svg icon-home" aria-hidden="true"></span> HOME</a>
+        <div class="header-actions">
+            <a sec:authorize="!isAuthenticated()" href="/login" class="btn-header header-action header-action--login">
+                <span class="header-action__icon header-action__icon--login icon-svg icon-login" aria-hidden="true"></span>
+                <span class="header-action__label">Log In</span>
+            </a>
+            <th:block sec:authorize="isAuthenticated()">
+                <a sec:authorize="hasRole('USER')" href="/my-orders" class="btn-header header-action header-action--neutral">
+                    <span class="header-action__icon icon-svg icon-orders" aria-hidden="true"></span>
+                    <span class="header-action__label">Orders</span>
+                </a>
+                <a sec:authorize="hasRole('USER')" href="/wishlist" class="btn-header header-action header-action--neutral">
+                    <span class="header-action__icon icon-svg icon-wishlist" aria-hidden="true"></span>
+                    <span class="header-action__label">Wishlist</span>
+                </a>
+                <a sec:authorize="hasRole('USER')" href="/compare" class="btn-header header-action header-action--neutral">
+                    <span class="header-action__icon icon-svg icon-clipboard" aria-hidden="true"></span>
+                    <span class="header-action__label">Compare</span>
+                </a>
+                <a sec:authorize="hasRole('USER')" href="/cart" class="btn-header header-action header-action--neutral">
+                    <span class="header-action__icon icon-svg icon-cart" aria-hidden="true"></span>
+                    <span class="header-action__label">Cart (<span th:text="${session.cartCount != null ? session.cartCount : 0}">0</span>)</span>
+                </a>
+                <a sec:authorize="hasRole('USER')" th:href="@{/profile}" class="btn-header header-action header-action--profile">
+                    <span class="header-action__icon icon-svg icon-user" aria-hidden="true"></span>
+                    <span class="header-action__label" sec:authentication="name"></span>
+                </a>
+                <a sec:authorize="hasRole('ADMIN')" href="/admin" class="btn-header header-action header-action--accent">
+                    <span class="header-action__icon icon-svg icon-admin" aria-hidden="true"></span>
+                    <span class="header-action__label">Admin</span>
+                </a>
+                <form th:action="@{/logout}" method="post" style="display:inline;margin:0;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" class="btn-logout-link header-action header-action--danger">
+                        <span class="header-action__icon icon-svg icon-logout" aria-hidden="true"></span>
+                        <span class="header-action__label">Log Out</span>
+                    </button>
+                </form>
+            </th:block>
+        </div>
+    </div>
+
+    <div class="container" style="max-width:900px;">
+        <h2 style="margin-bottom:24px;font-family:'Syne',sans-serif;font-weight:700;"><span class="icon-svg icon-wishlist" aria-hidden="true"></span> My Wishlist</h2>
+
+        <div th:if="${#lists.isEmpty(wishlist)}" style="text-align:center;padding:60px 0;color:var(--text-muted);">
+            <div style="font-size:50px;opacity:0.35;margin-bottom:16px;"><span class="icon-svg icon-heart-outline" aria-hidden="true"></span></div>
+            <p>Your wishlist is empty.</p>
+            <a href="/" class="btn-checkout" style="display:inline-block;margin-top:20px;padding:12px 30px;">Explore Products</a>
+        </div>
+
+        <div th:each="item : ${wishlist}" class="order-card">
+            <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                <a th:href="@{/product/{id}(id=${item.productId},from='wishlist')}"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:110px;height:110px;border:1px solid var(--glass-border);border-radius:12px;background:var(--surface-soft);">
+                    <img th:src="@{${item.imageUrl}}" th:alt="${item.name}"
+                        style="max-width:92px;max-height:92px;object-fit:contain;">
+                </a>
+
+                <div style="flex:1;min-width:220px;">
+                    <a th:href="@{/product/{id}(id=${item.productId},from='wishlist')}"
+                        style="text-decoration:none;color:var(--text);font-family:'Syne',sans-serif;font-weight:700;"
+                        th:text="${item.name}"></a>
+                    <div style="margin-top:8px;color:var(--accent);font-weight:700;font-family:'Syne',sans-serif;"
+                        th:text="${item.price != null ? #numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT') + ' JPY' : '0 JPY'}"></div>
+                    <div style="margin-top:6px;font-size:12px;color:var(--text-muted);"
+                        th:text="${item.stock != null and item.stock > 0} ? 'In stock: ' + ${item.stock} : 'Out of stock'"></div>
+                </div>
+
+                <div class="wishlist-item-actions" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <form th:if="${item.stock != null and item.stock > 0}" action="/cart/add" method="post" style="margin:0;"
+                        class="wishlist-item-form">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" name="id" th:value="${item.productId}">
+                        <button type="submit" class="btn-cart wishlist-action-btn">Add to Cart</button>
+                    </form>
+
+                    <a th:href="@{/product/{id}(id=${item.productId},from='wishlist')}"
+                        class="btn-edit wishlist-action-btn">View</a>
+
+                    <form th:action="@{/wishlist/remove}" method="post" style="margin:0;" class="wishlist-item-form">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" name="id" th:value="${item.productId}">
+                        <input type="hidden" name="redirect" value="/wishlist">
+                        <button type="submit" class="btn-del wishlist-action-btn">Remove</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" th:if="${toast}">
+        <div class="toast" th:text="${toast}"></div>
+    </div>
+    <script>
+        setTimeout(() => { document.querySelectorAll('.toast').forEach(t => t.remove()); }, 3200);
+    </script>
+
+    <footer th:replace="~{fragments/footer :: customerFooter}"></footer>
+    <div th:replace="~{fragments/compare-bar :: compareBar}"></div>
+    <div th:replace="~{fragments/chat-widget :: chatWidget}"></div>
+</body>
+</html>

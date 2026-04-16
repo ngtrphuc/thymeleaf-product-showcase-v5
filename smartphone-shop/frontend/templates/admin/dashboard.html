@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script defer th:src="@{/js/admin-shell.js}"></script>
+    <style>
+        .chat-badge {
+            display: none;
+            background: #000000;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            font-weight: 700;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: -6px;
+            right: -10px;
+            left: auto;
+            transform: none;
+            margin-left: 0;
+            flex-shrink: 0;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .chat-badge.visible { display: flex; }
+        .sidebar-admin .admin-nav-link .admin-nav-icon { position: relative; }
+        .dashboard-orders-shell {
+            --dashboard-order-rows: 10;
+            --dashboard-order-row-height: 60px;
+            --dashboard-order-header-height: 48px;
+            --dashboard-order-pagination-space: 64px;
+            min-height: calc(var(--dashboard-order-header-height) + (var(--dashboard-order-rows) * var(--dashboard-order-row-height)) + var(--dashboard-order-pagination-space));
+            display: flex;
+            flex-direction: column;
+        }
+        .dashboard-orders-shell .recent-table {
+            margin-bottom: 0;
+        }
+        .dashboard-orders-shell .pagination-wrapper {
+            margin-top: auto;
+            padding-top: 16px;
+            margin-bottom: 0;
+        }
+        .dashboard-orders-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .dashboard-orders-summary {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .dashboard-pagination .disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .dashboard-pagination .slot-empty {
+            opacity: 0.24;
+        }
+        @media (max-width: 1200px) {
+            .dashboard-orders-shell {
+                --dashboard-order-row-height: 58px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <div class="sidebar-admin">
+            <div class="brand"><span class="icon-svg icon-admin" aria-hidden="true"></span> Admin Panel</div>
+            <a href="/admin" class="admin-nav-link active">
+                <span class="admin-nav-icon"><span class="icon-svg icon-dashboard" aria-hidden="true"></span></span>
+                <span class="admin-nav-body">
+                    <span class="admin-nav-label">Dashboard</span>
+                </span>
+            </a>
+            <a href="/admin/products" class="admin-nav-link">
+                <span class="admin-nav-icon admin-nav-icon--svg" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                        <rect x="7" y="2.75" width="10" height="18.5" rx="2.8"></rect>
+                        <path d="M10 5.75h4"></path>
+                        <path d="M10.25 17.5h3.5"></path>
+                        <circle cx="12" cy="19.2" r="0.7" fill="currentColor" stroke="none"></circle>
+                    </svg>
+                </span>
+                <span class="admin-nav-body">
+                    <span class="admin-nav-label">Products</span>
+                </span>
+            </a>
+            <a href="/admin/orders" class="admin-nav-link">
+                <span class="admin-nav-icon"><span class="icon-svg icon-orders" aria-hidden="true"></span></span>
+                <span class="admin-nav-body">
+                    <span class="admin-nav-label">Orders</span>
+                </span>
+            </a>
+            <a href="/admin/chat" class="admin-nav-link">
+                <span class="admin-nav-icon">
+                    <span class="icon-svg icon-chat" aria-hidden="true"></span>
+                    <span id="admin-chat-badge" class="chat-badge">0</span>
+                </span>
+                <span class="admin-nav-body">
+                    <span class="admin-nav-label">Chat</span>
+                </span>
+            </a>
+            <a href="/" class="home-animated" style="margin-top:auto;border-top:1px solid var(--glass-border);padding-top:16px;"><span class="icon-svg icon-home" aria-hidden="true"></span> HOME</a>
+        </div>
+
+        <div class="admin-content">
+            <div style="margin-bottom:28px;">
+                <h2 style="font-family:'Syne',sans-serif;font-weight:700;font-size:22px;margin-bottom:4px;">Dashboard Overview</h2>
+                <p style="color:var(--text-muted);font-size:13px;">Welcome back - here's what's happening.</p>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Orders</div>
+                    <div class="stat-value" th:text="${totalOrders != null ? totalOrders : 0}">0</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-label">Total Revenue</div>
+                    <div class="stat-value" th:text="${#numbers.formatDecimal(totalRevenue != null ? totalRevenue : 0, 0, 'COMMA', 0, 'POINT')} + ' ¥'">0 ¥</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Products Sold</div>
+                    <div class="stat-value" th:text="${totalItemsSold != null ? totalItemsSold : 0}">0</div>
+                </div>
+            </div>
+
+            <div class="dashboard-orders-meta">
+                <h3 style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;">Order History</h3>
+                <p class="dashboard-orders-summary">
+                    Showing page <span th:text="${currentPage + 1}">1</span>
+                    of <span th:text="${totalPages > 0 ? totalPages : 1}">1</span>
+                    (<span th:text="${dashboardOrderCount}">0</span> orders)
+                </p>
+            </div>
+
+            <div class="dashboard-orders-shell">
+                <table class="recent-table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Customer</th>
+                            <th>Payment</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Order Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${recentOrders == null or #lists.isEmpty(recentOrders)}">
+                            <td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">No orders found.</td>
+                        </tr>
+                        <tr th:each="o, rowStat : ${recentOrders}">
+                            <td style="font-family:'Syne',sans-serif;font-weight:700;"
+                                th:text="${(currentPage * dashboardPageSize) + rowStat.index + 1}"></td>
+                            <td>
+                                <div th:text="${#strings.isEmpty(#strings.trim(o.customerName)) ? o.userEmail : o.customerName}"></div>
+                                <div style="color:var(--text-muted);font-size:12px;" th:text="${'#' + o.id + ' · ' + o.userEmail}"></div>
+                            </td>
+                            <td style="font-size:12px;" th:text="${o.paymentMethodDisplayName}"></td>
+                            <td style="color:var(--accent);font-weight:700;font-family:'Syne',sans-serif;" th:text="${#numbers.formatDecimal(o.totalAmount != null ? o.totalAmount : 0, 0, 'COMMA', 0, 'POINT')} + ' JPY'"></td>
+                            <td><span class="badge" th:classappend="'badge-' + ${o.status}" th:text="${o.status}"></span></td>
+                            <td style="color:var(--text-muted);font-size:12px;" th:text="${o.createdAt != null ? #temporals.format(o.createdAt, 'dd/MM/yyyy') : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="pagination-wrapper dashboard-pagination" th:if="${totalPages != null and totalPages > 1}"
+                    th:with="startPage=${T(java.lang.Math).max(0, T(java.lang.Math).min(currentPage - 1, totalPages - 3))}">
+                    <a th:if="${currentPage > 0}" th:href="@{/admin(page=${currentPage - 1})}">&#8249;</a>
+                    <span th:unless="${currentPage > 0}" class="disabled">&#8249;</span>
+
+                    <th:block th:each="offset : ${#numbers.sequence(0, 2)}" th:with="i=${startPage + offset}">
+                        <span th:if="${i >= totalPages}" class="disabled slot-empty">&#160;</span>
+                        <span th:if="${i < totalPages and i == currentPage}" class="active" th:text="${i + 1}"></span>
+                        <a th:if="${i < totalPages and i != currentPage}" th:href="@{/admin(page=${i})}" th:text="${i + 1}"></a>
+                    </th:block>
+
+                    <a th:if="${currentPage < totalPages - 1}" th:href="@{/admin(page=${currentPage + 1})}">&#8250;</a>
+                    <span th:unless="${currentPage < totalPages - 1}" class="disabled">&#8250;</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" th:if="${toast}">
+        <div class="toast" th:text="${toast}"></div>
+    </div>
+    <script>
+        setTimeout(() => { document.querySelectorAll('.toast').forEach(t => t.remove()); }, 3200);
+
+        function pollAdminUnread() {
+            fetch('/admin/chat/unread-count')
+                .then(r => r.json())
+                .then(count => {
+                    const badge = document.getElementById('admin-chat-badge');
+                    if (!badge) return;
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.classList.add('visible');
+                    } else {
+                        badge.classList.remove('visible');
+                    }
+                })
+                .catch(() => {});
+        }
+        pollAdminUnread();
+        setInterval(pollAdminUnread, 10000);
+    </script>
+</body>
+</html>
+
+
+
