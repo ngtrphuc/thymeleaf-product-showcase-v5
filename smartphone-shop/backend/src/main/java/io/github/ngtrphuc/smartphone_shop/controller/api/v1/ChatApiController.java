@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
@@ -32,11 +31,6 @@ public class ChatApiController {
         return chatService.getHistory(authentication.getName()).stream()
                 .map(apiMapper::toChatMessageResponse)
                 .toList();
-    }
-
-    @GetMapping(value = "/stream", produces = "text/event-stream")
-    public SseEmitter stream(Authentication authentication) {
-        return chatService.subscribeUser(authentication.getName());
     }
 
     @PostMapping("/messages")

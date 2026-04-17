@@ -479,6 +479,7 @@
                             <form action="/cart/add" method="post" class="detail-cart-form">
                                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                 <input type="hidden" name="id" th:value="${product.id}">
+                                <input type="hidden" name="redirect" th:value="${currentDetailUrl}">
                                 <div class="detail-split-actions">
                                     <button type="submit" name="mode" value="cart"
                                         class="btn-cart detail-action-btn detail-split-btn detail-split-btn--left">
@@ -510,7 +511,7 @@
                                 class="detail-wishlist-compare-form">
                                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                 <input type="hidden" name="id" th:value="${product.id}">
-                                <input type="hidden" name="redirect" th:value="@{/product/{id}(id=${product.id})}">
+                                <input type="hidden" name="redirect" th:value="${currentDetailUrl}">
                                 <div class="detail-split-actions">
                                     <button type="submit"
                                         th:formaction="${wishlisted} ? @{/wishlist/remove} : @{/wishlist/add}"
@@ -531,7 +532,7 @@
                                 <form action="/compare/add" method="post" class="detail-admin-actions__item">
                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                     <input type="hidden" name="id" th:value="${product.id}">
-                                    <input type="hidden" name="redirect" th:value="@{/product/{id}(id=${product.id})}">
+                                    <input type="hidden" name="redirect" th:value="${currentDetailUrl}">
                                     <button type="submit" class="btn-save detail-action-btn detail-invert-fill detail-invert-fill--left">
                                         <span class="detail-invert-label">Compare</span>
                                     </button>
@@ -550,7 +551,7 @@
                                 <form action="/compare/add" method="post" style="margin:0;">
                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                     <input type="hidden" name="id" th:value="${product.id}">
-                                    <input type="hidden" name="redirect" th:value="@{/product/{id}(id=${product.id})}">
+                                    <input type="hidden" name="redirect" th:value="${currentDetailUrl}">
                                     <button type="submit" class="btn-save detail-action-btn detail-invert-fill detail-invert-fill--left">
                                         <span class="detail-invert-label">Compare</span>
                                     </button>
@@ -589,7 +590,7 @@
 
             <div class="detail-related-grid">
                 <a th:each="suggestion : ${recommendedProducts}"
-                    th:href="@{/product/{id}(id=${suggestion.id})}"
+                    th:href="@{/product/{id}(id=${suggestion.id}, page=${param.page}, pageSize=${param.pageSize}, keyword=${param.keyword}, sort=${param.sort}, brand=${param.brand}, priceRange=${param.priceRange}, priceMin=${param.priceMin}, priceMax=${param.priceMax}, batteryRange=${param.batteryRange}, batteryMin=${param.batteryMin}, batteryMax=${param.batteryMax}, screenSize=${param.screenSize}, from=${param.from})}"
                     class="detail-related-card">
                     <span class="detail-related-brand"
                         th:text="${T(io.github.ngtrphuc.smartphone_shop.support.StorefrontSupport).extractBrand(suggestion.name)}">

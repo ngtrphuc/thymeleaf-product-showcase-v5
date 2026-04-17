@@ -20,7 +20,6 @@ import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import io.github.ngtrphuc.smartphone_shop.service.CompareService;
-import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/v1/compare")
@@ -39,19 +38,18 @@ public class CompareApiController {
     }
 
     @GetMapping
-    public CompareResponse compare(Authentication authentication, HttpSession session) {
-        return currentCompare(authentication, session);
+    public CompareResponse compare(Authentication authentication) {
+        return currentCompare(authentication);
     }
 
     @PostMapping("/items")
     public CompareResponse add(@RequestBody CompareAddRequest request,
-            Authentication authentication,
-            HttpSession session) {
+            Authentication authentication) {
         Long productId = request.productId();
         if (productId == null) {
             throw new IllegalArgumentException("Product ID is required.");
         }
-        CompareService.AddResult result = compareService.addItem(resolveEmail(authentication), session, productId);
+        CompareService.AddResult result = compareService.addItem(resolveEmail(authentication), null, productId);
         if (result == CompareService.AddResult.UNAVAILABLE) {
             throw new NoSuchElementException("Product not found.");
         }
@@ -61,23 +59,23 @@ public class CompareApiController {
         if (result == CompareService.AddResult.ALREADY_EXISTS) {
             throw new IllegalStateException("This product is already in compare list.");
         }
-        return currentCompare(authentication, session);
+        return currentCompare(authentication);
     }
 
     @DeleteMapping("/items/{id}")
-    public CompareResponse remove(@PathVariable(name = "id") long id, Authentication authentication, HttpSession session) {
-        compareService.removeItem(resolveEmail(authentication), session, id);
-        return currentCompare(authentication, session);
+    public CompareResponse remove(@PathVariable(name = "id") long id, Authentication authentication) {
+        compareService.removeItem(resolveEmail(authentication), null, id);
+        return currentCompare(authentication);
     }
 
     @DeleteMapping
-    public CompareResponse clear(Authentication authentication, HttpSession session) {
-        compareService.clear(resolveEmail(authentication), session);
-        return currentCompare(authentication, session);
+    public CompareResponse clear(Authentication authentication) {
+        compareService.clear(resolveEmail(authentication), null);
+        return currentCompare(authentication);
     }
 
-    private CompareResponse currentCompare(Authentication authentication, HttpSession session) {
-        List<Long> ids = compareService.getCompareIds(resolveEmail(authentication), session);
+    private CompareResponse currentCompare(Authentication authentication) {
+        List<Long> ids = compareService.getCompareIds(resolveEmail(authentication), null);
         List<Product> products = resolveOrderedProducts(ids);
         return new CompareResponse(
                 products.stream().map(product -> apiMapper.toProductSummary(product, false)).toList(),

@@ -31,7 +31,7 @@
             <form method="post" th:action="@{/login}" class="auth-neo-form">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                 <label class="auth-neo-label" for="login-email">Email</label>
-                <input id="login-email" type="email" name="username" placeholder="info@gmail.com" required>
+                <input id="login-email" type="email" name="email" placeholder="info@gmail.com" required>
 
                 <label class="auth-neo-label" for="login-password">Password</label>
                 <div class="auth-neo-password-wrap">

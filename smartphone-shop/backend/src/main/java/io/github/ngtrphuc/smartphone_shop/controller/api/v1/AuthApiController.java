@@ -2,6 +2,8 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +16,7 @@ import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
+import io.github.ngtrphuc.smartphone_shop.security.JwtTokenProvider;
 import io.github.ngtrphuc.smartphone_shop.service.AuthService;
 
 @RestController
@@ -23,11 +26,19 @@ public class AuthApiController {
     private final AuthService authService;
     private final UserRepository userRepository;
     private final ApiMapper apiMapper;
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public AuthApiController(AuthService authService, UserRepository userRepository, ApiMapper apiMapper) {
+    public AuthApiController(AuthService authService,
+            UserRepository userRepository,
+            ApiMapper apiMapper,
+            AuthenticationManager authenticationManager,
+            JwtTokenProvider jwtTokenProvider) {
         this.authService = authService;
         this.userRepository = userRepository;
         this.apiMapper = apiMapper;
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @GetMapping("/me")
@@ -37,6 +48,27 @@ public class AuthApiController {
         }
         User user = userRepository.findByEmailIgnoreCase(authentication.getName()).orElse(null);
         return apiMapper.toAuthMeResponse(user);
+    }
+
+    @PostMapping("/login")
+    public AuthTokenResponse login(@RequestBody LoginRequest request) {
+        if (request.email() == null || request.email().isBlank()
+                || request.password() == null || request.password().isBlank()) {
+            throw new IllegalArgumentException("Email and password are required.");
+        }
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+        User user = userRepository.findByEmailIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+        String token = jwtTokenProvider.generateAccessToken(user.getEmail(), user.getRole());
+        long expiresInSeconds = jwtTokenProvider.getExpiresInSeconds(token);
+        return new AuthTokenResponse(
+                token,
+                "Bearer",
+                expiresInSeconds,
+                user.getEmail(),
+                user.getRole(),
+                user.getFullName());
     }
 
     @PostMapping("/register")
@@ -54,6 +86,9 @@ public class AuthApiController {
         return authentication != null
                 && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken);
+    }
+
+    record LoginRequest(String email, String password) {
     }
 
     record RegisterRequest(String email, String fullName, String password) {

@@ -174,6 +174,7 @@ public class MainController {
         model.addAttribute("product", product);
         model.addAttribute("productBrand", StorefrontSupport.extractBrand(product.getName()));
         model.addAttribute("recommendedProducts", resolveRecommendedProducts(product));
+        model.addAttribute("currentDetailUrl", buildDetailUrl(id, requestParams));
         model.addAttribute("backUrl", buildBackUrl(requestParams));
         model.addAttribute("wishlisted", isAuthenticatedUser(authentication)
                 && wishlistService.isWishlisted(authentication.getName(), id));
@@ -335,6 +336,21 @@ public class MainController {
             }
         });
         return builder.build().encode().toUriString();
+    }
+
+    private String buildDetailUrl(long id, MultiValueMap<String, String> requestParams) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/product/{id}");
+        requestParams.forEach((key, values) -> {
+            if (key == null || key.isBlank() || values == null) {
+                return;
+            }
+            for (String value : values) {
+                if (value != null && !value.isBlank()) {
+                    builder.queryParam(key, value);
+                }
+            }
+        });
+        return builder.buildAndExpand(id).encode().toUriString();
     }
 
     private String firstNonBlank(List<String> values) {

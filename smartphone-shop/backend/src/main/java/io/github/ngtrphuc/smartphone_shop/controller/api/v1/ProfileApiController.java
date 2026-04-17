@@ -20,7 +20,6 @@ import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 import io.github.ngtrphuc.smartphone_shop.service.CartService;
 import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 import io.github.ngtrphuc.smartphone_shop.service.PaymentMethodService;
-import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/v1/profile")
@@ -47,14 +46,13 @@ public class ProfileApiController {
     }
 
     @GetMapping
-    public ProfileResponse profile(Authentication authentication, HttpSession session) {
-        return currentProfile(authentication, session);
+    public ProfileResponse profile(Authentication authentication) {
+        return currentProfile(authentication);
     }
 
     @PutMapping
     public ProfileResponse update(@RequestBody UpdateProfileRequest request,
-            Authentication authentication,
-            HttpSession session) {
+            Authentication authentication) {
         String normalizedFullName = normalizeRequiredField(
                 request.fullName(), "Full name cannot be empty.", "Full name is too long.", 100);
         String normalizedPhoneNumber = normalizeOptionalField(
@@ -72,15 +70,15 @@ public class ProfileApiController {
         user.setPhoneNumber(normalizedPhoneNumber);
         user.setDefaultAddress(normalizedAddress);
         userRepository.save(user);
-        return currentProfile(authentication, session);
+        return currentProfile(authentication);
     }
 
-    private ProfileResponse currentProfile(Authentication authentication, HttpSession session) {
+    private ProfileResponse currentProfile(Authentication authentication) {
         String email = authentication.getName();
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found."));
         List<Order> orders = orderService.getOrdersByUser(email);
-        List<CartItem> cartItems = cartService.getCart(email, session);
+        List<CartItem> cartItems = cartService.getUserCart(email);
         List<PaymentMethod> paymentMethods = paymentMethodService.getUserPaymentMethods(email);
         return apiMapper.toProfileResponse(user, orders, cartItems, paymentMethods);
     }

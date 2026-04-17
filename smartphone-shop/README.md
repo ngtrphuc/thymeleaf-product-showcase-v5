@@ -1,33 +1,99 @@
 ﻿# Smartphone Shop
 
-A smartphone e-commerce web application built with Spring Boot + Thymeleaf, including customer and admin flows.
+Smartphone Shop is in **hybrid migration mode**:
 
-## Key Features
+- Backend: Spring Boot REST API + legacy Thymeleaf controllers/views
+- Frontend mới: Next.js App Router (`frontend-next/`) đã bắt đầu dùng API thật
 
-- Sign up / sign in with `ROLE_USER` and `ROLE_ADMIN`
-- Product listing, filter/search, and detail pages
-- Compare, wishlist, cart, checkout, profile, and order tracking (customer)
-- Product/order management and chat dashboard (admin)
-- Real-time customer-admin chat with SSE
-- REST API under `/api/v1/**`
+## Current Tech Stack
 
-## Tech Stack
+### Backend
 
 - Java 21
 - Spring Boot 3.5.13
+- Spring Web
 - Spring Security 6
 - Spring Data JPA (Hibernate)
-- Thymeleaf
-- Maven Wrapper (`mvnw`, `mvnw.cmd`)
-- H2 (dev/test), MySQL/MariaDB (prod)
+- PostgreSQL
+- Flyway migration
+- JWT (`jjwt`)
+- WebSocket/STOMP
+- Springdoc OpenAPI (Swagger)
 
-## Project Structure
+### Frontend
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript 5
+- Tailwind CSS v4
+
+### Tooling & Infra
+
+- Maven Wrapper (`mvnw`, `mvnw.cmd`)
+- Docker Compose (PostgreSQL + Redis)
+- VS Code Tasks + Launch (auto-start infra/full-stack)
+
+## Run (Dev)
+
+### One-click full stack (Windows)
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-dev-stack.ps1
+```
+
+Script này sẽ:
+
+- tự bật Docker Desktop (nếu chưa mở)
+- `docker compose up -d postgres redis`
+- mở terminal backend (`mvnw.cmd spring-boot:run`)
+- mở terminal frontend (`frontend-next` -> `npm.cmd run dev`)
+
+### Run from VS Code
+
+- Mở **Run and Debug**
+- Chọn cấu hình: `Smartphone Shop: Full Stack (Backend + Frontend)`
+- Bấm Run
+
+### URLs
+
+- Frontend mới (Next.js): `http://localhost:3000/products`
+- Backend API: `http://localhost:8080/api/v1`
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+- Legacy Thymeleaf web: `http://localhost:8080/`
+
+> Nếu bạn mở `http://localhost:8080` và thấy JSON `UNAUTHORIZED`, hãy dùng frontend mới ở `http://localhost:3000/products` hoặc truy cập route web legacy cụ thể (`/login`, `/product/{id}`) theo quyền hiện tại.
+
+## Admin Account (Dev)
+
+Mặc định trong `application-dev.properties`:
+
+- Email: `admin@smartphone.local`
+- Password seed: `Admin@123456`
+
+Lưu ý:
+
+- Tài khoản admin chỉ được seed nếu DB chưa có dữ liệu user tương ứng.
+- Nếu bạn đã chạy DB trước đó, mật khẩu cũ trong DB sẽ được giữ lại.
+
+## Project Structure (Detailed)
+
+> Yêu cầu đặc biệt đã áp dụng: **file hình ảnh/SVG chỉ liệt kê tới thư mục chứa**, không liệt kê từng file ảnh.
 
 ```text
 smartphone-shop/
+├── .github/
+│   └── java-upgrade/
+│       ├── hooks/
+│       │   └── scripts/
+│       │       ├── recordToolUse.ps1
+│       │       └── recordToolUse.sh
+│       └── .gitignore
 ├── .mvn/
 │   └── wrapper/
 │       └── maven-wrapper.properties
+├── .vscode/
+│   ├── launch.json
+│   └── tasks.json
 ├── backend/
 │   └── src/
 │       ├── main/
@@ -39,6 +105,7 @@ smartphone-shop/
 │       │   │                   ├── api/
 │       │   │                   │   ├── dto/
 │       │   │                   │   │   ├── AuthMeResponse.java
+│       │   │                   │   │   ├── AuthTokenResponse.java
 │       │   │                   │   │   ├── CartItemResponse.java
 │       │   │                   │   │   ├── CartResponse.java
 │       │   │                   │   │   ├── CatalogPageResponse.java
@@ -70,7 +137,8 @@ smartphone-shop/
 │       │   │                   │   ├── PaymentMethodSchemaInitializer.java
 │       │   │                   │   ├── SecurityConfig.java
 │       │   │                   │   ├── ThymeleafConfig.java
-│       │   │                   │   └── WebConfig.java
+│       │   │                   │   ├── WebConfig.java
+│       │   │                   │   └── WebSocketConfig.java
 │       │   │                   ├── controller/
 │       │   │                   │   ├── admin/
 │       │   │                   │   │   ├── AdminController.java
@@ -96,6 +164,8 @@ smartphone-shop/
 │       │   │                   │       ├── PaymentMethodController.java
 │       │   │                   │       ├── ProfileController.java
 │       │   │                   │       └── WishlistController.java
+│       │   │                   ├── event/
+│       │   │                   │   └── ChatMessageCreatedEvent.java
 │       │   │                   ├── model/
 │       │   │                   │   ├── CartItem.java
 │       │   │                   │   ├── CartItemEntity.java
@@ -117,10 +187,16 @@ smartphone-shop/
 │       │   │                   │   ├── ProductRepository.java
 │       │   │                   │   ├── UserRepository.java
 │       │   │                   │   └── WishlistItemRepository.java
+│       │   │                   ├── security/
+│       │   │                   │   ├── JwtAuthenticationFilter.java
+│       │   │                   │   ├── JwtProperties.java
+│       │   │                   │   ├── JwtStompChannelInterceptor.java
+│       │   │                   │   └── JwtTokenProvider.java
 │       │   │                   ├── service/
 │       │   │                   │   ├── AuthService.java
 │       │   │                   │   ├── CartService.java
 │       │   │                   │   ├── ChatService.java
+│       │   │                   │   ├── ChatWebSocketNotifier.java
 │       │   │                   │   ├── CompareService.java
 │       │   │                   │   ├── CustomUserDetailsService.java
 │       │   │                   │   ├── OrderService.java
@@ -129,9 +205,13 @@ smartphone-shop/
 │       │   │                   │   └── WishlistService.java
 │       │   │                   ├── support/
 │       │   │                   │   └── StorefrontSupport.java
+│       │   │                   ├── DevInfrastructureBootstrap.java
 │       │   │                   ├── Port8080Guard.java
 │       │   │                   └── SmartphoneShopApplication.java
 │       │   └── resources/
+│       │       ├── db/
+│       │       │   └── migration/
+│       │       │       └── V1__baseline_schema.sql
 │       │       ├── application.properties
 │       │       ├── application-dev.properties
 │       │       └── application-prod.properties
@@ -142,6 +222,7 @@ smartphone-shop/
 │           │           └── ngtrphuc/
 │           │               └── smartphone_shop/
 │           │                   ├── config/
+│           │                   │   ├── ApplicationPropertiesDefaultProfileTest.java
 │           │                   │   └── PaymentMethodSchemaInitializerTest.java
 │           │                   ├── controller/
 │           │                   │   ├── api/
@@ -149,9 +230,11 @@ smartphone-shop/
 │           │                   │   │       ├── AuthApiControllerTest.java
 │           │                   │   │       └── ProductApiControllerTest.java
 │           │                   │   └── user/
+│           │                   │       ├── AuthControllerTest.java
 │           │                   │       ├── CartControllerTest.java
 │           │                   │       ├── CompareControllerTest.java
-│           │                   │       └── MainControllerTest.java
+│           │                   │       ├── MainControllerTest.java
+│           │                   │       └── PaymentMethodControllerTest.java
 │           │                   ├── model/
 │           │                   │   └── PaymentMethodTest.java
 │           │                   ├── service/
@@ -175,11 +258,11 @@ smartphone-shop/
 │   │   ├── customer/
 │   │   │   ├── css/
 │   │   │   │   └── style.css
-│   │   │   ├── images/
+│   │   │   ├── images/                 # Image assets only (files omitted)
 │   │   │   └── js/
 │   │   │       ├── auth-password-toggle.js
 │   │   │       └── order-success.js
-│   │   └── svg/
+│   │   └── svg/                        # SVG assets only (files omitted)
 │   │       └── griddy/
 │   │           └── README.md
 │   └── templates/
@@ -210,69 +293,61 @@ smartphone-shop/
 │           ├── shipping.html
 │           ├── success.html
 │           └── wishlist.html
+├── frontend-next/
+│   ├── public/                         # SVG/image assets only (files omitted)
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── products/
+│   │   │   │   ├── [id]/
+│   │   │   │   │   ├── loading.tsx
+│   │   │   │   │   ├── not-found.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── error.tsx
+│   │   │   │   ├── loading.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── globals.css
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── components/
+│   │   │   └── storefront/
+│   │   │       └── product-card.tsx
+│   │   └── lib/
+│   │       ├── api.ts
+│   │       └── format.ts
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── AGENTS.md
+│   ├── CLAUDE.md
+│   ├── eslint.config.mjs
+│   ├── next-env.d.ts
+│   ├── next.config.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.mjs
+│   ├── README.md
+│   └── tsconfig.json
+├── scripts/
+│   ├── start-dev-infra.ps1
+│   ├── start-dev-stack.ps1
+│   └── start-dev-stack.sh
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
+├── docker-compose.yml
 ├── mvnw
 ├── mvnw.cmd
 ├── pom.xml
 └── README.md
 ```
 
-## Run (Dev)
-
-```bash
-./mvnw spring-boot:run
-```
-
-Windows:
-
-```bat
-mvnw.cmd spring-boot:run
-```
-
-By default, local runs use profile `dev` (`spring.profiles.default=dev`).  
-You can still force a profile explicitly with `-Dspring-boot.run.profiles=dev|prod` or `SPRING_PROFILES_ACTIVE`.
-
-## Access URLs (Dev)
-
-- Home: `http://localhost:8080/`
-- H2 Console: `http://localhost:8080/h2-console`
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
-- Health: `http://localhost:8080/actuator/health`
-
-## Production Profile
-
-Set env vars and run with profile `prod`:
-
-- `SPRING_PROFILES_ACTIVE=prod`
-- `DATASOURCE_URL`
-- `DATASOURCE_USER`
-- `DATASOURCE_PASSWORD`
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
-
-Example:
-
-```bash
-SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run
-```
-
-Windows PowerShell:
+## Quick Validation Commands
 
 ```powershell
-$env:SPRING_PROFILES_ACTIVE="prod"
-.\mvnw.cmd spring-boot:run
-```
+# Backend
+.\mvnw.cmd test
 
-## Run Tests
-
-```bash
-./mvnw test
-```
-
-Windows:
-
-```bat
-mvnw.cmd test
+# Frontend
+cd .\frontend-next
+npm.cmd run lint
+npm.cmd run build
 ```

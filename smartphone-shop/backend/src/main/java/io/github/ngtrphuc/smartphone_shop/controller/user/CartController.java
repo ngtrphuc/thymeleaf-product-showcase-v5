@@ -75,6 +75,7 @@ public class CartController {
     public String add(@RequestParam(name = "id") long id,
             @RequestParam(name = "quantity", defaultValue = "1") int quantity,
             @RequestParam(name = "mode", defaultValue = "cart") String mode,
+            @RequestParam(name = "redirect", required = false) String redirect,
             Authentication auth,
             HttpSession session, RedirectAttributes redirectAttributes) {
         int safeQuantity = Math.max(1, quantity);
@@ -89,7 +90,7 @@ public class CartController {
             return "redirect:/cart/payment";
         }
         redirectAttributes.addFlashAttribute("toast", toast);
-        return "redirect:/product/" + id;
+        return "redirect:" + normalizeRedirectPath(redirect, "/product/" + id);
     }
 
     @PostMapping("/increase/{id}")
@@ -481,5 +482,19 @@ public class CartController {
             return null;
         }
         return rawChoice.substring("new:".length()).trim();
+    }
+
+    private String normalizeRedirectPath(String redirect, String fallback) {
+        if (redirect == null || redirect.isBlank()) {
+            return fallback;
+        }
+        String trimmed = redirect.trim();
+        if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
+            return fallback;
+        }
+        if (trimmed.contains("\r") || trimmed.contains("\n")) {
+            return fallback;
+        }
+        return trimmed;
     }
 }

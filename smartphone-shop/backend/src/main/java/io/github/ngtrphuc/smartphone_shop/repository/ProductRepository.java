@@ -18,7 +18,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("""
         SELECT p FROM Product p
-        WHERE (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        WHERE (:keyword IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%'))
           AND (:priceMin IS NULL OR p.price >= :priceMin)
           AND (:priceMax IS NULL OR p.price <= :priceMax)
         """)
@@ -30,7 +30,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("""
         SELECT p FROM Product p
-        WHERE (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        WHERE (:keyword IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%'))
           AND (:priceMin IS NULL OR p.price >= :priceMin)
           AND (:priceMax IS NULL OR p.price <= :priceMax)
         """)
@@ -44,11 +44,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         WHERE (
                 :keyword IS NULL
                 OR (:keywordId IS NOT NULL AND p.id = :keywordId)
-                OR LOWER(COALESCE(p.name, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(COALESCE(p.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(COALESCE(p.os, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(COALESCE(p.chipset, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(COALESCE(p.storage, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR LOWER(COALESCE(p.name, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
+                OR LOWER(COALESCE(p.description, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
+                OR LOWER(COALESCE(p.os, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
+                OR LOWER(COALESCE(p.chipset, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
+                OR LOWER(COALESCE(p.storage, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
               )
           AND (:minStock IS NULL OR p.stock >= :minStock)
           AND (:maxStock IS NULL OR p.stock <= :maxStock)
@@ -65,11 +65,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         WHERE (
                 :keyword IS NULL
                 OR (:keywordId IS NOT NULL AND p.id = :keywordId)
-                OR LOWER(COALESCE(p.name, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(COALESCE(p.description, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(COALESCE(p.os, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(COALESCE(p.chipset, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(COALESCE(p.storage, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR LOWER(COALESCE(p.name, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
+                OR LOWER(COALESCE(p.description, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
+                OR LOWER(COALESCE(p.os, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
+                OR LOWER(COALESCE(p.chipset, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
+                OR LOWER(COALESCE(p.storage, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
               )
           AND (:minStock IS NULL OR p.stock >= :minStock)
           AND (:maxStock IS NULL OR p.stock <= :maxStock)

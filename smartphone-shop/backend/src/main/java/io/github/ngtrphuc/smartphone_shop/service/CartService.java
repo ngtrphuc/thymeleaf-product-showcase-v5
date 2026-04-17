@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.lang.Nullable;
 
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;
 import io.github.ngtrphuc.smartphone_shop.model.CartItemEntity;
@@ -35,7 +36,10 @@ public class CartService {
         this.productRepository = productRepository;
     }
 
-    public List<CartItem> getSessionCart(HttpSession session) {
+    public List<CartItem> getSessionCart(@Nullable HttpSession session) {
+        if (session == null) {
+            return new ArrayList<>();
+        }
         Object obj = session.getAttribute("cart");
         if (obj instanceof List<?> rawCart) {
             if (rawCart.stream().allMatch(CartItem.class::isInstance)) {
@@ -59,7 +63,10 @@ public class CartService {
         return cart;
     }
 
-    public void syncCartCount(HttpSession session, String email) {
+    public void syncCartCount(@Nullable HttpSession session, String email) {
+        if (session == null) {
+            return;
+        }
         int count;
         if (isLoggedIn(email)) {
             count = getDbCartSnapshot(email)
@@ -72,7 +79,7 @@ public class CartService {
     }
 
     @Transactional
-    public void mergeSessionCartToDb(HttpSession session, String email) {
+    public void mergeSessionCartToDb(@Nullable HttpSession session, String email) {
         if (isLoggedIn(email)) {
             cleanupDbCart(email);
         }
@@ -87,7 +94,9 @@ public class CartService {
                 .distinct()
                 .toList();
         if (productIds.isEmpty()) {
-            session.removeAttribute("cart");
+            if (session != null) {
+                session.removeAttribute("cart");
+            }
             syncCartCount(session, email);
             return;
         }
@@ -136,7 +145,9 @@ public class CartService {
                 }
             }
         }
-        session.removeAttribute("cart");
+        if (session != null) {
+            session.removeAttribute("cart");
+        }
         syncCartCount(session, email);
     }
 
@@ -202,12 +213,12 @@ public class CartService {
     }
 
     @Transactional
-    public AddItemResult addItem(String email, HttpSession session, long productId) {
+    public AddItemResult addItem(String email, @Nullable HttpSession session, long productId) {
         return addItem(email, session, productId, 1);
     }
 
     @Transactional
-    public AddItemResult addItem(String email, HttpSession session, long productId, int requestedQuantity) {
+    public AddItemResult addItem(String email, @Nullable HttpSession session, long productId, int requestedQuantity) {
         Product p = productRepository.findById(productId).orElse(null);
         if (p == null) {
             return AddItemResult.UNAVAILABLE;
@@ -265,7 +276,7 @@ public class CartService {
     }
 
     @Transactional
-    public void increaseItem(String email, HttpSession session, long productId) {
+    public void increaseItem(String email, @Nullable HttpSession session, long productId) {
         Product p = productRepository.findById(productId).orElse(null);
         int maxStock = stockOf(p);
         if (maxStock <= 0) {
@@ -292,7 +303,7 @@ public class CartService {
     }
 
     @Transactional
-    public void decreaseItem(String email, HttpSession session, long productId) {
+    public void decreaseItem(String email, @Nullable HttpSession session, long productId) {
         if (isLoggedIn(email)) {
             cleanupDbCart(email);
             cartItemRepository.findByUserEmailAndProductId(email, productId).ifPresent(e -> {
@@ -319,7 +330,7 @@ public class CartService {
     }
 
     @Transactional
-    public void removeItem(String email, HttpSession session, long productId) {
+    public void removeItem(String email, @Nullable HttpSession session, long productId) {
         if (isLoggedIn(email)) {
             cleanupDbCart(email);
             cartItemRepository.deleteByUserEmailAndProductId(email, productId);
@@ -329,17 +340,27 @@ public class CartService {
     }
 
     @Transactional
-    public void clearCart(String email, HttpSession session) {
+    public void clearCart(String email, @Nullable HttpSession session) {
         if (isLoggedIn(email)) {
             cartItemRepository.deleteByUserEmail(email);
-        } else {
+        } else if (session != null) {
             session.removeAttribute("cart");
         }
-        session.setAttribute("cartCount", 0);
+        if (session != null) {
+            session.setAttribute("cartCount", 0);
+        }
     }
 
-    public List<CartItem> getCart(String email, HttpSession session) {
-        return isLoggedIn(email) ? getDbCartSnapshot(email) : getSessionCart(session);
+    public List<CartItem> getCart(String email, @Nullable HttpSession session) {
+        if (isLoggedIn(email)) {
+            return getDbCartSnapshot(email);
+        }
+        return getSessionCart(session);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CartItem> getUserCart(String email) {
+        return getDbCartSnapshot(email);
     }
 
     public double calculateTotal(List<CartItem> cart) {

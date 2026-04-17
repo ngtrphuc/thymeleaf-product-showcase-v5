@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+:root {
+  --color-page: #ecf4ff;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f6f9ff;
+  --color-border: #d3dff2;
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+  --color-primary: #0b5fff;
+  --color-primary-strong: #0848c9;
+  --color-success: #12715f;
+  --shadow-card: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--color-page);
+  --color-foreground: var(--color-text);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
+}
+
+a,
+button,
+input,
+select {
+  transition: all 0.2s ease;
+}
+
+.glass-panel {
+  background: color-mix(in oklab, var(--color-surface) 90%, white);
+  border: 1px solid color-mix(in oklab, var(--color-border) 85%, white);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(8px);
+}

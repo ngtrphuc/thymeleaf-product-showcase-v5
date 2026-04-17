@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.service.CartService;
-import jakarta.servlet.http.HttpSession;
 
 @RestController
 @RequestMapping("/api/v1/cart")
@@ -29,61 +28,56 @@ public class CartApiController {
     }
 
     @GetMapping
-    public CartResponse cart(Authentication authentication, HttpSession session) {
-        return currentCart(authentication, session);
+    public CartResponse cart(Authentication authentication) {
+        return currentCart(authentication);
     }
 
     @PostMapping("/items")
     public CartResponse addItem(@RequestBody AddItemRequest request,
-            Authentication authentication,
-            HttpSession session) {
+            Authentication authentication) {
         Long productId = request.productId();
         if (productId == null) {
             throw new IllegalArgumentException("Product ID is required.");
         }
-        CartService.AddItemResult result = cartService.addItem(resolveEmail(authentication), session,
+        CartService.AddItemResult result = cartService.addItem(resolveEmail(authentication), null,
                 productId, request.quantity() != null ? request.quantity() : 1);
-        cartService.syncCartCount(session, resolveEmail(authentication));
         if (result == CartService.AddItemResult.UNAVAILABLE) {
             throw new NoSuchElementException("Product not found or unavailable.");
         }
         if (result == CartService.AddItemResult.LIMIT_REACHED) {
             throw new IllegalStateException("You've already added the maximum available stock for this product.");
         }
-        return currentCart(authentication, session);
+        return currentCart(authentication);
     }
 
     @PostMapping("/items/{id}/increase")
-    public CartResponse increase(@PathVariable(name = "id") long id, Authentication authentication, HttpSession session) {
-        cartService.increaseItem(resolveEmail(authentication), session, id);
-        cartService.syncCartCount(session, resolveEmail(authentication));
-        return currentCart(authentication, session);
+    public CartResponse increase(@PathVariable(name = "id") long id, Authentication authentication) {
+        cartService.increaseItem(resolveEmail(authentication), null, id);
+        return currentCart(authentication);
     }
 
     @PostMapping("/items/{id}/decrease")
-    public CartResponse decrease(@PathVariable(name = "id") long id, Authentication authentication, HttpSession session) {
-        cartService.decreaseItem(resolveEmail(authentication), session, id);
-        cartService.syncCartCount(session, resolveEmail(authentication));
-        return currentCart(authentication, session);
+    public CartResponse decrease(@PathVariable(name = "id") long id, Authentication authentication) {
+        cartService.decreaseItem(resolveEmail(authentication), null, id);
+        return currentCart(authentication);
     }
 
     @DeleteMapping("/items/{id}")
-    public CartResponse remove(@PathVariable(name = "id") long id, Authentication authentication, HttpSession session) {
-        cartService.removeItem(resolveEmail(authentication), session, id);
-        cartService.syncCartCount(session, resolveEmail(authentication));
-        return currentCart(authentication, session);
+    public CartResponse remove(@PathVariable(name = "id") long id, Authentication authentication) {
+        cartService.removeItem(resolveEmail(authentication), null, id);
+        return currentCart(authentication);
     }
 
     @DeleteMapping
-    public CartResponse clear(Authentication authentication, HttpSession session) {
-        cartService.clearCart(resolveEmail(authentication), session);
-        return currentCart(authentication, session);
+    public CartResponse clear(Authentication authentication) {
+        cartService.clearCart(resolveEmail(authentication), null);
+        return currentCart(authentication);
     }
 
-    private CartResponse currentCart(Authentication authentication, HttpSession session) {
+    private CartResponse currentCart(Authentication authentication) {
         String email = resolveEmail(authentication);
         return apiMapper.toCartResponse(
-                cartService.getCart(email, session),
+                cartService.getUserCart(email),
                 email != null);
     }
 

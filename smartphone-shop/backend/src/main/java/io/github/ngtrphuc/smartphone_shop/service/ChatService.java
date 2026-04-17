@@ -14,11 +14,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import io.github.ngtrphuc.smartphone_shop.event.ChatMessageCreatedEvent;
 import io.github.ngtrphuc.smartphone_shop.model.ChatMessage;
 import io.github.ngtrphuc.smartphone_shop.repository.ChatMessageRepository;
 
@@ -32,12 +34,14 @@ public class ChatService {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     private final ChatMessageRepository chatMessageRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final Map<String, List<SseEmitter>> userEmitters = new ConcurrentHashMap<>();
     private final List<SseEmitter> adminEmitters = new CopyOnWriteArrayList<>();
 
-    public ChatService(ChatMessageRepository chatMessageRepository) {
+    public ChatService(ChatMessageRepository chatMessageRepository, ApplicationEventPublisher eventPublisher) {
         this.chatMessageRepository = chatMessageRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public SseEmitter subscribeUser(String email) {
@@ -69,6 +73,7 @@ public class ChatService {
         msg.setReadByAdmin(false);
         msg.setReadByUser(true);
         ChatMessage saved = chatMessageRepository.save(msg);
+        eventPublisher.publishEvent(new ChatMessageCreatedEvent(normalizedEmail, saved));
         pushToAdmins(normalizedEmail, saved);
         return saved;
     }
@@ -83,6 +88,7 @@ public class ChatService {
         msg.setReadByAdmin(true);
         msg.setReadByUser(false);
         ChatMessage saved = chatMessageRepository.save(msg);
+        eventPublisher.publishEvent(new ChatMessageCreatedEvent(normalizedEmail, saved));
         pushToUser(normalizedEmail, saved);
         pushToAdmins(normalizedEmail, saved);
         return saved;

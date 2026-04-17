@@ -7,6 +7,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
+import org.springframework.lang.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.github.ngtrphuc.smartphone_shop.model.CompareItemEntity;
@@ -39,18 +40,20 @@ public class CompareService {
     }
 
     @Transactional(readOnly = true)
-    public List<Long> getCompareIds(String email, HttpSession session) {
+    public List<Long> getCompareIds(String email, @Nullable HttpSession session) {
         if (isLoggedIn(email)) {
             String normalizedEmail = normalizeEmail(email);
             List<Long> ids = getDbCompareIds(normalizedEmail);
-            session.setAttribute(SESSION_KEY, new ArrayList<>(ids));
+            if (session != null) {
+                session.setAttribute(SESSION_KEY, new ArrayList<>(ids));
+            }
             return ids;
         }
         return getSessionIds(session);
     }
 
     @Transactional
-    public AddResult addItem(String email, HttpSession session, long productId) {
+    public AddResult addItem(String email, @Nullable HttpSession session, long productId) {
         if (!productRepository.existsById(productId)) {
             return AddResult.UNAVAILABLE;
         }
@@ -77,12 +80,14 @@ public class CompareService {
             return AddResult.LIMIT_REACHED;
         }
         ids.add(boxedId);
-        session.setAttribute(SESSION_KEY, ids);
+        if (session != null) {
+            session.setAttribute(SESSION_KEY, ids);
+        }
         return AddResult.ADDED;
     }
 
     @Transactional
-    public void removeItem(String email, HttpSession session, long productId) {
+    public void removeItem(String email, @Nullable HttpSession session, long productId) {
         if (isLoggedIn(email)) {
             String normalizedEmail = normalizeEmail(email);
             compareItemRepository.deleteByUserEmailAndProductId(normalizedEmail, productId);
@@ -91,19 +96,23 @@ public class CompareService {
         }
         List<Long> ids = getSessionIds(session);
         ids.remove(Long.valueOf(productId));
-        session.setAttribute(SESSION_KEY, ids);
+        if (session != null) {
+            session.setAttribute(SESSION_KEY, ids);
+        }
     }
 
     @Transactional
-    public void clear(String email, HttpSession session) {
+    public void clear(String email, @Nullable HttpSession session) {
         if (isLoggedIn(email)) {
             compareItemRepository.deleteByUserEmail(normalizeEmail(email));
         }
-        session.removeAttribute(SESSION_KEY);
+        if (session != null) {
+            session.removeAttribute(SESSION_KEY);
+        }
     }
 
     @Transactional
-    public void saveCompareIds(String email, HttpSession session, List<Long> ids) {
+    public void saveCompareIds(String email, @Nullable HttpSession session, List<Long> ids) {
         List<Long> sanitized = sanitizeIds(ids);
         if (isLoggedIn(email)) {
             String normalizedEmail = normalizeEmail(email);
@@ -114,11 +123,13 @@ public class CompareService {
             syncSessionFromDb(session, normalizedEmail);
             return;
         }
-        session.setAttribute(SESSION_KEY, sanitized);
+        if (session != null) {
+            session.setAttribute(SESSION_KEY, sanitized);
+        }
     }
 
     @Transactional
-    public void mergeSessionCompareToDb(HttpSession session, String email) {
+    public void mergeSessionCompareToDb(@Nullable HttpSession session, String email) {
         if (!isLoggedIn(email)) {
             return;
         }
@@ -145,8 +156,10 @@ public class CompareService {
         return MAX_COMPARE;
     }
 
-    private void syncSessionFromDb(HttpSession session, String normalizedEmail) {
-        session.setAttribute(SESSION_KEY, new ArrayList<>(getDbCompareIds(normalizedEmail)));
+    private void syncSessionFromDb(@Nullable HttpSession session, String normalizedEmail) {
+        if (session != null) {
+            session.setAttribute(SESSION_KEY, new ArrayList<>(getDbCompareIds(normalizedEmail)));
+        }
     }
 
     private List<Long> getDbCompareIds(String normalizedEmail) {
@@ -156,7 +169,10 @@ public class CompareService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Long> getSessionIds(HttpSession session) {
+    private List<Long> getSessionIds(@Nullable HttpSession session) {
+        if (session == null) {
+            return new ArrayList<>();
+        }
         Object obj = session.getAttribute(SESSION_KEY);
         if (obj instanceof List<?> rawList && rawList.stream().allMatch(Long.class::isInstance)) {
             return sanitizeIds((List<Long>) rawList);

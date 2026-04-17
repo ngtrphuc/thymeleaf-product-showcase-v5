@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -47,8 +48,50 @@ class CartControllerTest {
     void setUp() {
         cartController = new CartController(cartService, orderService, userRepository, paymentMethodService);
         auth = new UsernamePasswordAuthenticationToken("user@example.com", "password");
-        when(cartService.getCart(eq("user@example.com"), any()))
+        lenient().when(cartService.getCart(eq("user@example.com"), any()))
                 .thenReturn(List.of(new CartItem(1L, "Phone A", 100_000.0, 1)));
+    }
+
+    @Test
+    void add_shouldRedirectBackToProvidedDetailUrlForCartMode() {
+        when(cartService.addItem(eq("user@example.com"), any(), eq(8L), eq(1)))
+                .thenReturn(CartService.AddItemResult.ADDED);
+
+        MockHttpSession session = new MockHttpSession();
+        RedirectAttributesModelMap ra = new RedirectAttributesModelMap();
+
+        String redirect = cartController.add(
+                8L,
+                1,
+                "cart",
+                "/product/8?page=1&pageSize=9&keyword=iphone",
+                auth,
+                session,
+                ra);
+
+        assertEquals("redirect:/product/8?page=1&pageSize=9&keyword=iphone", redirect);
+        assertEquals("Added to cart successfully.", ra.getFlashAttributes().get("toast"));
+    }
+
+    @Test
+    void add_shouldFallbackToProductDetailWhenRedirectIsUnsafe() {
+        when(cartService.addItem(eq("user@example.com"), any(), eq(12L), eq(1)))
+                .thenReturn(CartService.AddItemResult.ADDED);
+
+        MockHttpSession session = new MockHttpSession();
+        RedirectAttributesModelMap ra = new RedirectAttributesModelMap();
+
+        String redirect = cartController.add(
+                12L,
+                1,
+                "cart",
+                "//malicious.example/steal",
+                auth,
+                session,
+                ra);
+
+        assertEquals("redirect:/product/12", redirect);
+        assertEquals("Added to cart successfully.", ra.getFlashAttributes().get("toast"));
     }
 
     @Test
