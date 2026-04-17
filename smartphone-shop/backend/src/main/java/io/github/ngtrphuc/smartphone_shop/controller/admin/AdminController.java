@@ -46,7 +46,7 @@ public class AdminController {
     }
 
     @GetMapping
-    public String dashboard(@RequestParam(defaultValue = "0") int page, Model model) {
+    public String dashboard(@RequestParam(name = "page", defaultValue = "0") int page, Model model) {
         long totalOrders = orderRepository.count();
         model.addAttribute("totalProducts", productRepository.count());
         model.addAttribute("totalItemsSold", orderService.getTotalItemsSold());
@@ -66,11 +66,11 @@ public class AdminController {
 
     @GetMapping("/products")
     public String products(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String brand,
-            @RequestParam(defaultValue = "all") String stock,
-            @RequestParam(defaultValue = "name_asc") String sort,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "brand", required = false) String brand,
+            @RequestParam(name = "stock", defaultValue = "all") String stock,
+            @RequestParam(name = "sort", defaultValue = "name_asc") String sort,
             Model model) {
         populateProductListModel(model, page, keyword, brand, stock, sort);
         return "products";
@@ -78,11 +78,11 @@ public class AdminController {
 
     @GetMapping("/products/new")
     public String newProductForm(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String brand,
-            @RequestParam(defaultValue = "all") String stock,
-            @RequestParam(defaultValue = "name_asc") String sort,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "brand", required = false) String brand,
+            @RequestParam(name = "stock", defaultValue = "all") String stock,
+            @RequestParam(name = "sort", defaultValue = "name_asc") String sort,
             Model model) {
         if (!model.containsAttribute("product")) {
             model.addAttribute("product", new Product());
@@ -95,13 +95,13 @@ public class AdminController {
     }
 
     @GetMapping("/products/edit/{id}")
-    public String editProductForm(@PathVariable long id,
-            @RequestParam(required = false) String returnUrl,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String brand,
-            @RequestParam(defaultValue = "all") String stock,
-            @RequestParam(defaultValue = "name_asc") String sort,
+    public String editProductForm(@PathVariable(name = "id") long id,
+            @RequestParam(name = "returnUrl", required = false) String returnUrl,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "brand", required = false) String brand,
+            @RequestParam(name = "stock", defaultValue = "all") String stock,
+            @RequestParam(name = "sort", defaultValue = "name_asc") String sort,
             Model model,
             RedirectAttributes redirectAttributes) {
         return productRepository.findById(id)
@@ -171,12 +171,12 @@ public class AdminController {
 
     @PostMapping("/products/delete/{id}")
     @Transactional
-    public String deleteProduct(@PathVariable long id,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String brand,
-            @RequestParam(defaultValue = "all") String stock,
-            @RequestParam(defaultValue = "name_asc") String sort,
+    public String deleteProduct(@PathVariable(name = "id") long id,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "brand", required = false) String brand,
+            @RequestParam(name = "stock", defaultValue = "all") String stock,
+            @RequestParam(name = "sort", defaultValue = "name_asc") String sort,
             RedirectAttributes redirectAttributes) {
         if (!productRepository.existsById(id)) {
             redirectAttributes.addFlashAttribute("toast", "Product not found.");
@@ -191,7 +191,7 @@ public class AdminController {
     }
 
     @GetMapping("/orders")
-    public String orders(@RequestParam(defaultValue = "0") int page, Model model) {
+    public String orders(@RequestParam(name = "page", defaultValue = "0") int page, Model model) {
         long totalOrders = orderService.countOrders();
         int totalPages = totalOrders == 0 ? 0 : (int) Math.ceil((double) totalOrders / ADMIN_ORDER_PAGE_SIZE);
         int safePage = totalPages == 0 ? 0 : Math.max(0, Math.min(page, totalPages - 1));
@@ -209,9 +209,9 @@ public class AdminController {
     }
 
     @PostMapping("/orders/{id}/status")
-    public String updateOrderStatus(@PathVariable long id,
-            @RequestParam String status,
-            @RequestParam(defaultValue = "0") int page,
+    public String updateOrderStatus(@PathVariable(name = "id") long id,
+            @RequestParam(name = "status") String status,
+            @RequestParam(name = "page", defaultValue = "0") int page,
             RedirectAttributes redirectAttributes) {
         try {
             orderService.updateStatus(id, status);

@@ -33,8 +33,8 @@ public class WishlistController {
     }
 
     @PostMapping("/add")
-    public String add(@RequestParam long id,
-            @RequestParam(required = false) String redirect,
+    public String add(@RequestParam(name = "id") long id,
+            @RequestParam(name = "redirect", required = false) String redirect,
             Authentication auth,
             RedirectAttributes redirectAttributes) {
         WishlistService.AddResult result = wishlistService.addItem(auth.getName(), id);
@@ -48,8 +48,8 @@ public class WishlistController {
     }
 
     @PostMapping("/remove")
-    public String remove(@RequestParam long id,
-            @RequestParam(required = false) String redirect,
+    public String remove(@RequestParam(name = "id") long id,
+            @RequestParam(name = "redirect", required = false) String redirect,
             Authentication auth,
             RedirectAttributes redirectAttributes) {
         boolean removed = wishlistService.removeItem(auth.getName(), id);

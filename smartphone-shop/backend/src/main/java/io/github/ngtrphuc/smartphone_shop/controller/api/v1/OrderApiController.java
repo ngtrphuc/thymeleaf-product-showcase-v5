@@ -33,7 +33,7 @@ public class OrderApiController {
     }
 
     @PostMapping("/{id}/cancel")
-    public OperationStatusResponse cancel(@PathVariable Long id, Authentication authentication) {
+    public OperationStatusResponse cancel(@PathVariable(name = "id") Long id, Authentication authentication) {
         boolean success = orderService.cancelOrder(id, authentication.getName());
         return new OperationStatusResponse(
                 success,

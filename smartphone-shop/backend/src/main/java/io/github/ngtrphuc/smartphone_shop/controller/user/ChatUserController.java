@@ -42,7 +42,7 @@ public class ChatUserController {
     }
 
     @PostMapping("/chat/send")
-    public ResponseEntity<String> sendUserMessage(Authentication auth, @RequestParam String content) {
+    public ResponseEntity<String> sendUserMessage(Authentication auth, @RequestParam(name = "content") String content) {
         if (content == null || content.isBlank()) {
             return ResponseEntity.badRequest().body("error");
         }

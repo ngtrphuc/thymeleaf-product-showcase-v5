@@ -47,18 +47,18 @@ public class ProductApiController {
 
     @GetMapping
     public CatalogPageResponse products(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String sort,
-            @RequestParam(required = false) String brand,
-            @RequestParam(required = false) String priceRange,
-            @RequestParam(required = false) Double priceMin,
-            @RequestParam(required = false) Double priceMax,
-            @RequestParam(required = false) String batteryRange,
-            @RequestParam(required = false) Integer batteryMin,
-            @RequestParam(required = false) Integer batteryMax,
-            @RequestParam(required = false) String screenSize,
-            @RequestParam(required = false) Integer pageSize,
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "sort", required = false) String sort,
+            @RequestParam(name = "brand", required = false) String brand,
+            @RequestParam(name = "priceRange", required = false) String priceRange,
+            @RequestParam(name = "priceMin", required = false) Double priceMin,
+            @RequestParam(name = "priceMax", required = false) Double priceMax,
+            @RequestParam(name = "batteryRange", required = false) String batteryRange,
+            @RequestParam(name = "batteryMin", required = false) Integer batteryMin,
+            @RequestParam(name = "batteryMax", required = false) Integer batteryMax,
+            @RequestParam(name = "screenSize", required = false) String screenSize,
+            @RequestParam(name = "pageSize", required = false) Integer pageSize,
+            @RequestParam(name = "page", defaultValue = "0") int page,
             Authentication authentication) {
 
         Double resolvedPriceMin = priceMin;
@@ -166,7 +166,7 @@ public class ProductApiController {
     }
 
     @GetMapping("/{id}")
-    public ProductDetailResponse product(@PathVariable long id, Authentication authentication) {
+    public ProductDetailResponse product(@PathVariable(name = "id") long id, Authentication authentication) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
         Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);

@@ -231,7 +231,10 @@ Windows:
 mvnw.cmd spring-boot:run
 ```
 
-## Access URLs
+By default, local runs use profile `dev` (`spring.profiles.default=dev`).  
+You can still force a profile explicitly with `-Dspring-boot.run.profiles=dev|prod` or `SPRING_PROFILES_ACTIVE`.
+
+## Access URLs (Dev)
 
 - Home: `http://localhost:8080/`
 - H2 Console: `http://localhost:8080/h2-console`
@@ -248,6 +251,19 @@ Set env vars and run with profile `prod`:
 - `DATASOURCE_PASSWORD`
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
+
+Example:
+
+```bash
+SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run
+```
+
+Windows PowerShell:
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE="prod"
+.\mvnw.cmd spring-boot:run
+```
 
 ## Run Tests
 

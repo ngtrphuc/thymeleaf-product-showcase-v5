@@ -26,7 +26,7 @@ public class OrderController {
     }
 
     @PostMapping("/my-orders/{id}/cancel")
-    public String cancelOrder(@PathVariable Long id,
+    public String cancelOrder(@PathVariable(name = "id") Long id,
                               Authentication auth,
                               RedirectAttributes ra) {
         boolean success = orderService.cancelOrder(id, auth.getName());

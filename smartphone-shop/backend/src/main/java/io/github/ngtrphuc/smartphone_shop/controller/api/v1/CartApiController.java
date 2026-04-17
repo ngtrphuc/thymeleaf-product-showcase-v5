@@ -54,21 +54,21 @@ public class CartApiController {
     }
 
     @PostMapping("/items/{id}/increase")
-    public CartResponse increase(@PathVariable long id, Authentication authentication, HttpSession session) {
+    public CartResponse increase(@PathVariable(name = "id") long id, Authentication authentication, HttpSession session) {
         cartService.increaseItem(resolveEmail(authentication), session, id);
         cartService.syncCartCount(session, resolveEmail(authentication));
         return currentCart(authentication, session);
     }
 
     @PostMapping("/items/{id}/decrease")
-    public CartResponse decrease(@PathVariable long id, Authentication authentication, HttpSession session) {
+    public CartResponse decrease(@PathVariable(name = "id") long id, Authentication authentication, HttpSession session) {
         cartService.decreaseItem(resolveEmail(authentication), session, id);
         cartService.syncCartCount(session, resolveEmail(authentication));
         return currentCart(authentication, session);
     }
 
     @DeleteMapping("/items/{id}")
-    public CartResponse remove(@PathVariable long id, Authentication authentication, HttpSession session) {
+    public CartResponse remove(@PathVariable(name = "id") long id, Authentication authentication, HttpSession session) {
         cartService.removeItem(resolveEmail(authentication), session, id);
         cartService.syncCartCount(session, resolveEmail(authentication));
         return currentCart(authentication, session);

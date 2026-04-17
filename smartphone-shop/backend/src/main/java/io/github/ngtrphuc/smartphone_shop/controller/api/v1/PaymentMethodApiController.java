@@ -49,13 +49,13 @@ public class PaymentMethodApiController {
     }
 
     @PostMapping("/{id}/default")
-    public List<PaymentMethodResponse> setDefault(@PathVariable Long id, Authentication authentication) {
+    public List<PaymentMethodResponse> setDefault(@PathVariable(name = "id") Long id, Authentication authentication) {
         paymentMethodService.setDefault(authentication.getName(), id);
         return currentPaymentMethods(authentication);
     }
 
     @DeleteMapping("/{id}")
-    public List<PaymentMethodResponse> remove(@PathVariable Long id, Authentication authentication) {
+    public List<PaymentMethodResponse> remove(@PathVariable(name = "id") Long id, Authentication authentication) {
         paymentMethodService.remove(authentication.getName(), id);
         return currentPaymentMethods(authentication);
     }

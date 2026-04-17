@@ -65,7 +65,7 @@ public class CompareApiController {
     }
 
     @DeleteMapping("/items/{id}")
-    public CompareResponse remove(@PathVariable long id, Authentication authentication, HttpSession session) {
+    public CompareResponse remove(@PathVariable(name = "id") long id, Authentication authentication, HttpSession session) {
         compareService.removeItem(resolveEmail(authentication), session, id);
         return currentCompare(authentication, session);
     }

@@ -37,7 +37,7 @@ public class ChatAdminController {
     }
 
     @GetMapping("/admin/chat/{email}")
-    public String adminChatConversation(@PathVariable String email, Model model) {
+    public String adminChatConversation(@PathVariable(name = "email") String email, Model model) {
         try {
             model.addAttribute("history", chatService.getHistory(email));
         } catch (IllegalArgumentException ex) {
@@ -64,7 +64,7 @@ public class ChatAdminController {
     @PostMapping("/admin/chat/send")
     @ResponseBody
     @Transactional
-    public ResponseEntity<String> sendAdminMessage(@RequestParam String userEmail, @RequestParam String content) {
+    public ResponseEntity<String> sendAdminMessage(@RequestParam(name = "userEmail") String userEmail, @RequestParam(name = "content") String content) {
         if (content == null || content.isBlank() || userEmail == null) {
             return ResponseEntity.badRequest().body("error");
         }
@@ -90,7 +90,7 @@ public class ChatAdminController {
 
     @PostMapping("/admin/chat/mark-read")
     @ResponseBody
-    public ResponseEntity<String> markConversationRead(@RequestParam String userEmail) {
+    public ResponseEntity<String> markConversationRead(@RequestParam(name = "userEmail") String userEmail) {
         try {
             chatService.markReadByAdmin(userEmail);
             return ResponseEntity.ok("ok");

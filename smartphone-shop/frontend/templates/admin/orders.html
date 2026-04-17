@@ -171,7 +171,7 @@
                     <span class="admin-nav-label">Chat</span>
                 </span>
             </a>
-            <a href="/" class="home-animated" style="margin-top:auto;border-top:1px solid var(--glass-border);padding-top:16px;"><span class="icon-svg icon-home" aria-hidden="true"></span> HOME</a>
+            <a href="/" class="admin-sidebar-home"><span class="icon-svg icon-home" aria-hidden="true"></span> HOME</a>
         </div>
 
         <div class="admin-content">
@@ -240,7 +240,7 @@
                 <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:15px;">
                     <div th:each="item : ${order.items}"
                         style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
-                        <span th:text="${item.productName} + ' Ã— ' + ${item.quantity}"></span>
+                        <span th:text="${item.productName + ' x ' + item.quantity}"></span>
                         <span style="font-family:'Syne',sans-serif;color:var(--accent);"
                             th:text="${#numbers.formatDecimal(item.price * item.quantity,0,'COMMA',0,'POINT')} + ' JPY'"></span>
                     </div>

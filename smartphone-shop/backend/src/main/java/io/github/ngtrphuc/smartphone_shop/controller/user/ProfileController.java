@@ -63,9 +63,9 @@ public class ProfileController {
 
     @PostMapping("/update")
     public String updateProfile(Authentication auth,
-            @RequestParam String fullName,
-            @RequestParam String phoneNumber,
-            @RequestParam String defaultAddress,
+            @RequestParam(name = "fullName") String fullName,
+            @RequestParam(name = "phoneNumber") String phoneNumber,
+            @RequestParam(name = "defaultAddress") String defaultAddress,
             RedirectAttributes redirectAttributes) {
         String normalizedFullName;
         String normalizedPhoneNumber;

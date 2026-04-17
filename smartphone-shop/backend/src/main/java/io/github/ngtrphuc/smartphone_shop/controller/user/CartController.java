@@ -72,9 +72,9 @@ public class CartController {
     }
 
     @PostMapping("/add")
-    public String add(@RequestParam long id,
-            @RequestParam(defaultValue = "1") int quantity,
-            @RequestParam(defaultValue = "cart") String mode,
+    public String add(@RequestParam(name = "id") long id,
+            @RequestParam(name = "quantity", defaultValue = "1") int quantity,
+            @RequestParam(name = "mode", defaultValue = "cart") String mode,
             Authentication auth,
             HttpSession session, RedirectAttributes redirectAttributes) {
         int safeQuantity = Math.max(1, quantity);
@@ -93,21 +93,21 @@ public class CartController {
     }
 
     @PostMapping("/increase/{id}")
-    public String increase(@PathVariable long id, Authentication auth, HttpSession session) {
+    public String increase(@PathVariable(name = "id") long id, Authentication auth, HttpSession session) {
         cartService.increaseItem(getEmail(auth), session, id);
         cartService.syncCartCount(session, getEmail(auth));
         return "redirect:/cart";
     }
 
     @PostMapping("/decrease/{id}")
-    public String decrease(@PathVariable long id, Authentication auth, HttpSession session) {
+    public String decrease(@PathVariable(name = "id") long id, Authentication auth, HttpSession session) {
         cartService.decreaseItem(getEmail(auth), session, id);
         cartService.syncCartCount(session, getEmail(auth));
         return "redirect:/cart";
     }
 
     @PostMapping("/remove/{id}")
-    public String remove(@PathVariable long id, Authentication auth, HttpSession session) {
+    public String remove(@PathVariable(name = "id") long id, Authentication auth, HttpSession session) {
         cartService.removeItem(getEmail(auth), session, id);
         cartService.syncCartCount(session, getEmail(auth));
         return "redirect:/cart";
@@ -145,15 +145,15 @@ public class CartController {
     }
 
     @PostMapping("/select-payment")
-    public String selectPayment(@RequestParam(required = false) String paymentType,
-            @RequestParam(required = false) Long savedPaymentMethodId,
-            @RequestParam(required = false) String bankDetail,
-            @RequestParam(required = false) String paymentPlan,
-            @RequestParam(required = false) String installmentMonths,
-            @RequestParam(required = false) String paymentChoice,
-            @RequestParam(required = false) String paymentMethodRadio,
-            @RequestParam(required = false) String paymentPlanChoice,
-            @RequestParam(required = false) String paymentPlanRadio,
+    public String selectPayment(@RequestParam(name = "paymentType", required = false) String paymentType,
+            @RequestParam(name = "savedPaymentMethodId", required = false) Long savedPaymentMethodId,
+            @RequestParam(name = "bankDetail", required = false) String bankDetail,
+            @RequestParam(name = "paymentPlan", required = false) String paymentPlan,
+            @RequestParam(name = "installmentMonths", required = false) String installmentMonths,
+            @RequestParam(name = "paymentChoice", required = false) String paymentChoice,
+            @RequestParam(name = "paymentMethodRadio", required = false) String paymentMethodRadio,
+            @RequestParam(name = "paymentPlanChoice", required = false) String paymentPlanChoice,
+            @RequestParam(name = "paymentPlanRadio", required = false) String paymentPlanRadio,
             Authentication auth,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
@@ -264,11 +264,11 @@ public class CartController {
     }
 
     @PostMapping("/process-shipping")
-    public String processShipping(@RequestParam String customerName,
-            @RequestParam String phoneNumber,
-            @RequestParam(required = false) String addressOption,
-            @RequestParam(required = false) String savedAddress,
-            @RequestParam(required = false) String address,
+    public String processShipping(@RequestParam(name = "customerName") String customerName,
+            @RequestParam(name = "phoneNumber") String phoneNumber,
+            @RequestParam(name = "addressOption", required = false) String addressOption,
+            @RequestParam(name = "savedAddress", required = false) String savedAddress,
+            @RequestParam(name = "address", required = false) String address,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         String normalizedName = normalizeInline(customerName);

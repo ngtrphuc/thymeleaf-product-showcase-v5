@@ -51,7 +51,7 @@ public class WishlistApiController {
     }
 
     @DeleteMapping("/items/{id}")
-    public WishlistResponse remove(@PathVariable long id, Authentication authentication) {
+    public WishlistResponse remove(@PathVariable(name = "id") long id, Authentication authentication) {
         boolean removed = wishlistService.removeItem(authentication.getName(), id);
         if (!removed) {
             throw new NoSuchElementException("This product is not in your wishlist.");

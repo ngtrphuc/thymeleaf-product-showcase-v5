@@ -61,8 +61,8 @@ public class CompareController {
 
     @PostMapping("/add")
     public String add(
-            @RequestParam long id,
-            @RequestParam(required = false) String redirect,
+            @RequestParam(name = "id") long id,
+            @RequestParam(name = "redirect", required = false) String redirect,
             Authentication auth,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
@@ -79,8 +79,8 @@ public class CompareController {
 
     @PostMapping("/remove")
     public String remove(
-            @RequestParam long id,
-            @RequestParam(required = false) String redirect,
+            @RequestParam(name = "id") long id,
+            @RequestParam(name = "redirect", required = false) String redirect,
             Authentication auth,
             HttpSession session) {
         compareService.removeItem(getEmail(auth), session, id);
