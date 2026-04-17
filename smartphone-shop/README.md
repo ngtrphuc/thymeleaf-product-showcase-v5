@@ -5,7 +5,7 @@ Smartphone Shop is in **hybrid migration mode**:
 - Backend: Spring Boot REST API + legacy Thymeleaf controllers/views
 - Frontend mới: Next.js App Router (`frontend-next/`) đã bắt đầu dùng API thật
 
-## Current Tech Stack
+## Tech Stack
 
 ### Backend
 
@@ -33,51 +33,7 @@ Smartphone Shop is in **hybrid migration mode**:
 - Docker Compose (PostgreSQL + Redis)
 - VS Code Tasks + Launch (auto-start infra/full-stack)
 
-## Run (Dev)
-
-### One-click full stack (Windows)
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-dev-stack.ps1
-```
-
-Script này sẽ:
-
-- tự bật Docker Desktop (nếu chưa mở)
-- `docker compose up -d postgres redis`
-- mở terminal backend (`mvnw.cmd spring-boot:run`)
-- mở terminal frontend (`frontend-next` -> `npm.cmd run dev`)
-
-### Run from VS Code
-
-- Mở **Run and Debug**
-- Chọn cấu hình: `Smartphone Shop: Full Stack (Backend + Frontend)`
-- Bấm Run
-
-### URLs
-
-- Frontend mới (Next.js): `http://localhost:3000/products`
-- Backend API: `http://localhost:8080/api/v1`
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
-- Legacy Thymeleaf web: `http://localhost:8080/`
-
-> Nếu bạn mở `http://localhost:8080` và thấy JSON `UNAUTHORIZED`, hãy dùng frontend mới ở `http://localhost:3000/products` hoặc truy cập route web legacy cụ thể (`/login`, `/product/{id}`) theo quyền hiện tại.
-
-## Admin Account (Dev)
-
-Mặc định trong `application-dev.properties`:
-
-- Email: `admin@smartphone.local`
-- Password seed: `Admin@123456`
-
-Lưu ý:
-
-- Tài khoản admin chỉ được seed nếu DB chưa có dữ liệu user tương ứng.
-- Nếu bạn đã chạy DB trước đó, mật khẩu cũ trong DB sẽ được giữ lại.
-
 ## Project Structure (Detailed)
-
-> Yêu cầu đặc biệt đã áp dụng: **file hình ảnh/SVG chỉ liệt kê tới thư mục chứa**, không liệt kê từng file ảnh.
 
 ```text
 smartphone-shop/
