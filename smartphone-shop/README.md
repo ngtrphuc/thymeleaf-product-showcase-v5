@@ -2,24 +2,6 @@
 
 A smartphone e-commerce web application built with Spring Boot + Thymeleaf, including customer and admin flows.
 
-## Modern Migration Track (Overnight Bootstrap)
-
-A new full-stack workspace is now available at [`modern-stack`](./modern-stack) with:
-
-- Next.js App Router frontend (`apps/web`)
-- NestJS + Fastify backend (`apps/api`)
-- Shared contracts package (`packages/shared`)
-- Docker Compose runtime with PostgreSQL + Redis (`infra/docker-compose.yml`)
-
-Quick start:
-
-```powershell
-cd modern-stack
-npm install
-npm run dev:api
-npm run dev:web
-```
-
 ## Key Features
 
 - Sign up / sign in with `ROLE_USER` and `ROLE_ADMIN`
@@ -228,94 +210,6 @@ smartphone-shop/
 │           ├── shipping.html
 │           ├── success.html
 │           └── wishlist.html
-├── modern-stack/
-│   ├── apps/
-│   │   ├── api/
-│   │   │   ├── src/
-│   │   │   │   ├── common/
-│   │   │   │   │   └── dto/
-│   │   │   │   │       └── api-response.dto.ts
-│   │   │   │   ├── modules/
-│   │   │   │   │   ├── auth/
-│   │   │   │   │   │   ├── dto/
-│   │   │   │   │   │   │   └── login.dto.ts
-│   │   │   │   │   │   ├── auth.controller.ts
-│   │   │   │   │   │   ├── auth.module.ts
-│   │   │   │   │   │   └── auth.service.ts
-│   │   │   │   │   ├── cart/
-│   │   │   │   │   │   ├── dto/
-│   │   │   │   │   │   │   └── add-cart-item.dto.ts
-│   │   │   │   │   │   ├── cart.controller.ts
-│   │   │   │   │   │   ├── cart.module.ts
-│   │   │   │   │   │   └── cart.service.ts
-│   │   │   │   │   ├── health/
-│   │   │   │   │   │   ├── health.controller.spec.ts
-│   │   │   │   │   │   ├── health.controller.ts
-│   │   │   │   │   │   └── health.module.ts
-│   │   │   │   │   ├── orders/
-│   │   │   │   │   │   ├── dto/
-│   │   │   │   │   │   │   └── create-order.dto.ts
-│   │   │   │   │   │   ├── orders.controller.ts
-│   │   │   │   │   │   ├── orders.module.ts
-│   │   │   │   │   │   └── orders.service.ts
-│   │   │   │   │   ├── products/
-│   │   │   │   │   │   ├── products.controller.ts
-│   │   │   │   │   │   ├── products.module.ts
-│   │   │   │   │   │   └── products.service.ts
-│   │   │   │   │   └── shared/
-│   │   │   │   │       └── catalog.data.ts
-│   │   │   │   ├── app.module.ts
-│   │   │   │   ├── bootstrap.ts
-│   │   │   │   └── main.ts
-│   │   │   ├── test/
-│   │   │   │   ├── app.e2e-spec.ts
-│   │   │   │   └── jest-e2e.json
-│   │   │   ├── .env.example
-│   │   │   ├── .prettierrc
-│   │   │   ├── Dockerfile
-│   │   │   ├── eslint.config.mjs
-│   │   │   ├── nest-cli.json
-│   │   │   ├── package.json
-│   │   │   ├── README.md
-│   │   │   ├── tsconfig.build.json
-│   │   │   └── tsconfig.json
-│   │   └── web/
-│   │       ├── public/
-│   │       ├── src/
-│   │       │   ├── app/
-│   │       │   │   ├── admin/
-│   │       │   │   │   └── page.tsx
-│   │       │   │   ├── cart/
-│   │       │   │   │   └── page.tsx
-│   │       │   │   ├── globals.css
-│   │       │   │   ├── layout.tsx
-│   │       │   │   └── page.tsx
-│   │       │   ├── components/
-│   │       │   │   └── add-to-cart-button.tsx
-│   │       │   └── lib/
-│   │       │       └── api.ts
-│   │       ├── .gitignore
-│   │       ├── AGENTS.md
-│   │       ├── CLAUDE.md
-│   │       ├── Dockerfile
-│   │       ├── eslint.config.mjs
-│   │       ├── next.config.ts
-│   │       ├── package.json
-│   │       ├── postcss.config.mjs
-│   │       ├── README.md
-│   │       └── tsconfig.json
-│   ├── infra/
-│   │   └── docker-compose.yml
-│   ├── packages/
-│   │   └── shared/
-│   │       ├── src/
-│   │       │   └── index.ts
-│   │       └── package.json
-│   ├── .dockerignore
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── README.md
-│   └── tsconfig.base.json
 ├── .editorconfig
 ├── .gitattributes
 ├── .gitignore
