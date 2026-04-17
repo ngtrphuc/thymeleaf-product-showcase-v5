@@ -22,6 +22,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class ProductApiControllerTest {
 
     @Mock

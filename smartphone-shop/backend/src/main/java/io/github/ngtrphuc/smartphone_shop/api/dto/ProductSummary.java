@@ -1,7 +1,5 @@
 package io.github.ngtrphuc.smartphone_shop.api.dto;
 
-import java.util.List;
-
 public record ProductSummary(
         Long id,
         String name,

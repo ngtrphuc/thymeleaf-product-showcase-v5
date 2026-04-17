@@ -26,6 +26,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.CartItemRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class CartServiceTest {
 
     @Mock

@@ -2,12 +2,12 @@ package io.github.ngtrphuc.smartphone_shop.controller.user;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.PatternSyntaxException;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -75,7 +75,12 @@ public class MainController {
         int effectivePageSize = resolvePageSize(pageSize);
         int safeRequestedPage = Math.max(page, 0);
         String normalizedSort = normalizeSort(sort);
-        Sort requestedSort = Objects.requireNonNull(resolveSort(normalizedSort));
+        Sort requestedSort = switch (normalizedSort) {
+            case "name_desc" -> Sort.by(Sort.Order.desc("name").ignoreCase());
+            case "price_asc" -> Sort.by("price").ascending();
+            case "price_desc" -> Sort.by("price").descending();
+            default -> Sort.by(Sort.Order.asc("name").ignoreCase());
+        };
         List<Product> products;
         long totalElements;
         int totalPages;
@@ -183,7 +188,7 @@ public class MainController {
             Integer batteryMin,
             Integer batteryMax,
             String screenSize,
-            Sort sort,
+            @NonNull Sort sort,
             int pageSize,
             int requestedPage) {
         long targetStart = (long) requestedPage * pageSize;
@@ -270,19 +275,6 @@ public class MainController {
                 || (screenSize != null && !screenSize.isBlank());
     }
 
-    private Sort resolveSort(String sort) {
-        if (sort == null) {
-            return Sort.by(Sort.Order.asc("name").ignoreCase());
-        }
-        return switch (sort) {
-            case "name_asc" -> Sort.by(Sort.Order.asc("name").ignoreCase());
-            case "name_desc" -> Sort.by(Sort.Order.desc("name").ignoreCase());
-            case "price_asc" -> Sort.by("price").ascending();
-            case "price_desc" -> Sort.by("price").descending();
-            default -> Sort.by(Sort.Order.asc("name").ignoreCase());
-        };
-    }
-
     private String normalizeSort(String sort) {
         if (sort == null || sort.isBlank()) {
             return "name_asc";
@@ -319,7 +311,7 @@ public class MainController {
         if (currentProduct == null || currentProduct.getId() == null) {
             return List.of();
         }
-        double targetPrice = Objects.requireNonNullElse(currentProduct.getPrice(), 0.0);
+        double targetPrice = currentProduct.getPrice() == null ? 0.0 : currentProduct.getPrice();
         return productRepository.findRecommendedProducts(
                 currentProduct.getId(),
                 targetPrice,

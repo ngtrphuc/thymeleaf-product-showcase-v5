@@ -3,7 +3,6 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.PatternSyntaxException;
 
@@ -12,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -83,7 +83,12 @@ public class ProductApiController {
         int effectivePageSize = resolvePageSize(pageSize);
         int safeRequestedPage = Math.max(page, 0);
         String normalizedSort = normalizeSort(sort);
-        Sort requestedSort = Objects.requireNonNull(resolveSort(normalizedSort));
+        Sort requestedSort = switch (normalizedSort) {
+            case "name_desc" -> Sort.by(Sort.Order.desc("name").ignoreCase());
+            case "price_asc" -> Sort.by("price").ascending();
+            case "price_desc" -> Sort.by("price").descending();
+            default -> Sort.by(Sort.Order.asc("name").ignoreCase());
+        };
         List<Product> products;
         long totalElements;
         int totalPages;
@@ -186,7 +191,7 @@ public class ProductApiController {
             Integer batteryMin,
             Integer batteryMax,
             String screenSize,
-            Sort sort,
+            @NonNull Sort sort,
             int pageSize,
             int requestedPage) {
         long targetStart = (long) requestedPage * pageSize;
@@ -263,7 +268,7 @@ public class ProductApiController {
         if (currentProduct == null || currentProduct.getId() == null) {
             return List.of();
         }
-        double targetPrice = Objects.requireNonNullElse(currentProduct.getPrice(), 0.0);
+        double targetPrice = currentProduct.getPrice() == null ? 0.0 : currentProduct.getPrice();
         return productRepository.findRecommendedProducts(
                 currentProduct.getId(),
                 targetPrice,
@@ -303,19 +308,6 @@ public class ProductApiController {
 
     private int resolvePageSize(Integer pageSize) {
         return pageSize != null && pageSize == COMPACT_PAGE_SIZE ? COMPACT_PAGE_SIZE : DESKTOP_PAGE_SIZE;
-    }
-
-    private Sort resolveSort(String sort) {
-        if (sort == null) {
-            return Sort.by(Sort.Order.asc("name").ignoreCase());
-        }
-        return switch (sort) {
-            case "name_asc" -> Sort.by(Sort.Order.asc("name").ignoreCase());
-            case "name_desc" -> Sort.by(Sort.Order.desc("name").ignoreCase());
-            case "price_asc" -> Sort.by("price").ascending();
-            case "price_desc" -> Sort.by("price").descending();
-            default -> Sort.by(Sort.Order.asc("name").ignoreCase());
-        };
     }
 
     private String normalizeSort(String sort) {

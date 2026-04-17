@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.springframework.lang.NonNull;
 
+@SuppressWarnings("null")
 final class MockitoNullSafety {
 
     private MockitoNullSafety() {
