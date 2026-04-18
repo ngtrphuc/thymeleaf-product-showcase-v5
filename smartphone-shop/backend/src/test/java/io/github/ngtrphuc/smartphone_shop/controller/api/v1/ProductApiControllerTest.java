@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -50,14 +51,14 @@ class ProductApiControllerTest {
         iphone.setStock(5);
 
         when(productRepository.findAll(
-                any(Specification.class),
+                ArgumentMatchers.<Specification<Product>>any(),
                 any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(iphone)));
         when(productRepository.findAllNamesOrdered())
                 .thenReturn(List.of("Apple iPhone 17 Pro", "Samsung Galaxy S26 Ultra"));
 
         CatalogPageResponse response = controller.products(
-                null, null, "Apple", null, null, null, null, null, null, null, 9, 0, null);
+                null, null, "Apple", null, null, null, null, null, null, null, null, 9, 0, null);
 
         assertEquals(1, response.products().size());
         assertEquals("Apple", response.products().get(0).brand());
@@ -79,18 +80,18 @@ class ProductApiControllerTest {
         iphone.setPrice(249800.0);
         iphone.setStock(5);
 
-        when(productRepository.findAll(any(Specification.class), any(Pageable.class)))
+        when(productRepository.findAll(ArgumentMatchers.<Specification<Product>>any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(iphone)));
         when(productRepository.findAllNamesOrdered()).thenReturn(List.of("Apple iPhone 17 Pro"));
         when(wishlistService.getWishlistedProductIds("alice@example.com")).thenReturn(Set.of(1L));
         when(wishlistService.getWishlistedProductIds("bob@example.com")).thenReturn(Set.of());
 
         CatalogPageResponse aliceResponse = controller.products(
-                null, null, null, null, null, null, null, null, null, null, 9, 0,
+                null, null, null, null, null, null, null, null, null, null, null, 9, 0,
                 new UsernamePasswordAuthenticationToken(
                         "alice@example.com", "password", AuthorityUtils.createAuthorityList("ROLE_USER")));
         CatalogPageResponse bobResponse = controller.products(
-                null, null, null, null, null, null, null, null, null, null, 9, 0,
+                null, null, null, null, null, null, null, null, null, null, null, 9, 0,
                 new UsernamePasswordAuthenticationToken(
                         "bob@example.com", "password", AuthorityUtils.createAuthorityList("ROLE_USER")));
 

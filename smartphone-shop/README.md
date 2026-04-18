@@ -41,9 +41,9 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
   - JWT cookie (`httpOnly`) login/logout flow
   - Route guarding via Next.js proxy (`frontend-next/src/proxy.ts`)
 - Role-separated navigation hardening:
-  - Admin sessions are redirected to `/admin` and blocked from customer route group pages
+  - Admin sessions default to `/admin` on root access
   - Storefront navigation no longer exposes an `Admin` shortcut for customer sessions
-  - Admin header navigation is simplified to `Admin` and `Logout`
+  - Admin header navigation includes `Dashboard`, `Products`, `Orders`, `Chat`, `Home`, and `Logout`
   - Storefront products page removed the `Items / page` selector
 - New/expanded backend API coverage:
   - `POST /api/v1/orders` for API-first checkout
@@ -244,6 +244,12 @@ npm install
 npm run dev
 ```
 
+PowerShell note:
+
+- If your shell blocks `npm` scripts (`npm.ps1 cannot be loaded`), use `npm.cmd` instead of `npm`.
+- `frontend-next` defaults to `next dev --webpack` for local stability.
+- Use `npm.cmd run dev:turbo` only when you explicitly want Turbopack.
+
 ### Environment defaults
 
 - Backend profile defaults to `dev` (`spring.profiles.default=dev`)
@@ -266,6 +272,19 @@ npm run dev
 - Dev bootstrap admin account (unless overridden by env vars):
   - Email: `admin@smartphone.local`
   - Password: `Admin@123456`
+
+### Troubleshooting local startup
+
+- `ERR_CONNECTION_REFUSED` on `http://localhost:3000`:
+  - Ensure frontend is running in `frontend-next` and logs `Ready`.
+  - Start with `npm.cmd run dev` on Windows PowerShell.
+  - Check port conflicts: `Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue`.
+- Next.js guard file naming:
+  - This project uses Next.js `16.x`, where `proxy.ts` is the route-guard entrypoint.
+  - Guard implementation is at `frontend-next/src/proxy.ts` (not `middleware.ts`).
+- Backend reachable but frontend API calls fail:
+  - Verify `NEXT_PUBLIC_API_BASE_URL` in `frontend-next/.env.local`.
+  - Ensure backend is up on `http://localhost:8080`.
 
 ### Monitoring stack (optional)
 
@@ -545,6 +564,29 @@ smartphone-shop/
 - Scheduled cart/wishlist cleanup over hot-path cleanup:
   - Reduces repeated read/write overhead on every cart or wishlist mutation.
   - Keeps data hygiene via bounded periodic maintenance jobs.
+
+## Optimization Roadmap (Q2 2026)
+
+### P0 (high priority)
+
+- [x] Move cart cleanup from mutation hot-path to scheduled cleanup job.
+- [x] Replace unsafe delimiter-based cache keys with hashed keys.
+- [x] Replace login rate-limit map cleanup heuristic with Caffeine TTL cache.
+- [x] Add explicit JWT cookie secure override (`APP_JWT_COOKIE_SECURE`).
+- [ ] Add Flyway migration for persistent `order_code` column/index if DB-side search on order code is required.
+
+### P1 (medium priority)
+
+- [ ] Extract and cache brand facet list independently from catalog page payload.
+- [ ] Move admin chat from polling to SSE stream path end-to-end in frontend.
+- [ ] Add default fetch timeout via `AbortController` in frontend API client.
+- [ ] Review authenticated catalog caching strategy to keep high hit-rate while isolating user-specific fields.
+
+### P2 (low priority)
+
+- [ ] Clarify unsupported payment types strategy (remove from enum or explicitly deprecate).
+- [ ] Review index/query plan for order history at larger datasets.
+- [ ] Expand Playwright scenarios for admin order/product regressions.
 
 ## Portfolio Guide
 

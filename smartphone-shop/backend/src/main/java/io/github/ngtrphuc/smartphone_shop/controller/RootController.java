@@ -1,6 +1,7 @@
 package io.github.ngtrphuc.smartphone_shop.controller;
 
 import java.net.URI;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -22,8 +23,9 @@ public class RootController {
     @GetMapping("/")
     public Object root(@RequestHeader(value = HttpHeaders.ACCEPT, required = false) String acceptHeader) {
         if (acceptsHtml(acceptHeader)) {
+            URI targetUri = Objects.requireNonNull(URI.create(frontendUrl), "Frontend URL must resolve to a URI.");
             return ResponseEntity.status(302)
-                    .location(URI.create(frontendUrl))
+                    .location(targetUri)
                     .build();
         }
         return new RootResponse(

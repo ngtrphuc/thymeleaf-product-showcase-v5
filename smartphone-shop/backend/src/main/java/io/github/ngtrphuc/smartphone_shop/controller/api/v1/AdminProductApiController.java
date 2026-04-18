@@ -102,7 +102,7 @@ public class AdminProductApiController {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
         applyProductInput(existing, request);
-        return productRepository.save(existing);
+        return productRepository.save(Objects.requireNonNull(existing));
     }
 
     @DeleteMapping("/products/{id}")

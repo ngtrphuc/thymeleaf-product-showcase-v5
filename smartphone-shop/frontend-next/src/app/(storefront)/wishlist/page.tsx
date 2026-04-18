@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ApiError, fetchWishlist, removeWishlistItem, toAssetUrl, type WishlistResponse } from "@/lib/api";
 import { formatPriceVnd } from "@/lib/format";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 export default function WishlistPage() {
   const [wishlist, setWishlist] = useState<WishlistResponse | null>(null);
@@ -75,7 +76,7 @@ export default function WishlistPage() {
                 alt={item.name}
                 width={520}
                 height={520}
-                className="aspect-square w-full rounded-2xl object-cover"
+                className="aspect-square w-full rounded-2xl bg-[var(--color-surface-soft)] object-contain p-2"
                 unoptimized
               />
               <h2 className="mt-3 text-lg font-semibold text-slate-900">{item.name}</h2>
@@ -86,16 +87,18 @@ export default function WishlistPage() {
               <div className="mt-3 flex gap-2">
                 <Link
                   href={`/products/${item.productId}`}
-                  className="rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white"
+                  className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
                 >
+                  <GriddyIcon name="eye" />
                   View
                 </Link>
                 <button
                   type="button"
                   disabled={busyId === item.productId}
                   onClick={() => void removeItem(item.productId)}
-                  className="rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700"
+                  className="ui-btn ui-btn-danger inline-flex items-center gap-2 px-4 py-2 text-sm"
                 >
+                  <GriddyIcon name="trash" />
                   Remove
                 </button>
               </div>

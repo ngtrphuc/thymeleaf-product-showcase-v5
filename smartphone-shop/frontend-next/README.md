@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# frontend-next
 
-## Getting Started
+Next.js App Router frontend for the Smartphone Shop project.
 
-First, run the development server:
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm.cmd run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+PowerShell note:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- If `npm.ps1` is blocked by execution policy, run `npm.cmd` commands instead of `npm`.
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+- `npm.cmd run dev`: start dev server with webpack (`next dev --webpack`, default and recommended).
+- `npm.cmd run dev:turbo`: start dev server with Turbopack.
+- `npm.cmd run build`: production build.
+- `npm.cmd run start`: start production server.
+- `npm.cmd run lint`: lint frontend source.
+- `npm.cmd run test:e2e`: run Playwright tests.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Create `frontend-next/.env.local` from `.env.example` and set:
 
-## Deploy on Vercel
+- `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Route protection and proxy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- This project uses Next.js 16 route proxy entry at `src/proxy.ts`.
+- `proxy.ts` is expected for this version; `middleware.ts` is not required here.
+
+## Troubleshooting
+
+- `ERR_CONNECTION_REFUSED` on `localhost:3000`:
+  - Ensure this app is running and logs `Ready`.
+  - Run `npm.cmd run dev` from `frontend-next`.
+- UI loads but API fails:
+  - Verify backend is running at `http://localhost:8080`.
+  - Re-check `NEXT_PUBLIC_API_BASE_URL` in `.env.local`.

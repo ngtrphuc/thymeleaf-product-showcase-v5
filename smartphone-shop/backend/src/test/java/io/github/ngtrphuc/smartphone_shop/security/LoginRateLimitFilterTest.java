@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Objects;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -32,22 +34,23 @@ class LoginRateLimitFilterTest {
                 {"email":"unknown@example.com","password":"wrong-password"}
                 """;
         String clientIp = "198.51.100.99";
+        MediaType jsonMediaType = Objects.requireNonNull(MediaType.APPLICATION_JSON);
 
         mockMvc.perform(post("/api/v1/auth/login")
                 .header("X-Forwarded-For", clientIp)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(jsonMediaType)
                 .content(requestBody))
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/v1/auth/login")
                 .header("X-Forwarded-For", clientIp)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(jsonMediaType)
                 .content(requestBody))
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/v1/auth/login")
                 .header("X-Forwarded-For", clientIp)
-                .contentType(MediaType.APPLICATION_JSON)
+                .contentType(jsonMediaType)
                 .content(requestBody))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"))

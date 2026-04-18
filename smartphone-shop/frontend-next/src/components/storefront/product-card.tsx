@@ -1,8 +1,10 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import type { ProductSummary } from "@/lib/api";
-import { formatPriceVnd } from "@/lib/format";
 import { toAssetUrl } from "@/lib/api";
+import { formatPriceVnd } from "@/lib/format";
+import { QuickProductActions } from "@/components/storefront/quick-product-actions";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 type ProductCardProps = {
   product: ProductSummary;
@@ -19,7 +21,7 @@ export function ProductCard({ product }: ProductCardProps) {
           alt={product.name}
           width={640}
           height={640}
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+          className="h-full w-full object-contain p-2 transition duration-300 group-hover:scale-[1.03]"
           unoptimized
         />
         <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -47,10 +49,13 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.availabilityLabel || "Unavailable"}
         </p>
 
+        {product.id ? <QuickProductActions productId={productId} initiallyWishlisted={product.wishlisted} /> : null}
+
         <Link
           href={`/products/${productId}`}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-strong)]"
+          className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center px-4 py-2.5 text-sm"
         >
+          <GriddyIcon name="eye" className="mr-1" />
           View Details
         </Link>
       </div>

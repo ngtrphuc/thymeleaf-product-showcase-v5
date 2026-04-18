@@ -1,8 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 
-const CUSTOMER_PROTECTED = ["/cart", "/checkout", "/profile", "/orders", "/wishlist", "/compare"];
+const CUSTOMER_PROTECTED = ["/cart", "/checkout", "/profile", "/orders", "/wishlist", "/compare", "/chat"];
 const ADMIN_PROTECTED = ["/admin"];
-const STOREFRONT_ROUTES = ["/products", "/cart", "/checkout", "/orders", "/wishlist", "/compare", "/profile"];
 const AUTH_ROUTES = ["/login", "/register"];
 
 function startsWithAny(pathname: string, rules: string[]): boolean {
@@ -47,7 +46,7 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  if (token && role === "ROLE_ADMIN" && (pathname === "/" || startsWithAny(pathname, STOREFRONT_ROUTES))) {
+  if (token && role === "ROLE_ADMIN" && pathname === "/") {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 

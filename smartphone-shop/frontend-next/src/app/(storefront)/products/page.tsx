@@ -5,7 +5,7 @@ import { ProductCard } from "@/components/storefront/product-card";
 type SearchValue = string | string[] | undefined;
 
 type ProductsPageProps = {
-  searchParams?: Promise<Record<string, SearchValue>> | Record<string, SearchValue>;
+  searchParams?: Promise<Record<string, SearchValue>>;
 };
 
 const SORT_OPTIONS = [
@@ -32,7 +32,9 @@ function positiveInt(value: string | undefined, fallback: number): number {
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const resolved = await Promise.resolve(searchParams ?? {});
+  const resolved: Record<string, SearchValue> = await (
+    searchParams ?? Promise.resolve({} as Record<string, SearchValue>)
+  );
   const keyword = readFirst(resolved.keyword)?.trim() ?? "";
   const brand = readFirst(resolved.brand)?.trim() ?? "";
   const sort = readFirst(resolved.sort)?.trim() ?? "name_asc";
@@ -79,7 +81,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               name="keyword"
               defaultValue={keyword}
               placeholder="Example: iPhone, Samsung"
-              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm outline-none ring-[var(--color-primary)] focus:ring-2"
+              className="ui-input px-3 py-2 text-sm"
             />
           </label>
 
@@ -88,7 +90,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <select
               name="brand"
               defaultValue={brand}
-              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm outline-none ring-[var(--color-primary)] focus:ring-2"
+              className="ui-input px-3 py-2 text-sm"
             >
               <option value="">All brands</option>
               {catalog.brands.map((item) => (
@@ -104,7 +106,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <select
               name="sort"
               defaultValue={sort}
-              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm outline-none ring-[var(--color-primary)] focus:ring-2"
+              className="ui-input px-3 py-2 text-sm"
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -117,7 +119,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           <div className="md:col-span-3">
             <button
               type="submit"
-              className="inline-flex items-center rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-strong)]"
+              className="ui-btn ui-btn-primary inline-flex items-center px-5 py-2.5 text-sm"
             >
               Apply Filters
             </button>
@@ -150,10 +152,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       <nav className="glass-panel flex items-center justify-between rounded-2xl p-4">
         <Link
           href={pageHref(previousPage)}
-          className={`rounded-lg px-4 py-2 text-sm font-medium ${
+          className={`ui-btn px-4 py-2 text-sm ${
             currentPage === 0
-              ? "pointer-events-none bg-slate-100 text-slate-400"
-              : "bg-white text-slate-700 hover:bg-slate-100"
+              ? "pointer-events-none border border-[var(--color-border)] bg-slate-100 text-slate-400"
+              : "ui-btn-secondary"
           }`}
         >
           Previous
@@ -164,10 +166,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             <Link
               key={index}
               href={pageHref(index)}
-              className={`rounded-lg px-3 py-1.5 text-sm ${
+              className={`ui-btn px-3 py-1.5 text-sm ${
                 index === currentPage
-                  ? "bg-[var(--color-primary)] font-semibold text-white"
-                  : "bg-white text-slate-700 hover:bg-slate-100"
+                  ? "ui-btn-primary"
+                  : "ui-btn-secondary"
               }`}
             >
               {index + 1}
@@ -177,10 +179,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
         <Link
           href={pageHref(nextPage)}
-          className={`rounded-lg px-4 py-2 text-sm font-medium ${
+          className={`ui-btn px-4 py-2 text-sm ${
             currentPage >= totalPages - 1
-              ? "pointer-events-none bg-slate-100 text-slate-400"
-              : "bg-white text-slate-700 hover:bg-slate-100"
+              ? "pointer-events-none border border-[var(--color-border)] bg-slate-100 text-slate-400"
+              : "ui-btn-secondary"
           }`}
         >
           Next

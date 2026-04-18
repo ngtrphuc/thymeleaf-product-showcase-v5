@@ -56,7 +56,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+            className="ui-input w-full px-3 py-2 text-sm"
             required
           />
         </label>
@@ -67,7 +67,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+            className="ui-input w-full px-3 py-2 text-sm"
             required
           />
         </label>
@@ -75,7 +75,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+          className="ui-btn ui-btn-primary w-full px-4 py-2.5 text-sm"
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>

@@ -6,7 +6,7 @@ import { formatPriceVnd } from "@/lib/format";
 import { ProductActions } from "@/components/storefront/product-actions";
 
 type ProductDetailPageProps = {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 };
 
 function AvailabilityBadge({ product }: { product: ProductSummary }) {
@@ -22,7 +22,7 @@ function AvailabilityBadge({ product }: { product: ProductSummary }) {
 }
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const { id } = await Promise.resolve(params);
+  const { id } = await params;
 
   let detail;
   try {
@@ -53,7 +53,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             alt={product.name}
             width={860}
             height={860}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain p-2"
             unoptimized
           />
         </div>
@@ -109,7 +109,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   alt={recommended.name}
                   width={480}
                   height={480}
-                  className="aspect-square w-full rounded-xl object-cover"
+                  className="aspect-square w-full rounded-xl bg-[var(--color-surface-soft)] object-contain p-2"
                   unoptimized
                 />
                 <p className="mt-2 text-sm font-semibold text-slate-900">{recommended.name}</p>

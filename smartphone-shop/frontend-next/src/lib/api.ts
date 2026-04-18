@@ -529,6 +529,27 @@ export async function clearCompare(): Promise<CompareResponse> {
   return requestJson<CompareResponse>("/api/v1/compare", { method: "DELETE" });
 }
 
+export async function fetchChatHistory(): Promise<ChatMessageResponse[]> {
+  return requestJson<ChatMessageResponse[]>("/api/v1/chat/history");
+}
+
+export async function sendChatMessage(content: string): Promise<ChatMessageResponse> {
+  return requestJson<ChatMessageResponse>("/api/v1/chat/messages", {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
+export async function markChatRead(): Promise<OperationStatusResponse> {
+  return requestJson<OperationStatusResponse>("/api/v1/chat/read", {
+    method: "POST",
+  });
+}
+
+export async function fetchChatUnreadCount(): Promise<number> {
+  return requestJson<number>("/api/v1/chat/unread-count");
+}
+
 export async function fetchAdminDashboard(page = 0): Promise<AdminDashboardResponse> {
   return requestJson<AdminDashboardResponse>(`/api/v1/admin/dashboard?page=${page}`);
 }

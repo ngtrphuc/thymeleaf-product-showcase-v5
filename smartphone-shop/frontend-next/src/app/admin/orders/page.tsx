@@ -99,7 +99,7 @@ export default function AdminOrdersPage() {
                   value={order.status}
                   onChange={(event) => void onStatusChange(order.id, event.target.value)}
                   disabled={busyOrderId === order.id}
-                  className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm"
+                  className="ui-input px-3 py-1.5 text-sm"
                 >
                   {ORDER_STATUSES.map((status) => (
                     <option key={status} value={status}>

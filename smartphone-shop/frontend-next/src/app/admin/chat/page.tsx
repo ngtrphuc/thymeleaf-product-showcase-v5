@@ -12,6 +12,7 @@ import {
   type ChatMessageResponse,
 } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 export default function AdminChatPage() {
   const [conversations, setConversations] = useState<AdminConversationsResponse | null>(null);
@@ -182,13 +183,14 @@ export default function AdminChatPage() {
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder="Type a reply..."
-                  className="flex-1 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+                  className="ui-input flex-1 px-3 py-2 text-sm"
                 />
                 <button
                   type="submit"
                   disabled={sending || !draft.trim()}
-                  className="rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
                 >
+                  <GriddyIcon name="chat" />
                   {sending ? "Sending..." : "Send"}
                 </button>
               </form>

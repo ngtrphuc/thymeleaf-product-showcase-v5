@@ -82,7 +82,7 @@ export default function CartPage() {
           <p className="text-slate-700">Your cart is currently empty.</p>
           <Link
             href="/products"
-            className="mt-4 inline-flex rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white"
+            className="ui-btn ui-btn-primary mt-4 inline-flex px-4 py-2 text-sm"
           >
             Browse Products
           </Link>
@@ -103,7 +103,7 @@ export default function CartPage() {
                       type="button"
                       disabled={busy}
                       onClick={() => mutate(() => decreaseCartItem(item.id))}
-                      className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm"
+                      className="ui-btn ui-btn-secondary px-3 py-1.5 text-sm"
                     >
                       -
                     </button>
@@ -112,7 +112,7 @@ export default function CartPage() {
                       type="button"
                       disabled={busy}
                       onClick={() => mutate(() => increaseCartItem(item.id))}
-                      className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm"
+                      className="ui-btn ui-btn-secondary px-3 py-1.5 text-sm"
                     >
                       +
                     </button>
@@ -120,7 +120,7 @@ export default function CartPage() {
                       type="button"
                       disabled={busy}
                       onClick={() => mutate(() => removeCartItem(item.id))}
-                      className="ml-2 rounded-lg bg-red-50 px-3 py-1.5 text-sm text-red-700"
+                      className="ui-btn ui-btn-danger ml-2 px-3 py-1.5 text-sm"
                     >
                       Remove
                     </button>
@@ -138,13 +138,13 @@ export default function CartPage() {
                 type="button"
                 disabled={busy}
                 onClick={() => mutate(() => clearCart())}
-                className="rounded-xl border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-slate-800"
+                className="ui-btn ui-btn-secondary px-4 py-2 text-sm"
               >
                 Clear Cart
               </button>
               <Link
                 href="/checkout"
-                className="rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white"
+                className="ui-btn ui-btn-primary px-4 py-2 text-sm"
               >
                 Proceed to Checkout
               </Link>

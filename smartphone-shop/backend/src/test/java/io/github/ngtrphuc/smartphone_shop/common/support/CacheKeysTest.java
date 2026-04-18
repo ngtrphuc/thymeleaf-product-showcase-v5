@@ -14,6 +14,7 @@ class CacheKeysTest {
                 "iPhone",
                 "price_desc",
                 "Apple",
+                "256",
                 "over250",
                 250001d,
                 null,
@@ -30,15 +31,15 @@ class CacheKeysTest {
 
     @Test
     void catalog_shouldDifferentiateDistinctFilterSets() {
-        String keyA = CacheKeys.catalog("iphone", "name_asc", "", "", null, null, "", null, null, "", 9, 0);
-        String keyB = CacheKeys.catalog("iphone", "name_asc", "", "", null, null, "", null, null, "", 9, 1);
+        String keyA = CacheKeys.catalog("iphone", "name_asc", "", "", "", null, null, "", null, null, "", 9, 0);
+        String keyB = CacheKeys.catalog("iphone", "name_asc", "", "", "", null, null, "", null, null, "", 9, 1);
         assertNotEquals(keyA, keyB);
     }
 
     @Test
     void catalog_shouldNotCollideWithDelimiterLikeInputs() {
-        String keyA = CacheKeys.catalog("abc|brand=x", "name_asc", "", "", null, null, "", null, null, "", 9, 0);
-        String keyB = CacheKeys.catalog("abc", "name_asc", "x", "", null, null, "", null, null, "", 9, 0);
+        String keyA = CacheKeys.catalog("abc|brand=x", "name_asc", "", "", "", null, null, "", null, null, "", 9, 0);
+        String keyB = CacheKeys.catalog("abc", "name_asc", "x", "", "", null, null, "", null, null, "", 9, 0);
         assertNotEquals(keyA, keyB);
     }
 }

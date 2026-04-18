@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ApiError, authLogout } from "@/lib/api";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 export function AdminSessionActions() {
   const router = useRouter();
@@ -29,18 +29,13 @@ export function AdminSessionActions() {
 
   return (
     <div className="flex items-center gap-2">
-      <Link
-        href="/admin"
-        className="rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-[var(--color-border)] hover:bg-white"
-      >
-        Admin
-      </Link>
       <button
         type="button"
         onClick={() => void logout()}
         disabled={loggingOut}
-        className="rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-[var(--color-border)] hover:bg-white disabled:opacity-60"
+        className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
       >
+        <GriddyIcon name="logout" />
         {loggingOut ? "Logging out..." : "Logout"}
       </button>
       {error ? <span className="text-xs text-red-700">{error}</span> : null}

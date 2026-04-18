@@ -3,6 +3,7 @@ package io.github.ngtrphuc.smartphone_shop.service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
 import static org.mockito.Mockito.verify;
@@ -26,7 +26,6 @@ import io.github.ngtrphuc.smartphone_shop.model.ChatMessage;
 import io.github.ngtrphuc.smartphone_shop.repository.ChatMessageRepository;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class ChatServiceTest {
 
     @Mock
@@ -39,7 +38,6 @@ class ChatServiceTest {
     private ChatService chatService;
 
     @BeforeEach
-    @SuppressWarnings("unused")
     void setUp() {
         chatSseRegistry = new ChatSseRegistry();
         chatService = new ChatService(chatMessageRepository, eventPublisher, chatSseRegistry);
@@ -88,7 +86,7 @@ class ChatServiceTest {
         assertEquals("ADMIN", saved.getSenderRole());
         assertEquals(true, saved.isReadByAdmin());
         assertEquals(false, saved.isReadByUser());
-        verify(eventPublisher).publishEvent(any(ChatMessageCreatedEvent.class));
+        verify(eventPublisher).publishEvent(MockitoNullSafety.anyNonNull(ChatMessageCreatedEvent.class));
     }
 
     @Test
@@ -99,7 +97,7 @@ class ChatServiceTest {
         when(chatMessageRepository.findByUserEmailOrderByCreatedAtDesc(
                 eq("user@example.com"),
                 eq(PageRequest.of(0, 50))))
-                .thenReturn(new PageImpl<>(List.of(latest, older)));
+                .thenReturn(new PageImpl<>(Objects.requireNonNull(List.of(latest, older))));
 
         List<ChatMessage> history = chatService.getHistory("user@example.com");
 
@@ -112,7 +110,8 @@ class ChatServiceTest {
     void getUnreadCountsByAdminConversation_shouldMapRowsInOrder() {
         ChatMessageRepository.UnreadCountView first = unread("user-a@example.com", 3L);
         ChatMessageRepository.UnreadCountView second = unread("user-b@example.com", 1L);
-        when(chatMessageRepository.countUnreadByAdminGrouped()).thenReturn(List.of(first, second));
+        when(chatMessageRepository.countUnreadByAdminGrouped())
+                .thenReturn(Objects.requireNonNull(List.of(first, second)));
 
         Map<String, Long> unreadCounts = chatService.getUnreadCountsByAdminConversation();
 

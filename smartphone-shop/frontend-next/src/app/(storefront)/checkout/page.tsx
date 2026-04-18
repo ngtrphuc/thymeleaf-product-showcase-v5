@@ -146,7 +146,7 @@ export default function CheckoutPage() {
             <input
               value={customerName}
               onChange={(event) => setCustomerName(event.target.value)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+              className="ui-input w-full px-3 py-2 text-sm"
               required
             />
           </label>
@@ -156,7 +156,7 @@ export default function CheckoutPage() {
             <input
               value={phoneNumber}
               onChange={(event) => setPhoneNumber(event.target.value)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+              className="ui-input w-full px-3 py-2 text-sm"
               required
             />
           </label>
@@ -166,7 +166,7 @@ export default function CheckoutPage() {
             <textarea
               value={shippingAddress}
               onChange={(event) => setShippingAddress(event.target.value)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+              className="ui-input w-full px-3 py-2 text-sm"
               rows={3}
               required
             />
@@ -179,7 +179,7 @@ export default function CheckoutPage() {
             <select
               value={paymentMethod}
               onChange={(event) => setPaymentMethod(event.target.value as PaymentMethodType)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+              className="ui-input w-full px-3 py-2 text-sm"
             >
               <option value="CASH_ON_DELIVERY">Cash on Delivery</option>
               <option value="BANK_TRANSFER">Bank Transfer</option>
@@ -194,7 +194,7 @@ export default function CheckoutPage() {
               <input
                 value={paymentDetail}
                 onChange={(event) => setPaymentDetail(event.target.value)}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+                className="ui-input w-full px-3 py-2 text-sm"
                 required
               />
             </label>
@@ -205,7 +205,7 @@ export default function CheckoutPage() {
             <select
               value={paymentPlan}
               onChange={(event) => setPaymentPlan(event.target.value as PaymentPlanType)}
-              className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+              className="ui-input w-full px-3 py-2 text-sm"
               disabled={isInstallmentDisabled}
             >
               <option value="FULL_PAYMENT">Full Payment</option>
@@ -219,7 +219,7 @@ export default function CheckoutPage() {
               <select
                 value={installmentMonths}
                 onChange={(event) => setInstallmentMonths(Number.parseInt(event.target.value, 10))}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+                className="ui-input w-full px-3 py-2 text-sm"
               >
                 <option value={6}>6 months</option>
                 <option value={12}>12 months</option>
@@ -270,7 +270,7 @@ export default function CheckoutPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="ui-btn ui-btn-primary w-full px-4 py-2.5 text-sm"
           >
             {submitting ? "Placing order..." : "Place Order"}
           </button>

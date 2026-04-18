@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { addCartItem, addCompareItem, addWishlistItem, ApiError } from "@/lib/api";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 type ProductActionsProps = {
   productId: number;
@@ -45,24 +46,27 @@ export function ProductActions({ productId }: ProductActionsProps) {
           type="button"
           onClick={() => runAction("cart")}
           disabled={loadingAction !== null}
-          className="rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
         >
+          <GriddyIcon name="cart" />
           {loadingAction === "cart" ? "Adding..." : "Add to Cart"}
         </button>
         <button
           type="button"
           onClick={() => runAction("wishlist")}
           disabled={loadingAction !== null}
-          className="rounded-xl border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
         >
+          <GriddyIcon name="heart-outline" />
           {loadingAction === "wishlist" ? "Adding..." : "Wishlist"}
         </button>
         <button
           type="button"
           onClick={() => runAction("compare")}
           disabled={loadingAction !== null}
-          className="rounded-xl border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
         >
+          <GriddyIcon name="clipboard" />
           {loadingAction === "compare" ? "Adding..." : "Compare"}
         </button>
       </div>

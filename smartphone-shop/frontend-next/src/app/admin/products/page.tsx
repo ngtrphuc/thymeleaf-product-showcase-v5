@@ -149,7 +149,7 @@ export default function AdminProductsPage() {
           value={newProduct.name}
           onChange={(event) => setNewProduct((prev) => ({ ...prev, name: event.target.value }))}
           placeholder="Product name"
-          className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+          className="ui-input px-3 py-2 text-sm"
           required
         />
         <input
@@ -159,7 +159,7 @@ export default function AdminProductsPage() {
             setNewProduct((prev) => ({ ...prev, price: Number.parseFloat(event.target.value || "0") }))
           }
           placeholder="Price"
-          className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+          className="ui-input px-3 py-2 text-sm"
           min={0}
           required
         />
@@ -170,7 +170,7 @@ export default function AdminProductsPage() {
             setNewProduct((prev) => ({ ...prev, stock: Number.parseInt(event.target.value || "0", 10) }))
           }
           placeholder="Stock"
-          className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+          className="ui-input px-3 py-2 text-sm"
           min={0}
           required
         />
@@ -178,19 +178,19 @@ export default function AdminProductsPage() {
           value={newProduct.imageUrl ?? ""}
           onChange={(event) => setNewProduct((prev) => ({ ...prev, imageUrl: event.target.value }))}
           placeholder="Image URL"
-          className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+          className="ui-input px-3 py-2 text-sm"
         />
         <textarea
           value={newProduct.description ?? ""}
           onChange={(event) => setNewProduct((prev) => ({ ...prev, description: event.target.value }))}
           placeholder="Description"
-          className="sm:col-span-2 rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+          className="ui-input sm:col-span-2 px-3 py-2 text-sm"
           rows={3}
         />
         <button
           type="submit"
           disabled={saving}
-          className="sm:col-span-2 rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white"
+          className="ui-btn ui-btn-primary sm:col-span-2 px-4 py-2.5 text-sm"
         >
           {saving ? "Saving..." : "Create Product"}
         </button>
@@ -211,7 +211,7 @@ export default function AdminProductsPage() {
                       <input
                         value={editProduct.name}
                         onChange={(event) => setEditProduct((prev) => ({ ...prev, name: event.target.value }))}
-                        className="rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-sm"
+                        className="ui-input px-2 py-1.5 text-sm"
                       />
                       <input
                         type="number"
@@ -222,7 +222,7 @@ export default function AdminProductsPage() {
                             price: Number.parseFloat(event.target.value || "0"),
                           }))
                         }
-                        className="rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-sm"
+                        className="ui-input px-2 py-1.5 text-sm"
                       />
                       <input
                         type="number"
@@ -233,21 +233,21 @@ export default function AdminProductsPage() {
                             stock: Number.parseInt(event.target.value || "0", 10),
                           }))
                         }
-                        className="rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-sm"
+                        className="ui-input px-2 py-1.5 text-sm"
                       />
                       <div className="sm:col-span-3 flex gap-2">
                         <button
                           type="button"
                           onClick={() => void onUpdate()}
                           disabled={saving}
-                          className="rounded-lg bg-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold text-white"
+                          className="ui-btn ui-btn-primary px-3 py-1.5 text-xs"
                         >
                           Save
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditId(null)}
-                          className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold"
+                          className="ui-btn ui-btn-secondary px-3 py-1.5 text-xs"
                         >
                           Cancel
                         </button>
@@ -268,7 +268,7 @@ export default function AdminProductsPage() {
                             setEditId(product.id ?? null);
                             setEditProduct(product);
                           }}
-                          className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold"
+                          className="ui-btn ui-btn-secondary px-3 py-1.5 text-xs"
                         >
                           Edit
                         </button>
@@ -276,7 +276,7 @@ export default function AdminProductsPage() {
                           <button
                             type="button"
                             onClick={() => void onDelete(product.id ?? 0)}
-                            className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"
+                            className="ui-btn ui-btn-danger px-3 py-1.5 text-xs"
                           >
                             Delete
                           </button>

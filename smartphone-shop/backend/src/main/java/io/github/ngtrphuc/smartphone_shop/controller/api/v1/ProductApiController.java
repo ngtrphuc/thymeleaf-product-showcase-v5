@@ -2,6 +2,7 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -10,6 +11,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,6 +58,7 @@ public class ProductApiController {
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "sort", required = false) String sort,
             @RequestParam(name = "brand", required = false) String brand,
+            @RequestParam(name = "storage", required = false) String storage,
             @RequestParam(name = "priceRange", required = false) String priceRange,
             @RequestParam(name = "priceMin", required = false) Double priceMin,
             @RequestParam(name = "priceMax", required = false) Double priceMax,
@@ -66,10 +69,11 @@ public class ProductApiController {
             @RequestParam(name = "pageSize", required = false) Integer pageSize,
             @RequestParam(name = "page", defaultValue = "0") int page,
             Authentication authentication) {
-        String cacheKey = CacheKeys.catalog(
+        String cacheKey = Objects.requireNonNull(CacheKeys.catalog(
                 keyword,
                 sort,
                 brand,
+                storage,
                 priceRange,
                 priceMin,
                 priceMax,
@@ -78,7 +82,7 @@ public class ProductApiController {
                 batteryMax,
                 screenSize,
                 pageSize,
-                page);
+                page));
         CatalogPageResponse publicResponse = getOrLoadCache(
                 CATALOG_PUBLIC_CACHE,
                 cacheKey,
@@ -86,6 +90,7 @@ public class ProductApiController {
                         keyword,
                         sort,
                         brand,
+                        storage,
                         priceRange,
                         priceMin,
                         priceMax,
@@ -104,9 +109,10 @@ public class ProductApiController {
 
     @GetMapping("/{id}")
     public ProductDetailResponse product(@PathVariable(name = "id") long id, Authentication authentication) {
+        String detailKey = Objects.requireNonNull(CacheKeys.productDetail(id));
         ProductDetailResponse publicResponse = getOrLoadCache(
                 PRODUCT_DETAIL_PUBLIC_CACHE,
-                CacheKeys.productDetail(id),
+                detailKey,
                 () -> buildProductDetailPublicResponse(id));
         Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
         if (wishlistedProductIds.isEmpty()) {
@@ -119,6 +125,7 @@ public class ProductApiController {
             String keyword,
             String sort,
             String brand,
+            String storage,
             String priceRange,
             Double priceMin,
             Double priceMax,
@@ -161,7 +168,7 @@ public class ProductApiController {
         int totalPages;
         int safePage;
         int activeFilterCount = countActiveFilters(
-                keyword, brand, priceRange, priceMin, priceMax, batteryRange, batteryMin, batteryMax, screenSize);
+                keyword, brand, storage, priceRange, priceMin, priceMax, batteryRange, batteryMin, batteryMax, screenSize);
 
         Page<Product> productPage = productRepository.findAll(
                 ProductCatalogSpecifications.forCatalog(
@@ -169,6 +176,7 @@ public class ProductApiController {
                         resolvedPriceMin,
                         resolvedPriceMax,
                         blankToNull(brand),
+                        blankToNull(storage),
                         blankToNull(batteryRange),
                         batteryMin,
                         batteryMax,
@@ -181,6 +189,7 @@ public class ProductApiController {
                             resolvedPriceMin,
                             resolvedPriceMax,
                             blankToNull(brand),
+                            blankToNull(storage),
                             blankToNull(batteryRange),
                             batteryMin,
                             batteryMax,
@@ -295,20 +304,22 @@ public class ProductApiController {
                 wishlisted);
     }
 
-    private <T> T getOrLoadCache(String cacheName, String key, Supplier<T> valueLoader) {
+    private <T> T getOrLoadCache(@NonNull String cacheName, @NonNull String key, @NonNull Supplier<T> valueLoader) {
         Cache cache = cacheManager.getCache(cacheName);
         if (cache == null) {
-            return valueLoader.get();
+            return Objects.requireNonNull(valueLoader.get(), "Cache loader must not return null.");
         }
-        return cache.get(key, valueLoader::get);
+        T value = cache.get(key, valueLoader::get);
+        return Objects.requireNonNull(value, "Cache value must not be null.");
     }
 
-    private int countActiveFilters(String keyword, String brand, String priceRange,
+    private int countActiveFilters(String keyword, String brand, String storage, String priceRange,
             Double priceMin, Double priceMax, String batteryRange, Integer batteryMin,
             Integer batteryMax, String screenSize) {
         int count = 0;
         if (keyword != null && !keyword.isBlank()) count++;
         if (brand != null && !brand.isBlank()) count++;
+        if (storage != null && !storage.isBlank()) count++;
         if (priceRange != null && !priceRange.isBlank()) count++;
         if (priceMin != null || priceMax != null) count++;
         if (batteryRange != null && !batteryRange.isBlank()) count++;

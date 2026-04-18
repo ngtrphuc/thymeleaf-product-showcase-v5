@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,7 +84,7 @@ class AdminApiControllerTest {
 
         when(productRepository.findAdminProducts(
                 eq(null), eq(null), eq(null), eq(null), eq("Apple"), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(iphone)));
+                .thenReturn(new PageImpl<>(Objects.requireNonNull(List.of(iphone))));
         when(productRepository.findAllNamesOrdered()).thenReturn(List.of("Apple iPhone 17 Pro"));
 
         mockMvc.perform(get("/api/v1/admin/products")

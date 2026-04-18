@@ -57,7 +57,7 @@ export default function RegisterPage() {
           <input
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+            className="ui-input w-full px-3 py-2 text-sm"
             required
           />
         </label>
@@ -68,7 +68,7 @@ export default function RegisterPage() {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+            className="ui-input w-full px-3 py-2 text-sm"
             required
           />
         </label>
@@ -79,7 +79,7 @@ export default function RegisterPage() {
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+            className="ui-input w-full px-3 py-2 text-sm"
             required
           />
         </label>
@@ -90,7 +90,7 @@ export default function RegisterPage() {
             type="password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+            className="ui-input w-full px-3 py-2 text-sm"
             required
           />
         </label>
@@ -98,7 +98,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+          className="ui-btn ui-btn-primary w-full px-4 py-2.5 text-sm"
         >
           {loading ? "Creating account..." : "Create Account"}
         </button>

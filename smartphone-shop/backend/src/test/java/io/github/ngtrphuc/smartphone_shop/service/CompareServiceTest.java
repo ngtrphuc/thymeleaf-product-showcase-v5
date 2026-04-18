@@ -22,7 +22,6 @@ import io.github.ngtrphuc.smartphone_shop.repository.CompareItemRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 class CompareServiceTest {
 
     @Mock
@@ -34,7 +33,6 @@ class CompareServiceTest {
     private CompareService compareService;
 
     @BeforeEach
-    @SuppressWarnings("unused")
     void setUp() {
         compareService = new CompareService(compareItemRepository, productRepository);
     }

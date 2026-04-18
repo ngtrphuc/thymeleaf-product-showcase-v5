@@ -3,6 +3,7 @@ package io.github.ngtrphuc.smartphone_shop.repository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class ProductCatalogSpecificationIntegrationTest {
 
     @Container
+    @SuppressWarnings("resource")
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
             .withDatabaseName("smartphone_shop_test")
             .withUsername("test")
@@ -46,11 +48,11 @@ class ProductCatalogSpecificationIntegrationTest {
 
     @Test
     void forCatalog_shouldFilterBrandBatteryAndScreenSizeOnDatabase() {
-        productRepository.saveAll(List.of(
+        productRepository.saveAll(Objects.requireNonNull(List.of(
                 newProduct("Apple iPhone 15 Pro Max", 31_000_000d, "5000 mAh", "6.7\""),
                 newProduct("Samsung Galaxy S24", 22_000_000d, "4900 mAh", "6.2\""),
                 newProduct("Sony Xperia 1 VI", 28_000_000d, "5100 mAh", "6.9\""),
-                newProduct("Nokia X50", 9_000_000d, "4300 mAh", "6.4\"")));
+                newProduct("Nokia X50", 9_000_000d, "4300 mAh", "6.4\""))));
 
         Page<Product> page = productRepository.findAll(
                 ProductCatalogSpecifications.forCatalog(
@@ -58,6 +60,7 @@ class ProductCatalogSpecificationIntegrationTest {
                         null,
                         null,
                         "apple",
+                        null,
                         "over5000",
                         5000,
                         null,

@@ -23,6 +23,7 @@ public final class ProductCatalogSpecifications {
             @Nullable Double priceMin,
             @Nullable Double priceMax,
             @Nullable String brand,
+            @Nullable String storage,
             @Nullable String batteryRange,
             @Nullable Integer batteryMin,
             @Nullable Integer batteryMax,
@@ -46,6 +47,10 @@ public final class ProductCatalogSpecifications {
                 predicates.add(buildBrandPredicate(root, cb, brand.trim().toLowerCase(Locale.ROOT)));
             }
 
+            if (storage != null && !storage.isBlank()) {
+                predicates.add(buildStoragePredicate(root, cb, storage.trim().toLowerCase(Locale.ROOT)));
+            }
+
             if ((batteryRange != null && !batteryRange.isBlank()) || batteryMin != null || batteryMax != null) {
                 Expression<String> batteryValue = batteryComparableValue(root, cb);
                 if ("under5000".equals(batteryRange)) {
@@ -66,6 +71,14 @@ public final class ProductCatalogSpecifications {
             }
 
             return cb.and(predicates.toArray(Predicate[]::new));
+        };
+    }
+
+    private static Predicate buildStoragePredicate(Root<Product> root, CriteriaBuilder cb, String storage) {
+        Expression<String> storageLower = cb.lower(cb.coalesce(root.get("storage"), ""));
+        return switch (storage) {
+            case "1tb" -> cb.or(like(cb, storageLower, "%1tb%"), like(cb, storageLower, "%1 tb%"));
+            default -> like(cb, storageLower, "%" + storage + "%");
         };
     }
 
