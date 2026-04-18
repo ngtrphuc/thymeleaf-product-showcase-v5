@@ -141,6 +141,7 @@ public class SecurityConfig {
                 .logout(logout -> logout.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/",
                                 "/favicon.ico",
                                 "/images/**")
                         .permitAll()

@@ -1,22 +1,21 @@
 package io.github.ngtrphuc.smartphone_shop.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
@@ -39,6 +38,7 @@ class ChatServiceTest {
     private ChatService chatService;
 
     @BeforeEach
+    @SuppressWarnings("unused")
     void setUp() {
         chatService = new ChatService(chatMessageRepository, eventPublisher);
     }
@@ -127,14 +127,16 @@ class ChatServiceTest {
 
     @Test
     void saveUserMessage_shouldRejectBlankContent() {
-        assertThrows(IllegalArgumentException.class,
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> chatService.saveUserMessage("user@example.com", "   "));
+        assertEquals("Message content cannot be empty.", exception.getMessage());
     }
 
     @Test
     void saveAdminMessage_shouldRejectInvalidConversationEmail() {
-        assertThrows(IllegalArgumentException.class,
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> chatService.saveAdminMessage("not-an-email", "hello"));
+        assertEquals("Conversation email is invalid.", exception.getMessage());
     }
 
     private ChatMessage chat(Long id, String email, String content, LocalDateTime createdAt) {

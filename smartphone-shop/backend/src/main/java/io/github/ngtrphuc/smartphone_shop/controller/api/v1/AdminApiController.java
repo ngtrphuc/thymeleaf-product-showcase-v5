@@ -147,7 +147,7 @@ public class AdminApiController {
     public Product createProduct(@RequestBody Product request) {
         Product product = new Product();
         applyProductInput(product, request);
-        return Objects.requireNonNull(productRepository.save(product));
+        return productRepository.save(product);
     }
 
     @PutMapping("/products/{id}")
@@ -156,7 +156,7 @@ public class AdminApiController {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
         applyProductInput(existing, request);
-        return Objects.requireNonNull(productRepository.save(existing));
+        return productRepository.save(existing);
     }
 
     @DeleteMapping("/products/{id}")

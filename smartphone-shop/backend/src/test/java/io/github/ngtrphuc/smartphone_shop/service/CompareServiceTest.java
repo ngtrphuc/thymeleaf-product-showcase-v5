@@ -34,6 +34,7 @@ class CompareServiceTest {
     private CompareService compareService;
 
     @BeforeEach
+    @SuppressWarnings("unused")
     void setUp() {
         compareService = new CompareService(compareItemRepository, productRepository);
     }
@@ -107,7 +108,8 @@ class CompareServiceTest {
         CompareItemEntity merged = new CompareItemEntity("user@example.com", 3L);
 
         when(compareItemRepository.findByUserEmailOrderByCreatedAtDesc("user@example.com"))
-                .thenReturn(List.of(dbLatest, dbOlder), List.of(merged, dbLatest, dbOlder));
+                .thenReturn(List.of(dbLatest, dbOlder))
+                .thenReturn(List.of(merged, dbLatest, dbOlder));
         when(productRepository.existsById(3L)).thenReturn(true);
 
         compareService.mergeSessionCompareToDb(session, "user@example.com");

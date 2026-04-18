@@ -1,5 +1,6 @@
 package io.github.ngtrphuc.smartphone_shop.api.dto;
 
+import java.io.Serializable;
 import java.util.List;
 
 public record CatalogPageResponse(
@@ -10,5 +11,7 @@ public record CatalogPageResponse(
         int pageSize,
         List<String> brands,
         int activeFilterCount,
-        boolean hasActiveFilters) {
+        boolean hasActiveFilters) implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 }

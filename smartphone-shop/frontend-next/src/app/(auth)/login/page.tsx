@@ -28,8 +28,9 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await authLogin(email, password);
-      router.push(nextPath);
+      const auth = await authLogin(email, password);
+      const destination = auth.role === "ROLE_ADMIN" ? "/admin" : nextPath;
+      router.push(destination);
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {

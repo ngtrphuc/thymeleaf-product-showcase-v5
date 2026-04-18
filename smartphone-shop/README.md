@@ -40,9 +40,16 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 - Auth foundation for Next.js:
   - JWT cookie (`httpOnly`) login/logout flow
   - Route guarding via Next.js proxy (`frontend-next/src/proxy.ts`)
+- Role-separated navigation hardening:
+  - Admin sessions are redirected to `/admin` and blocked from customer route group pages
+  - Storefront navigation no longer exposes an `Admin` shortcut for customer sessions
+  - Admin header navigation is simplified to `Admin` and `Logout`
+  - Storefront products page removed the `Items / page` selector
 - New/expanded backend API coverage:
   - `POST /api/v1/orders` for API-first checkout
   - Admin API namespace under `/api/v1/admin` (dashboard, products, orders, chat)
+- Admin dashboard stability fix:
+  - Fixed lazy-loading errors on `/api/v1/admin/dashboard` by loading paged orders with items inside transaction scope
 - Architecture debt cleanup:
   - `OrderValidationException` moved to `common/exception`
   - `ChatWebSocketNotifier` moved to `infrastructure/websocket`
@@ -191,6 +198,9 @@ npm run dev
 - Backend profile defaults to `dev` (`spring.profiles.default=dev`)
 - Backend CORS default: `http://localhost:3000`
 - Frontend API base example is in `frontend-next/.env.example`
+- Dev bootstrap admin account (unless overridden by env vars):
+  - Email: `admin@smartphone.local`
+  - Password: `Admin@123456`
 
 ### Monitoring stack (optional)
 

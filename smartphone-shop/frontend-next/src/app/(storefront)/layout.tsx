@@ -8,7 +8,6 @@ const storefrontLinks = [
   { href: "/wishlist", label: "Wishlist" },
   { href: "/compare", label: "Compare" },
   { href: "/profile", label: "Profile" },
-  { href: "/admin", label: "Admin" },
 ];
 
 export default function StorefrontLayout({

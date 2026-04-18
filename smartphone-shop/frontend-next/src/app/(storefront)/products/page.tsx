@@ -37,14 +37,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const brand = readFirst(resolved.brand)?.trim() ?? "";
   const sort = readFirst(resolved.sort)?.trim() ?? "name_asc";
   const page = positiveInt(readFirst(resolved.page), 0);
-  const pageSize = readFirst(resolved.pageSize) === "8" ? "8" : "9";
 
   const query = new URLSearchParams();
   if (keyword.length > 0) query.set("keyword", keyword);
   if (brand.length > 0) query.set("brand", brand);
   if (sort.length > 0) query.set("sort", sort);
   query.set("page", String(page));
-  query.set("pageSize", pageSize);
 
   const catalog = await fetchCatalogPage(query);
 
@@ -74,7 +72,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       </header>
 
       <section className="glass-panel rounded-3xl p-5">
-        <form className="grid gap-4 md:grid-cols-4">
+        <form className="grid gap-4 md:grid-cols-3">
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">Keyword</span>
             <input
@@ -116,19 +114,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             </select>
           </label>
 
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Items / page</span>
-            <select
-              name="pageSize"
-              defaultValue={pageSize}
-              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm outline-none ring-[var(--color-primary)] focus:ring-2"
-            >
-              <option value="9">9</option>
-              <option value="8">8</option>
-            </select>
-          </label>
-
-          <div className="md:col-span-4">
+          <div className="md:col-span-3">
             <button
               type="submit"
               className="inline-flex items-center rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-strong)]"

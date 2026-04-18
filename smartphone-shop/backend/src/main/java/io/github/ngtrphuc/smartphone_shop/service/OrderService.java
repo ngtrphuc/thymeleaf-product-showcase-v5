@@ -139,6 +139,20 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public List<Order> getAdminOrdersPage(int page, int limit) {
+        return loadOrdersPageWithItems(page, limit);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Order> getRecentOrders(int limit) {
+        return loadOrdersPageWithItems(0, limit);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Order> getRecentOrders(int page, int limit) {
+        return loadOrdersPageWithItems(page, limit);
+    }
+
+    private List<Order> loadOrdersPageWithItems(int page, int limit) {
         int safePage = Math.max(0, page);
         int safeLimit = Math.max(1, limit);
         List<Long> orderIds = orderRepository.findOrderIdsByCreatedAtDesc(PageRequest.of(safePage, safeLimit))
@@ -155,18 +169,6 @@ public class OrderService {
         return orderRepository.findAllWithItemsByIdIn(orderIds).stream()
                 .sorted(Comparator.comparingInt(order -> sortOrder.getOrDefault(order.getId(), Integer.MAX_VALUE)))
                 .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<Order> getRecentOrders(int limit) {
-        return orderRepository.findRecentOrders(PageRequest.of(0, limit));
-    }
-
-    @Transactional(readOnly = true)
-    public List<Order> getRecentOrders(int page, int limit) {
-        int safePage = Math.max(0, page);
-        int safeLimit = Math.max(1, limit);
-        return orderRepository.findRecentOrders(PageRequest.of(safePage, safeLimit));
     }
 
     @Transactional(readOnly = true)

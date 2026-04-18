@@ -1,12 +1,5 @@
-﻿import Link from "next/link";
-
-const adminLinks = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/products", label: "Products" },
-  { href: "/admin/orders", label: "Orders" },
-  { href: "/admin/chat", label: "Chat" },
-  { href: "/products", label: "Storefront" },
-];
+import Link from "next/link";
+import { AdminSessionActions } from "@/components/admin/admin-session-actions";
 
 export default function AdminLayout({
   children,
@@ -18,17 +11,7 @@ export default function AdminLayout({
           <Link href="/admin" className="text-lg font-bold text-slate-900">
             Admin Console
           </Link>
-          <nav className="flex flex-wrap gap-2 text-sm">
-            {adminLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-lg border border-transparent px-3 py-1.5 font-medium text-slate-700 hover:border-[var(--color-border)] hover:bg-white"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          <AdminSessionActions />
         </div>
       </header>
       <main className="flex-1">{children}</main>

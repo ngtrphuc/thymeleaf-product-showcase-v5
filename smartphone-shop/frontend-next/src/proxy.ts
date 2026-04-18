@@ -2,6 +2,7 @@
 
 const CUSTOMER_PROTECTED = ["/cart", "/checkout", "/profile", "/orders", "/wishlist", "/compare"];
 const ADMIN_PROTECTED = ["/admin"];
+const STOREFRONT_ROUTES = ["/products", "/cart", "/checkout", "/orders", "/wishlist", "/compare", "/profile"];
 const AUTH_ROUTES = ["/login", "/register"];
 
 function startsWithAny(pathname: string, rules: string[]): boolean {
@@ -27,6 +28,7 @@ function decodeJwtRole(token: string): string | null {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("jwt")?.value;
+  const role = token ? decodeJwtRole(token) : null;
 
   const requiresCustomerAuth = startsWithAny(pathname, CUSTOMER_PROTECTED);
   const requiresAdminAuth = startsWithAny(pathname, ADMIN_PROTECTED);
@@ -38,14 +40,18 @@ export function proxy(request: NextRequest) {
   }
 
   if (requiresAdminAuth && token) {
-    const role = decodeJwtRole(token);
     if (role !== "ROLE_ADMIN") {
       return NextResponse.redirect(new URL("/products", request.url));
     }
   }
 
+  if (token && role === "ROLE_ADMIN" && (pathname === "/" || startsWithAny(pathname, STOREFRONT_ROUTES))) {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+
   if (token && startsWithAny(pathname, AUTH_ROUTES)) {
-    return NextResponse.redirect(new URL("/products", request.url));
+    const destination = role === "ROLE_ADMIN" ? "/admin" : "/products";
+    return NextResponse.redirect(new URL(destination, request.url));
   }
 
   return NextResponse.next();
