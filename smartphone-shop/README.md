@@ -61,19 +61,9 @@ The codebase is actively evolving from monolithic server-rendered pages toward a
 
 ```text
 smartphone-shop/
-├── .github/
-│   └── java-upgrade/
-│       ├── hooks/
-│       │   └── scripts/
-│       │       ├── recordToolUse.ps1
-│       │       └── recordToolUse.sh
-│       └── .gitignore
 ├── .mvn/
 │   └── wrapper/
 │       └── maven-wrapper.properties
-├── .vscode/
-│   ├── launch.json
-│   └── tasks.json
 ├── backend/
 │   └── src/
 │       ├── main/
