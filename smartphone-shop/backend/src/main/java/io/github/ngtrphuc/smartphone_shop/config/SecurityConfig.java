@@ -101,8 +101,11 @@ public class SecurityConfig {
                                 "/favicon.ico")
                         .permitAll()
                         .requestMatchers("/ws", "/ws/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/logout")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/me").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/**").authenticated()
                         .anyRequest().denyAll())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -128,46 +131,21 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain webFilterChain(HttpSecurity http, LoginSuccessHandler loginSuccessHandler) throws Exception {
+    public SecurityFilterChain webFilterChain(HttpSecurity http) throws Exception {
         http
-                .userDetailsService(userDetailsService)
-                .csrf(withDefaults())
+                .securityMatcher("/**")
+                .csrf(csrf -> csrf.disable())
                 .cors(withDefaults())
                 .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(form -> form.disable())
+                .logout(logout -> logout.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/",
-                                "/product/**",
-                                "/login",
-                                "/register",
-                                "/error",
                                 "/favicon.ico",
-                                "/customer/**",
-                                "/admin/css/**",
-                                "/admin/js/**",
-                                "/images/**",
-                                "/fonts/**",
-                                "/svg/**")
+                                "/images/**")
                         .permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/wishlist/**", "/profile/**", "/my-orders/**", "/chat/**").authenticated()
-                        .requestMatchers("/cart/**", "/compare/**").permitAll()
                         .anyRequest().denyAll())
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/login")
-                        .usernameParameter("email")
-                        .passwordParameter("password")
-                        .successHandler(loginSuccessHandler)
-                        .failureUrl("/login?error")
-                        .permitAll())
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                        .invalidateHttpSession(true)
-                        .clearAuthentication(true)
-                        .deleteCookies("JSESSIONID"))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(this::configureSecurityHeaders);
 
         return http.build();

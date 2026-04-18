@@ -1,4 +1,4 @@
-export type ProductSummary = {
+﻿export type ProductSummary = {
   id: number | null;
   name: string;
   brand: string;
@@ -32,10 +32,170 @@ export type ProductDetailResponse = {
   wishlisted: boolean;
 };
 
-type RevalidateOption = {
-  next?: {
-    revalidate?: number;
-  };
+export type AuthMeResponse = {
+  authenticated: boolean;
+  email: string | null;
+  role: string | null;
+  fullName: string | null;
+};
+
+export type AuthTokenResponse = {
+  accessToken: string;
+  tokenType: string;
+  expiresInSeconds: number;
+  email: string;
+  role: string;
+  fullName: string;
+};
+
+export type OperationStatusResponse = {
+  success: boolean;
+  message: string;
+};
+
+export type CartItemResponse = {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  imageUrl: string | null;
+  availableStock: number;
+  lineTotal: number;
+  lowStock: boolean;
+  availabilityLabel: string;
+};
+
+export type CartResponse = {
+  items: CartItemResponse[];
+  totalAmount: number;
+  itemCount: number;
+  authenticated: boolean;
+};
+
+export type PaymentMethodResponse = {
+  id: number;
+  type: string;
+  displayName: string;
+  maskedDetail: string | null;
+  isDefault: boolean;
+  active: boolean;
+  createdAt: string;
+};
+
+export type ProfileResponse = {
+  id: number;
+  email: string;
+  fullName: string;
+  phoneNumber: string | null;
+  defaultAddress: string | null;
+  deliveredOrderCount: number;
+  pendingOrderCount: number;
+  cartItemCount: number;
+  paymentMethods: PaymentMethodResponse[];
+};
+
+export type OrderItemResponse = {
+  productId: number;
+  productName: string;
+  price: number;
+  quantity: number;
+};
+
+export type OrderResponse = {
+  id: number;
+  orderCode: string;
+  status: string;
+  statusSummary: string;
+  customerName: string;
+  phoneNumber: string;
+  shippingAddress: string;
+  totalAmount: number;
+  paymentMethod: string;
+  paymentPlan: string;
+  installmentMonths: number | null;
+  installmentMonthlyAmount: number | null;
+  createdAt: string;
+  itemCount: number;
+  cancelable: boolean;
+  items: OrderItemResponse[];
+};
+
+export type WishlistItemResponse = {
+  productId: number;
+  name: string;
+  price: number;
+  imageUrl: string | null;
+  stock: number;
+  addedAt: string;
+};
+
+export type WishlistResponse = {
+  items: WishlistItemResponse[];
+  count: number;
+};
+
+export type CompareResponse = {
+  products: ProductSummary[];
+  ids: number[];
+  maxCompare: number;
+};
+
+export type ChatMessageResponse = {
+  id: number;
+  userEmail: string;
+  content: string;
+  senderRole: string;
+  createdAt: string;
+};
+
+export type AdminDashboardResponse = {
+  totalProducts: number;
+  totalItemsSold: number;
+  totalOrders: number;
+  totalRevenue: number;
+  currentPage: number;
+  totalPages: number;
+  recentOrders: OrderResponse[];
+};
+
+export type AdminProductPageResponse = {
+  products: AdminProduct[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  pageSize: number;
+  brands: string[];
+};
+
+export type AdminProduct = {
+  id: number | null;
+  name: string;
+  price: number | null;
+  imageUrl: string | null;
+  stock: number | null;
+  os: string | null;
+  chipset: string | null;
+  speed: string | null;
+  ram: string | null;
+  storage: string | null;
+  size: string | null;
+  resolution: string | null;
+  battery: string | null;
+  charging: string | null;
+  description: string | null;
+};
+
+export type AdminOrderPageResponse = {
+  orders: OrderResponse[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  pageSize: number;
+};
+
+export type AdminConversationsResponse = {
+  emails: string[];
+  unreadCounts: Record<string, number>;
 };
 
 const DEFAULT_BACKEND_ORIGIN = "http://localhost:8080";
@@ -71,16 +231,23 @@ export function toAssetUrl(path: string | null | undefined): string {
   return `${getBackendOrigin()}/${path}`;
 }
 
-async function requestJson<T>(
-  path: string,
-  init?: RequestInit & RevalidateOption,
-): Promise<T> {
+type RequestOptions = RequestInit & {
+  includeCredentials?: boolean;
+  next?: {
+    revalidate?: number;
+  };
+};
+
+async function requestJson<T>(path: string, init?: RequestOptions): Promise<T> {
+  const headers = new Headers(init?.headers);
+  if (!headers.has("Content-Type") && init?.body && !(init.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+
   const response = await fetch(`${getBackendOrigin()}${path}`, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers,
+    credentials: init?.includeCredentials === false ? "omit" : "include",
   });
 
   if (!response.ok) {
@@ -91,28 +258,256 @@ async function requestJson<T>(
         message = errorBody.message;
       }
     } catch {
-      // Keep fallback message if body is not JSON.
+      // ignore parse failure
     }
     throw new ApiError(message, response.status);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return (await response.json()) as T;
 }
 
-export async function fetchCatalogPage(
-  searchParams: URLSearchParams,
-): Promise<CatalogPageResponse> {
+export async function fetchCatalogPage(searchParams: URLSearchParams): Promise<CatalogPageResponse> {
   const query = searchParams.toString();
   const suffix = query.length > 0 ? `?${query}` : "";
   return requestJson<CatalogPageResponse>(`/api/v1/products${suffix}`, {
     next: { revalidate: 20 },
+    includeCredentials: false,
   });
 }
 
-export async function fetchProductDetail(
-  id: string,
-): Promise<ProductDetailResponse> {
+export async function fetchProductDetail(id: string): Promise<ProductDetailResponse> {
   return requestJson<ProductDetailResponse>(`/api/v1/products/${id}`, {
     next: { revalidate: 20 },
+    includeCredentials: false,
   });
+}
+
+export async function fetchAuthMe(): Promise<AuthMeResponse> {
+  return requestJson<AuthMeResponse>("/api/v1/auth/me");
+}
+
+export async function authLogin(email: string, password: string): Promise<AuthTokenResponse> {
+  return requestJson<AuthTokenResponse>("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function authRegister(email: string, fullName: string, password: string): Promise<OperationStatusResponse> {
+  return requestJson<OperationStatusResponse>("/api/v1/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ email, fullName, password }),
+  });
+}
+
+export async function authLogout(): Promise<OperationStatusResponse> {
+  return requestJson<OperationStatusResponse>("/api/v1/auth/logout", {
+    method: "POST",
+  });
+}
+
+export async function fetchCart(): Promise<CartResponse> {
+  return requestJson<CartResponse>("/api/v1/cart");
+}
+
+export async function addCartItem(productId: number, quantity = 1): Promise<CartResponse> {
+  return requestJson<CartResponse>("/api/v1/cart/items", {
+    method: "POST",
+    body: JSON.stringify({ productId, quantity }),
+  });
+}
+
+export async function increaseCartItem(productId: number): Promise<CartResponse> {
+  return requestJson<CartResponse>(`/api/v1/cart/items/${productId}/increase`, { method: "POST" });
+}
+
+export async function decreaseCartItem(productId: number): Promise<CartResponse> {
+  return requestJson<CartResponse>(`/api/v1/cart/items/${productId}/decrease`, { method: "POST" });
+}
+
+export async function removeCartItem(productId: number): Promise<CartResponse> {
+  return requestJson<CartResponse>(`/api/v1/cart/items/${productId}`, { method: "DELETE" });
+}
+
+export async function clearCart(): Promise<CartResponse> {
+  return requestJson<CartResponse>("/api/v1/cart", { method: "DELETE" });
+}
+
+export type PlaceOrderPayload = {
+  customerName: string;
+  phoneNumber: string;
+  shippingAddress: string;
+  paymentMethod: string;
+  paymentDetail?: string | null;
+  paymentPlan: string;
+  installmentMonths?: number | null;
+};
+
+export async function placeOrder(payload: PlaceOrderPayload): Promise<OrderResponse> {
+  return requestJson<OrderResponse>("/api/v1/orders", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchOrders(): Promise<OrderResponse[]> {
+  return requestJson<OrderResponse[]>("/api/v1/orders");
+}
+
+export async function cancelOrder(orderId: number): Promise<OperationStatusResponse> {
+  return requestJson<OperationStatusResponse>(`/api/v1/orders/${orderId}/cancel`, {
+    method: "POST",
+  });
+}
+
+export async function fetchProfile(): Promise<ProfileResponse> {
+  return requestJson<ProfileResponse>("/api/v1/profile");
+}
+
+export async function updateProfile(payload: {
+  fullName: string;
+  phoneNumber?: string | null;
+  defaultAddress?: string | null;
+}): Promise<ProfileResponse> {
+  return requestJson<ProfileResponse>("/api/v1/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchPaymentMethods(): Promise<PaymentMethodResponse[]> {
+  return requestJson<PaymentMethodResponse[]>("/api/v1/payment-methods");
+}
+
+export async function addPaymentMethod(payload: {
+  type: string;
+  bankDetail?: string | null;
+  setAsDefault?: boolean;
+}): Promise<PaymentMethodResponse[]> {
+  return requestJson<PaymentMethodResponse[]>("/api/v1/payment-methods", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function setDefaultPaymentMethod(id: number): Promise<PaymentMethodResponse[]> {
+  return requestJson<PaymentMethodResponse[]>(`/api/v1/payment-methods/${id}/default`, {
+    method: "POST",
+  });
+}
+
+export async function removePaymentMethod(id: number): Promise<PaymentMethodResponse[]> {
+  return requestJson<PaymentMethodResponse[]>(`/api/v1/payment-methods/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchWishlist(): Promise<WishlistResponse> {
+  return requestJson<WishlistResponse>("/api/v1/wishlist");
+}
+
+export async function addWishlistItem(productId: number): Promise<WishlistResponse> {
+  return requestJson<WishlistResponse>("/api/v1/wishlist/items", {
+    method: "POST",
+    body: JSON.stringify({ productId }),
+  });
+}
+
+export async function removeWishlistItem(productId: number): Promise<WishlistResponse> {
+  return requestJson<WishlistResponse>(`/api/v1/wishlist/items/${productId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchCompare(): Promise<CompareResponse> {
+  return requestJson<CompareResponse>("/api/v1/compare");
+}
+
+export async function addCompareItem(productId: number): Promise<CompareResponse> {
+  return requestJson<CompareResponse>("/api/v1/compare/items", {
+    method: "POST",
+    body: JSON.stringify({ productId }),
+  });
+}
+
+export async function removeCompareItem(productId: number): Promise<CompareResponse> {
+  return requestJson<CompareResponse>(`/api/v1/compare/items/${productId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function clearCompare(): Promise<CompareResponse> {
+  return requestJson<CompareResponse>("/api/v1/compare", { method: "DELETE" });
+}
+
+export async function fetchAdminDashboard(page = 0): Promise<AdminDashboardResponse> {
+  return requestJson<AdminDashboardResponse>(`/api/v1/admin/dashboard?page=${page}`);
+}
+
+export async function fetchAdminProducts(params: URLSearchParams): Promise<AdminProductPageResponse> {
+  const query = params.toString();
+  const suffix = query ? `?${query}` : "";
+  return requestJson<AdminProductPageResponse>(`/api/v1/admin/products${suffix}`);
+}
+
+export async function createAdminProduct(payload: AdminProduct): Promise<AdminProduct> {
+  return requestJson<AdminProduct>("/api/v1/admin/products", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminProduct(id: number, payload: AdminProduct): Promise<AdminProduct> {
+  return requestJson<AdminProduct>(`/api/v1/admin/products/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminProduct(id: number): Promise<OperationStatusResponse> {
+  return requestJson<OperationStatusResponse>(`/api/v1/admin/products/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchAdminOrders(page = 0, pageSize = 10): Promise<AdminOrderPageResponse> {
+  return requestJson<AdminOrderPageResponse>(`/api/v1/admin/orders?page=${page}&pageSize=${pageSize}`);
+}
+
+export async function updateAdminOrderStatus(id: number, status: string): Promise<OperationStatusResponse> {
+  return requestJson<OperationStatusResponse>(`/api/v1/admin/orders/${id}/status`, {
+    method: "POST",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function fetchAdminConversations(): Promise<AdminConversationsResponse> {
+  return requestJson<AdminConversationsResponse>("/api/v1/admin/chat/conversations");
+}
+
+export async function fetchAdminChatHistory(email: string): Promise<ChatMessageResponse[]> {
+  const escaped = encodeURIComponent(email);
+  return requestJson<ChatMessageResponse[]>(`/api/v1/admin/chat/history?email=${escaped}`);
+}
+
+export async function sendAdminChatMessage(userEmail: string, content: string): Promise<ChatMessageResponse> {
+  return requestJson<ChatMessageResponse>("/api/v1/admin/chat/messages", {
+    method: "POST",
+    body: JSON.stringify({ userEmail, content }),
+  });
+}
+
+export async function markAdminConversationRead(userEmail: string): Promise<OperationStatusResponse> {
+  return requestJson<OperationStatusResponse>("/api/v1/admin/chat/read", {
+    method: "POST",
+    body: JSON.stringify({ userEmail }),
+  });
+}
+
+export async function fetchAdminUnreadCount(): Promise<number> {
+  return requestJson<number>("/api/v1/admin/chat/unread-count");
 }

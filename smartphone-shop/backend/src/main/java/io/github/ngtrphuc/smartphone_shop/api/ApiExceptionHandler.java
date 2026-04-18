@@ -13,7 +13,7 @@ import io.github.ngtrphuc.smartphone_shop.api.dto.ErrorResponse;
 import io.github.ngtrphuc.smartphone_shop.common.exception.ResourceNotFoundException;
 import io.github.ngtrphuc.smartphone_shop.common.exception.UnauthorizedActionException;
 import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
-import io.github.ngtrphuc.smartphone_shop.service.OrderValidationException;
+import io.github.ngtrphuc.smartphone_shop.common.exception.OrderValidationException;
 
 @RestControllerAdvice(basePackages = "io.github.ngtrphuc.smartphone_shop.controller.api")
 public class ApiExceptionHandler {
@@ -72,4 +72,5 @@ public class ApiExceptionHandler {
                 .body(new ErrorResponse("INVALID_BODY", "Request body is missing or invalid."));
     }
 }
+
 

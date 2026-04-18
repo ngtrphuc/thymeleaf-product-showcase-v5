@@ -6,12 +6,13 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.regex.PatternSyntaxException;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,7 +24,7 @@ import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
-import io.github.ngtrphuc.smartphone_shop.support.StorefrontSupport;
+import io.github.ngtrphuc.smartphone_shop.common.support.StorefrontSupport;
 
 @RestController
 @RequestMapping("/api/v1/products")
@@ -46,6 +47,10 @@ public class ProductApiController {
     }
 
     @GetMapping
+    @Cacheable(
+            value = "catalogPublic",
+            key = "T(java.util.Objects).hash(#keyword,#sort,#brand,#priceRange,#priceMin,#priceMax,#batteryRange,#batteryMin,#batteryMax,#screenSize,#pageSize,#page)",
+            condition = "#authentication == null")
     public CatalogPageResponse products(
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "sort", required = false) String sort,
@@ -166,6 +171,7 @@ public class ProductApiController {
     }
 
     @GetMapping("/{id}")
+    @Cacheable(value = "productDetailPublic", key = "#id", condition = "#authentication == null")
     public ProductDetailResponse product(@PathVariable(name = "id") long id, Authentication authentication) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
@@ -366,4 +372,5 @@ public class ProductApiController {
     private record FilteredScanResult(List<Product> pageItems, long totalMatched) {
     }
 }
+
 

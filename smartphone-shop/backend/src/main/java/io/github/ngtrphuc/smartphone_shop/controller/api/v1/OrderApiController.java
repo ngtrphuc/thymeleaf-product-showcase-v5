@@ -6,11 +6,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
+import io.github.ngtrphuc.smartphone_shop.model.Order;
+import io.github.ngtrphuc.smartphone_shop.service.CartService;
 import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 
 @RestController
@@ -18,10 +21,12 @@ import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 public class OrderApiController {
 
     private final OrderService orderService;
+    private final CartService cartService;
     private final ApiMapper apiMapper;
 
-    public OrderApiController(OrderService orderService, ApiMapper apiMapper) {
+    public OrderApiController(OrderService orderService, CartService cartService, ApiMapper apiMapper) {
         this.orderService = orderService;
+        this.cartService = cartService;
         this.apiMapper = apiMapper;
     }
 
@@ -38,6 +43,33 @@ public class OrderApiController {
         return new OperationStatusResponse(
                 success,
                 success ? "Order cancelled successfully." : "Cannot cancel this order.");
+    }
+
+    @PostMapping
+    public OrderResponse place(@RequestBody PlaceOrderRequest request, Authentication authentication) {
+        String userEmail = authentication.getName();
+        Order created = orderService.createOrder(
+                userEmail,
+                request.customerName(),
+                request.phoneNumber(),
+                request.shippingAddress(),
+                cartService.getUserCart(userEmail),
+                request.paymentMethod(),
+                request.paymentDetail(),
+                request.paymentPlan(),
+                request.installmentMonths());
+        cartService.clearCart(userEmail, null);
+        return apiMapper.toOrderResponse(created);
+    }
+
+    private record PlaceOrderRequest(
+            String customerName,
+            String phoneNumber,
+            String shippingAddress,
+            String paymentMethod,
+            String paymentDetail,
+            String paymentPlan,
+            Integer installmentMonths) {
     }
 }
 

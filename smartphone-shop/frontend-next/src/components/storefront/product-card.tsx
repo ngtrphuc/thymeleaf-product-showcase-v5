@@ -1,4 +1,4 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import type { ProductSummary } from "@/lib/api";
 import { formatPriceVnd } from "@/lib/format";
@@ -28,14 +28,12 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
 
       <div className="space-y-3 p-5">
-        <h3 className="text-lg font-semibold text-slate-900">
-          {product.name}
-        </h3>
+        <h3 className="text-lg font-semibold text-slate-900">{product.name}</h3>
         <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
           <span>{product.storage || "N/A"}</span>
-          <span>•</span>
+          <span>-</span>
           <span>{product.ram || "N/A"}</span>
-          <span>•</span>
+          <span>-</span>
           <span>{product.size || "N/A"}</span>
         </div>
         <p className="text-2xl font-bold text-[var(--color-primary-strong)]">
@@ -46,14 +44,14 @@ export function ProductCard({ product }: ProductCardProps) {
             product.available ? "text-[var(--color-success)]" : "text-red-600"
           }`}
         >
-          {product.availabilityLabel || "Không có sẵn"}
+          {product.availabilityLabel || "Unavailable"}
         </p>
 
         <Link
           href={`/products/${productId}`}
           className="inline-flex w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--color-primary-strong)]"
         >
-          Xem chi tiết
+          View Details
         </Link>
       </div>
     </article>

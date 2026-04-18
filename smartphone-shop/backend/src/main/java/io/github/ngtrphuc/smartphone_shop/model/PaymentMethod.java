@@ -11,7 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import io.github.ngtrphuc.smartphone_shop.support.StorefrontSupport;
+import io.github.ngtrphuc.smartphone_shop.common.support.StorefrontSupport;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -120,3 +120,4 @@ public class PaymentMethod {
         return StorefrontSupport.maskPaymentDetail(detail);
     }
 }
+

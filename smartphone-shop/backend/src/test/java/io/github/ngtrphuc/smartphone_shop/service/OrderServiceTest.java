@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.OrderValidationException;
 import io.github.ngtrphuc.smartphone_shop.model.Order;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;

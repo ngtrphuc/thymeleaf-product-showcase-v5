@@ -2,6 +2,7 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -18,10 +19,13 @@ import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 import io.github.ngtrphuc.smartphone_shop.security.JwtTokenProvider;
 import io.github.ngtrphuc.smartphone_shop.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthApiController {
+    private static final String JWT_COOKIE_NAME = "jwt";
 
     private final AuthService authService;
     private final UserRepository userRepository;
@@ -51,7 +55,9 @@ public class AuthApiController {
     }
 
     @PostMapping("/login")
-    public AuthTokenResponse login(@RequestBody LoginRequest request) {
+    public AuthTokenResponse login(@RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         if (request.email() == null || request.email().isBlank()
                 || request.password() == null || request.password().isBlank()) {
             throw new IllegalArgumentException("Email and password are required.");
@@ -62,6 +68,7 @@ public class AuthApiController {
                 .orElseThrow(() -> new IllegalArgumentException("User not found."));
         String token = jwtTokenProvider.generateAccessToken(user.getEmail(), user.getRole());
         long expiresInSeconds = jwtTokenProvider.getExpiresInSeconds(token);
+        httpResponse.addHeader("Set-Cookie", buildJwtCookie(token, expiresInSeconds, httpRequest.isSecure()).toString());
         return new AuthTokenResponse(
                 token,
                 "Bearer",
@@ -69,6 +76,12 @@ public class AuthApiController {
                 user.getEmail(),
                 user.getRole(),
                 user.getFullName());
+    }
+
+    @PostMapping("/logout")
+    public OperationStatusResponse logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        httpResponse.addHeader("Set-Cookie", buildJwtCookie("", 0, httpRequest.isSecure()).toString());
+        return new OperationStatusResponse(true, "Logged out successfully.");
     }
 
     @PostMapping("/register")
@@ -92,6 +105,16 @@ public class AuthApiController {
     }
 
     record RegisterRequest(String email, String fullName, String password) {
+    }
+
+    private ResponseCookie buildJwtCookie(String token, long maxAgeSeconds, boolean secureRequest) {
+        return ResponseCookie.from(JWT_COOKIE_NAME, token)
+                .httpOnly(true)
+                .secure(secureRequest)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Math.max(maxAgeSeconds, 0))
+                .build();
     }
 }
 

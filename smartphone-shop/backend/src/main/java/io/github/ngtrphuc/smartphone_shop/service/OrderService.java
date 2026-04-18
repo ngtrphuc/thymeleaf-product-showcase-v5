@@ -16,6 +16,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.OrderValidationException;
+import io.github.ngtrphuc.smartphone_shop.common.exception.UnauthorizedActionException;
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;
 import io.github.ngtrphuc.smartphone_shop.model.Order;
 import io.github.ngtrphuc.smartphone_shop.model.OrderItem;
@@ -214,21 +216,27 @@ public class OrderService {
 
     @Transactional
     public boolean cancelOrder(long orderId, String userEmail) {
-        return orderRepository.findByIdWithItemsForUpdate(orderId)
-                .filter(o -> o.getUserEmail().equals(userEmail))
-                .filter(o -> {
-                    String status = normalizeStatus(o.getStatus());
-                    return "pending".equals(status) || "processing".equals(status);
-                })
-                .map(o -> {
-                    Map<Long, Integer> itemQuantities = extractOrderQuantities(o.getItems());
-                    Map<Long, Product> lockedProducts = loadProductsForUpdate(itemQuantities.keySet());
-                    applyStockDelta(lockedProducts, itemQuantities, 1, true);
-                    o.setStatus("cancelled");
-                    orderRepository.save(o);
-                    return true;
-                })
-                .orElse(false);
+        Optional<Order> optionalOrder = orderRepository.findByIdWithItemsForUpdate(orderId);
+        if (optionalOrder.isEmpty()) {
+            return false;
+        }
+
+        Order order = optionalOrder.get();
+        if (!Objects.equals(order.getUserEmail(), userEmail)) {
+            throw new UnauthorizedActionException("You do not have permission to cancel this order.");
+        }
+
+        String status = normalizeStatus(order.getStatus());
+        if (!"pending".equals(status) && !"processing".equals(status)) {
+            return false;
+        }
+
+        Map<Long, Integer> itemQuantities = extractOrderQuantities(order.getItems());
+        Map<Long, Product> lockedProducts = loadProductsForUpdate(itemQuantities.keySet());
+        applyStockDelta(lockedProducts, itemQuantities, 1, true);
+        order.setStatus("cancelled");
+        orderRepository.save(order);
+        return true;
     }
 
     private String normalizePaymentMethod(String raw) {
