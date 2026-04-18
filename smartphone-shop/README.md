@@ -33,7 +33,7 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 - [x] Monitoring dashboard + alerting provisioning
 - [x] Portfolio polish baseline (screenshots checklist + project narrative)
 
-## Progress Snapshot (Updated: 2026-04-18)
+## Progress Snapshot (Updated: 2026-04-19)
 
 ### Completed recently
 
@@ -51,6 +51,7 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 - Catalog performance optimization:
   - Replaced in-memory batch scan/filter flow in `ProductApiController` with DB-side paging/filtering for brand, battery, and screen-size criteria
   - Preserved existing API response contract while removing full-table scan behavior under advanced filters
+  - Aligned `ProductCatalogSpecificationIntegrationTest` with current `ProductCatalogSpecifications.forCatalog(...)` signature by including `storage` argument before `batteryRange` to prevent argument-order compile errors
 - Admin product query optimization:
   - Removed in-memory brand filtering from `/api/v1/admin/products`
   - Moved admin brand filtering into repository query with paging + DB sort to avoid full-list scans
@@ -542,6 +543,7 @@ smartphone-shop/
 - Backend tests are located under `backend/src/test`
 - Frontend quality checks (lint/build) are managed inside `frontend-next/`
 - Latest local validation snapshot:
+  - `mvnw -Dtest=ProductCatalogSpecificationIntegrationTest test`: build success (test is skipped automatically when Docker/Testcontainers is unavailable)
   - `mvnw -Dtest=CacheKeysTest,ProductCatalogSpecificationIntegrationTest,ChatServiceTest,WishlistServiceTest,AdminApiControllerTest,ProductApiControllerTest,LoginRateLimitFilterTest test`: passing
   - `cd frontend-next && npm run lint`: passing (1 existing non-blocking hook warning in `admin/chat/page.tsx`)
   - `cd frontend-next && npm run test:e2e`: passing (2 checkout flow tests)
