@@ -3,6 +3,7 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
@@ -41,14 +42,10 @@ class ProductApiControllerTest {
         iphone.setPrice(249800.0);
         iphone.setStock(5);
 
-        Product galaxy = new Product();
-        galaxy.setId(2L);
-        galaxy.setName("Samsung Galaxy S26 Ultra");
-        galaxy.setPrice(299200.0);
-        galaxy.setStock(7);
-
-        when(productRepository.findWithFilters(isNull(), isNull(), isNull(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(iphone, galaxy)));
+        when(productRepository.findCatalogPage(
+                isNull(), isNull(), isNull(), eq("Apple"), isNull(), isNull(), isNull(), isNull(), eq("name_asc"),
+                any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(iphone)));
         when(productRepository.findAllNamesOrdered())
                 .thenReturn(List.of("Apple iPhone 17 Pro", "Samsung Galaxy S26 Ultra"));
 

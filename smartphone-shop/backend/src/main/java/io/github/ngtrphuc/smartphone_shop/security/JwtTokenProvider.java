@@ -1,12 +1,14 @@
 package io.github.ngtrphuc.smartphone_shop.security;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
@@ -17,13 +19,24 @@ import io.jsonwebtoken.security.Keys;
 public class JwtTokenProvider {
 
     private static final String ROLE_CLAIM = "role";
+    private static final String INSECURE_SECRET_PREFIX = "change-this-secret-in-production";
 
     private final JwtProperties jwtProperties;
     private final SecretKey signingKey;
 
-    public JwtTokenProvider(JwtProperties jwtProperties) {
+    public JwtTokenProvider(JwtProperties jwtProperties, Environment environment) {
         this.jwtProperties = jwtProperties;
-        byte[] secretBytes = jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8);
+        String secret = jwtProperties.getSecret();
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("JWT secret must not be blank.");
+        }
+        boolean prodProfileActive = Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(profile -> "prod".equalsIgnoreCase(profile));
+        if (prodProfileActive && secret.startsWith(INSECURE_SECRET_PREFIX)) {
+            throw new IllegalStateException("JWT secret must be overridden in production.");
+        }
+
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
         if (secretBytes.length < 32) {
             throw new IllegalStateException("JWT secret must be at least 32 bytes.");
         }

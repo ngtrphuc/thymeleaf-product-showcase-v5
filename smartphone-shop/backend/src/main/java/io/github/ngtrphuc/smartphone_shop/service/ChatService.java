@@ -36,7 +36,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    private final Map<String, List<SseEmitter>> userEmitters = new ConcurrentHashMap<>();
+    private final Map<String, CopyOnWriteArrayList<SseEmitter>> userEmitters = new ConcurrentHashMap<>();
     private final List<SseEmitter> adminEmitters = new CopyOnWriteArrayList<>();
 
     public ChatService(ChatMessageRepository chatMessageRepository, ApplicationEventPublisher eventPublisher) {
@@ -157,9 +157,9 @@ public class ChatService {
         }
         adminEmitters.removeAll(deadAdmins);
 
-        for (Map.Entry<String, List<SseEmitter>> entry : userEmitters.entrySet()) {
+        for (Map.Entry<String, CopyOnWriteArrayList<SseEmitter>> entry : userEmitters.entrySet()) {
             String email = entry.getKey();
-            List<SseEmitter> emitters = entry.getValue();
+            CopyOnWriteArrayList<SseEmitter> emitters = entry.getValue();
             List<SseEmitter> deadUsers = new CopyOnWriteArrayList<>();
             for (SseEmitter emitter : emitters) {
                 try {
@@ -191,7 +191,7 @@ public class ChatService {
     }
 
     private void pushToUser(String email, ChatMessage msg) {
-        List<SseEmitter> emitters = userEmitters.get(email);
+        CopyOnWriteArrayList<SseEmitter> emitters = userEmitters.get(email);
         if (emitters == null) {
             return;
         }
@@ -212,7 +212,7 @@ public class ChatService {
     }
 
     private void removeUserEmitter(String email, SseEmitter emitter) {
-        List<SseEmitter> emitters = userEmitters.get(email);
+        CopyOnWriteArrayList<SseEmitter> emitters = userEmitters.get(email);
         if (emitters != null) {
             emitters.remove(emitter);
             if (emitters.isEmpty()) {

@@ -5408,3 +5408,37 @@ Unconditional classes:
 2026-04-18T18:35:03.797+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-1] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [*/*] and supported [application/json, application/*+json, application/yaml]
 2026-04-18T18:35:03.798+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-1] m.m.a.RequestResponseBodyMethodProcessor : Writing [AuthTokenResponse[accessToken=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbkBzbWFydHBob25lLmxvY2FsIiwicm9sZ (truncated)...]
 2026-04-18T18:35:03.798+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-04-18T18:35:42.881+09:00  INFO 83240 --- [smartphone-shop] [MessageBroker-2] o.s.w.s.c.WebSocketMessageBrokerStats    : WebSocketSession[0 current WS(0)-HttpStream(0)-HttpPoll(0), 0 total, 0 closed abnormally (0 connect failure, 0 send limit, 0 transport error)], stompSubProtocol[processed CONNECT(0)-CONNECTED(0)-DISCONNECT(0)], stompBrokerRelay[null], inboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], outboundChannel[pool size = 0, active threads = 0, queued tasks = 0, completed tasks = 0], sockJsScheduler[pool size = 3, active threads = 1, queued tasks = 1, completed tasks = 1]
+2026-04-18T18:37:28.694+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : POST "/api/v1/auth/login", parameters={}
+2026-04-18T18:37:28.694+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to io.github.ngtrphuc.smartphone_shop.controller.api.v1.AuthApiController#login(LoginRequest, HttpServletRequest, HttpServletResponse)
+2026-04-18T18:37:28.694+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-5] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [LoginRequest[email=admin@smartphone.local, password=Admin@123456]]
+2026-04-18T18:37:28.695+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-5] org.hibernate.SQL                        : select u1_0.id,u1_0.created_at,u1_0.default_address,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone_number,u1_0.role from users u1_0 where upper(u1_0.email)=upper(?)
+2026-04-18T18:37:28.757+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-5] org.hibernate.SQL                        : select u1_0.id,u1_0.created_at,u1_0.default_address,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone_number,u1_0.role from users u1_0 where upper(u1_0.email)=upper(?)
+2026-04-18T18:37:28.761+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-5] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [*/*] and supported [application/json, application/*+json, application/yaml]
+2026-04-18T18:37:28.761+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-5] m.m.a.RequestResponseBodyMethodProcessor : Writing [AuthTokenResponse[accessToken=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbkBzbWFydHBob25lLmxvY2FsIiwicm9sZ (truncated)...]
+2026-04-18T18:37:28.762+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+2026-04-18T18:37:28.778+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] org.hibernate.SQL                        : select u1_0.id,u1_0.created_at,u1_0.default_address,u1_0.email,u1_0.full_name,u1_0.password,u1_0.phone_number,u1_0.role from users u1_0 where upper(u1_0.email)=upper(?)
+2026-04-18T18:37:28.781+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : GET "/api/v1/admin/dashboard", parameters={}
+2026-04-18T18:37:28.782+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to io.github.ngtrphuc.smartphone_shop.controller.api.v1.AdminApiController#dashboard(int)
+2026-04-18T18:37:28.783+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] org.hibernate.SQL                        : select count(*) from orders o1_0
+2026-04-18T18:37:28.788+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] org.hibernate.SQL                        : select count(*) from products p1_0
+2026-04-18T18:37:28.793+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] org.hibernate.SQL                        : select coalesce(sum(oi1_0.quantity),0) from order_items oi1_0 join orders o1_0 on o1_0.id=oi1_0.order_id where o1_0.status<>'cancelled'
+2026-04-18T18:37:28.798+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] org.hibernate.SQL                        : select coalesce(sum(o1_0.total_amount),0) from orders o1_0 where o1_0.status<>'cancelled'
+2026-04-18T18:37:28.802+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] org.hibernate.SQL                        : select o1_0.id from orders o1_0 order by o1_0.created_at desc,o1_0.id desc fetch first ? rows only
+2026-04-18T18:37:28.806+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] org.hibernate.SQL                        : select distinct o1_0.id,o1_0.created_at,o1_0.customer_name,o1_0.installment_monthly_amount,o1_0.installment_months,i1_0.order_id,i1_0.id,i1_0.price,i1_0.product_id,i1_0.product_name,i1_0.quantity,o1_0.payment_detail,o1_0.payment_method,o1_0.payment_plan,o1_0.phone_number,o1_0.shipping_address,o1_0.status,o1_0.total_amount,o1_0.user_email from orders o1_0 left join order_items i1_0 on o1_0.id=i1_0.order_id where o1_0.id in (?)
+2026-04-18T18:37:28.815+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Using 'application/json', given [*/*] and supported [application/json, application/*+json, application/yaml]
+2026-04-18T18:37:28.817+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Writing [DashboardResponse[totalProducts=27, totalItemsSold=2, totalOrders=1, totalRevenue=454100.0, currentP (truncated)...]
+2026-04-18T18:37:28.821+09:00 DEBUG 83240 --- [smartphone-shop] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  13:09 min
+[INFO] Finished at: 2026-04-18T18:46:46+09:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.5.13:run (default-cli) on project smartphone-shop: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

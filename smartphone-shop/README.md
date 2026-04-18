@@ -48,8 +48,16 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 - New/expanded backend API coverage:
   - `POST /api/v1/orders` for API-first checkout
   - Admin API namespace under `/api/v1/admin` (dashboard, products, orders, chat)
+- Catalog performance optimization:
+  - Replaced in-memory batch scan/filter flow in `ProductApiController` with DB-side paging/filtering for brand, battery, and screen-size criteria
+  - Preserved existing API response contract while removing full-table scan behavior under advanced filters
 - Admin dashboard stability fix:
   - Fixed lazy-loading errors on `/api/v1/admin/dashboard` by loading paged orders with items inside transaction scope
+- Chat SSE concurrency hardening:
+  - Upgraded user emitter registry to `ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>>` to avoid concurrent mutation risks in subscribe/prune/push flows
+- JWT production hardening:
+  - Added fail-fast startup validation for `prod` profile if JWT secret still uses the default placeholder
+  - Kept local `dev/test` startup behavior unchanged
 - Architecture debt cleanup:
   - `OrderValidationException` moved to `common/exception`
   - `ChatWebSocketNotifier` moved to `infrastructure/websocket`
