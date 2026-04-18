@@ -1,39 +1,63 @@
 ﻿# Smartphone Shop
 
-Smartphone Shop is in **hybrid migration mode**:
+Smartphone Shop is an e-commerce web application focused on smartphone retail flows.
+The project is currently in a hybrid migration phase, combining a mature Spring Boot + Thymeleaf implementation with a new Next.js frontend.
 
-- Backend: Spring Boot REST API + legacy Thymeleaf controllers/views
-- Frontend mới: Next.js App Router (`frontend-next/`) đã bắt đầu dùng API thật
+## Project Overview
 
-## Tech Stack
+This repository demonstrates a full-stack commerce architecture with:
 
-### Backend
+- A Java/Spring backend exposing both server-rendered pages and REST APIs
+- A legacy Thymeleaf UI for existing production-ready customer/admin flows
+- A modern Next.js App Router frontend that is being incrementally migrated to API-first rendering
 
-- Java 21
-- Spring Boot 3.5.13
-- Spring Web
-- Spring Security 6
-- Spring Data JPA (Hibernate)
-- PostgreSQL
-- Flyway migration
-- JWT (`jjwt`)
-- WebSocket/STOMP
-- Springdoc OpenAPI (Swagger)
+## Current Status
 
-### Frontend
+The codebase is actively evolving from monolithic server-rendered pages toward a decoupled frontend/backend model.
 
-- Next.js 16 (App Router)
-- React 19
-- TypeScript 5
-- Tailwind CSS v4
+- Legacy UI remains stable in `frontend/` (Thymeleaf templates + static assets)
+- New UI work is developed in `frontend-next/`
+- Backend APIs in `backend/` serve both frontends during migration
 
-### Tooling & Infra
+## Core Features
 
-- Maven Wrapper (`mvnw`, `mvnw.cmd`)
-- Docker Compose (PostgreSQL + Redis)
-- VS Code Tasks + Launch (auto-start infra/full-stack)
+- Product catalog and product detail browsing
+- User authentication and profile management
+- Cart, wishlist, and compare list workflows
+- Checkout and order management
+- Payment method selection
+- Customer and admin real-time chat support
+- Admin dashboard and product/order operations
 
-## Project Structure (Detailed)
+## Architecture
+
+### Backend (`backend/`)
+
+- Spring Boot application with layered architecture (controller/service/repository)
+- Spring Security with JWT support for API authentication
+- Spring Data JPA + Hibernate for persistence
+- Flyway for schema migration
+- WebSocket/STOMP for real-time messaging
+- OpenAPI/Swagger for API documentation
+
+### Legacy Frontend (`frontend/`)
+
+- Thymeleaf server-side templates
+- Static CSS/JS assets for customer and admin areas
+
+### Modern Frontend (`frontend-next/`)
+
+- Next.js App Router + React + TypeScript
+- API-driven rendering for new storefront pages
+
+## Technology Stack
+
+- Backend: Java 21, Spring Boot 3, Spring Security, JPA/Hibernate
+- Database: PostgreSQL
+- Frontend: Next.js, React, TypeScript, Tailwind CSS
+- Tooling: Maven Wrapper, Docker Compose
+
+## Project Structure
 
 ```text
 smartphone-shop/
@@ -54,177 +78,161 @@ smartphone-shop/
 │   └── src/
 │       ├── main/
 │       │   ├── java/
-│       │   │   └── io/
-│       │   │       └── github/
-│       │   │           └── ngtrphuc/
-│       │   │               └── smartphone_shop/
-│       │   │                   ├── api/
-│       │   │                   │   ├── dto/
-│       │   │                   │   │   ├── AuthMeResponse.java
-│       │   │                   │   │   ├── AuthTokenResponse.java
-│       │   │                   │   │   ├── CartItemResponse.java
-│       │   │                   │   │   ├── CartResponse.java
-│       │   │                   │   │   ├── CatalogPageResponse.java
-│       │   │                   │   │   ├── ChatMessageResponse.java
-│       │   │                   │   │   ├── CompareResponse.java
-│       │   │                   │   │   ├── ErrorResponse.java
-│       │   │                   │   │   ├── OperationStatusResponse.java
-│       │   │                   │   │   ├── OrderItemResponse.java
-│       │   │                   │   │   ├── OrderResponse.java
-│       │   │                   │   │   ├── PaymentMethodResponse.java
-│       │   │                   │   │   ├── ProductDetailResponse.java
-│       │   │                   │   │   ├── ProductSummary.java
-│       │   │                   │   │   ├── ProfileResponse.java
-│       │   │                   │   │   ├── WishlistItemResponse.java
-│       │   │                   │   │   └── WishlistResponse.java
-│       │   │                   │   ├── ApiExceptionHandler.java
-│       │   │                   │   └── ApiMapper.java
-│       │   │                   ├── common/
-│       │   │                   │   └── exception/
-│       │   │                   │       ├── BusinessException.java
-│       │   │                   │       ├── ResourceNotFoundException.java
-│       │   │                   │       ├── UnauthorizedActionException.java
-│       │   │                   │       └── ValidationException.java
-│       │   │                   ├── config/
-│       │   │                   │   ├── AdminAccountInitializer.java
-│       │   │                   │   ├── DataInitializer.java
-│       │   │                   │   ├── GlobalModelAttributes.java
-│       │   │                   │   ├── LoginSuccessHandler.java
-│       │   │                   │   ├── PaymentMethodSchemaInitializer.java
-│       │   │                   │   ├── SecurityConfig.java
-│       │   │                   │   ├── ThymeleafConfig.java
-│       │   │                   │   ├── WebConfig.java
-│       │   │                   │   └── WebSocketConfig.java
-│       │   │                   ├── controller/
-│       │   │                   │   ├── admin/
-│       │   │                   │   │   ├── AdminController.java
-│       │   │                   │   │   └── ChatAdminController.java
-│       │   │                   │   ├── api/
-│       │   │                   │   │   └── v1/
-│       │   │                   │   │       ├── AuthApiController.java
-│       │   │                   │   │       ├── CartApiController.java
-│       │   │                   │   │       ├── ChatApiController.java
-│       │   │                   │   │       ├── CompareApiController.java
-│       │   │                   │   │       ├── OrderApiController.java
-│       │   │                   │   │       ├── PaymentMethodApiController.java
-│       │   │                   │   │       ├── ProductApiController.java
-│       │   │                   │   │       ├── ProfileApiController.java
-│       │   │                   │   │       └── WishlistApiController.java
-│       │   │                   │   └── user/
-│       │   │                   │       ├── AuthController.java
-│       │   │                   │       ├── CartController.java
-│       │   │                   │       ├── ChatUserController.java
-│       │   │                   │       ├── CompareController.java
-│       │   │                   │       ├── MainController.java
-│       │   │                   │       ├── OrderController.java
-│       │   │                   │       ├── PaymentMethodController.java
-│       │   │                   │       ├── ProfileController.java
-│       │   │                   │       └── WishlistController.java
-│       │   │                   ├── event/
-│       │   │                   │   └── ChatMessageCreatedEvent.java
-│       │   │                   ├── model/
-│       │   │                   │   ├── CartItem.java
-│       │   │                   │   ├── CartItemEntity.java
-│       │   │                   │   ├── ChatMessage.java
-│       │   │                   │   ├── CompareItemEntity.java
-│       │   │                   │   ├── Order.java
-│       │   │                   │   ├── OrderItem.java
-│       │   │                   │   ├── PaymentMethod.java
-│       │   │                   │   ├── Product.java
-│       │   │                   │   ├── User.java
-│       │   │                   │   ├── WishlistItem.java
-│       │   │                   │   └── WishlistItemEntity.java
-│       │   │                   ├── repository/
-│       │   │                   │   ├── CartItemRepository.java
-│       │   │                   │   ├── ChatMessageRepository.java
-│       │   │                   │   ├── CompareItemRepository.java
-│       │   │                   │   ├── OrderRepository.java
-│       │   │                   │   ├── PaymentMethodRepository.java
-│       │   │                   │   ├── ProductRepository.java
-│       │   │                   │   ├── UserRepository.java
-│       │   │                   │   └── WishlistItemRepository.java
-│       │   │                   ├── security/
-│       │   │                   │   ├── JwtAuthenticationFilter.java
-│       │   │                   │   ├── JwtProperties.java
-│       │   │                   │   ├── JwtStompChannelInterceptor.java
-│       │   │                   │   └── JwtTokenProvider.java
-│       │   │                   ├── service/
-│       │   │                   │   ├── AuthService.java
-│       │   │                   │   ├── CartService.java
-│       │   │                   │   ├── ChatService.java
-│       │   │                   │   ├── ChatWebSocketNotifier.java
-│       │   │                   │   ├── CompareService.java
-│       │   │                   │   ├── CustomUserDetailsService.java
-│       │   │                   │   ├── OrderService.java
-│       │   │                   │   ├── OrderValidationException.java
-│       │   │                   │   ├── PaymentMethodService.java
-│       │   │                   │   └── WishlistService.java
-│       │   │                   ├── support/
-│       │   │                   │   └── StorefrontSupport.java
-│       │   │                   ├── DevInfrastructureBootstrap.java
-│       │   │                   ├── Port8080Guard.java
-│       │   │                   └── SmartphoneShopApplication.java
+│       │   │   └── io/github/ngtrphuc/smartphone_shop/
+│       │   │       ├── api/
+│       │   │       │   ├── dto/
+│       │   │       │   │   ├── AuthMeResponse.java
+│       │   │       │   │   ├── AuthTokenResponse.java
+│       │   │       │   │   ├── CartItemResponse.java
+│       │   │       │   │   ├── CartResponse.java
+│       │   │       │   │   ├── CatalogPageResponse.java
+│       │   │       │   │   ├── ChatMessageResponse.java
+│       │   │       │   │   ├── CompareResponse.java
+│       │   │       │   │   ├── ErrorResponse.java
+│       │   │       │   │   ├── OperationStatusResponse.java
+│       │   │       │   │   ├── OrderItemResponse.java
+│       │   │       │   │   ├── OrderResponse.java
+│       │   │       │   │   ├── PaymentMethodResponse.java
+│       │   │       │   │   ├── ProductDetailResponse.java
+│       │   │       │   │   ├── ProductSummary.java
+│       │   │       │   │   ├── ProfileResponse.java
+│       │   │       │   │   ├── WishlistItemResponse.java
+│       │   │       │   │   └── WishlistResponse.java
+│       │   │       │   ├── ApiExceptionHandler.java
+│       │   │       │   └── ApiMapper.java
+│       │   │       ├── common/exception/
+│       │   │       │   ├── BusinessException.java
+│       │   │       │   ├── ResourceNotFoundException.java
+│       │   │       │   ├── UnauthorizedActionException.java
+│       │   │       │   └── ValidationException.java
+│       │   │       ├── config/
+│       │   │       │   ├── AdminAccountInitializer.java
+│       │   │       │   ├── DataInitializer.java
+│       │   │       │   ├── GlobalModelAttributes.java
+│       │   │       │   ├── LoginSuccessHandler.java
+│       │   │       │   ├── PaymentMethodSchemaInitializer.java
+│       │   │       │   ├── SecurityConfig.java
+│       │   │       │   ├── ThymeleafConfig.java
+│       │   │       │   ├── WebConfig.java
+│       │   │       │   └── WebSocketConfig.java
+│       │   │       ├── controller/
+│       │   │       │   ├── admin/
+│       │   │       │   │   ├── AdminController.java
+│       │   │       │   │   └── ChatAdminController.java
+│       │   │       │   ├── api/v1/
+│       │   │       │   │   ├── AuthApiController.java
+│       │   │       │   │   ├── CartApiController.java
+│       │   │       │   │   ├── ChatApiController.java
+│       │   │       │   │   ├── CompareApiController.java
+│       │   │       │   │   ├── OrderApiController.java
+│       │   │       │   │   ├── PaymentMethodApiController.java
+│       │   │       │   │   ├── ProductApiController.java
+│       │   │       │   │   ├── ProfileApiController.java
+│       │   │       │   │   └── WishlistApiController.java
+│       │   │       │   └── user/
+│       │   │       │       ├── AuthController.java
+│       │   │       │       ├── CartController.java
+│       │   │       │       ├── ChatUserController.java
+│       │   │       │       ├── CompareController.java
+│       │   │       │       ├── MainController.java
+│       │   │       │       ├── OrderController.java
+│       │   │       │       ├── PaymentMethodController.java
+│       │   │       │       ├── ProfileController.java
+│       │   │       │       └── WishlistController.java
+│       │   │       ├── event/
+│       │   │       │   └── ChatMessageCreatedEvent.java
+│       │   │       ├── model/
+│       │   │       │   ├── CartItem.java
+│       │   │       │   ├── CartItemEntity.java
+│       │   │       │   ├── ChatMessage.java
+│       │   │       │   ├── CompareItemEntity.java
+│       │   │       │   ├── Order.java
+│       │   │       │   ├── OrderItem.java
+│       │   │       │   ├── PaymentMethod.java
+│       │   │       │   ├── Product.java
+│       │   │       │   ├── User.java
+│       │   │       │   ├── WishlistItem.java
+│       │   │       │   └── WishlistItemEntity.java
+│       │   │       ├── repository/
+│       │   │       │   ├── CartItemRepository.java
+│       │   │       │   ├── ChatMessageRepository.java
+│       │   │       │   ├── CompareItemRepository.java
+│       │   │       │   ├── OrderRepository.java
+│       │   │       │   ├── PaymentMethodRepository.java
+│       │   │       │   ├── ProductRepository.java
+│       │   │       │   ├── UserRepository.java
+│       │   │       │   └── WishlistItemRepository.java
+│       │   │       ├── security/
+│       │   │       │   ├── JwtAuthenticationFilter.java
+│       │   │       │   ├── JwtProperties.java
+│       │   │       │   ├── JwtStompChannelInterceptor.java
+│       │   │       │   └── JwtTokenProvider.java
+│       │   │       ├── service/
+│       │   │       │   ├── AuthService.java
+│       │   │       │   ├── CartService.java
+│       │   │       │   ├── ChatService.java
+│       │   │       │   ├── ChatWebSocketNotifier.java
+│       │   │       │   ├── CompareService.java
+│       │   │       │   ├── CustomUserDetailsService.java
+│       │   │       │   ├── OrderService.java
+│       │   │       │   ├── OrderValidationException.java
+│       │   │       │   ├── PaymentMethodService.java
+│       │   │       │   └── WishlistService.java
+│       │   │       ├── support/
+│       │   │       │   └── StorefrontSupport.java
+│       │   │       ├── DevInfrastructureBootstrap.java
+│       │   │       ├── Port8080Guard.java
+│       │   │       └── SmartphoneShopApplication.java
 │       │   └── resources/
-│       │       ├── db/
-│       │       │   └── migration/
-│       │       │       └── V1__baseline_schema.sql
+│       │       ├── db/migration/
+│       │       │   └── V1__baseline_schema.sql
 │       │       ├── application.properties
 │       │       ├── application-dev.properties
 │       │       └── application-prod.properties
 │       └── test/
-│           ├── java/
-│           │   └── io/
-│           │       └── github/
-│           │           └── ngtrphuc/
-│           │               └── smartphone_shop/
-│           │                   ├── config/
-│           │                   │   ├── ApplicationPropertiesDefaultProfileTest.java
-│           │                   │   └── PaymentMethodSchemaInitializerTest.java
-│           │                   ├── controller/
-│           │                   │   ├── api/
-│           │                   │   │   └── v1/
-│           │                   │   │       ├── AuthApiControllerTest.java
-│           │                   │   │       └── ProductApiControllerTest.java
-│           │                   │   └── user/
-│           │                   │       ├── AuthControllerTest.java
-│           │                   │       ├── CartControllerTest.java
-│           │                   │       ├── CompareControllerTest.java
-│           │                   │       ├── MainControllerTest.java
-│           │                   │       └── PaymentMethodControllerTest.java
-│           │                   ├── model/
-│           │                   │   └── PaymentMethodTest.java
-│           │                   ├── service/
-│           │                   │   ├── AuthServiceTest.java
-│           │                   │   ├── CartServiceTest.java
-│           │                   │   ├── MockitoNullSafety.java
-│           │                   │   ├── OrderServiceTest.java
-│           │                   │   ├── PaymentMethodServiceTest.java
-│           │                   │   └── WishlistServiceTest.java
-│           │                   ├── Port8080GuardTest.java
-│           │                   └── SmartphoneShopApplicationTests.java
+│           ├── java/io/github/ngtrphuc/smartphone_shop/
+│           │   ├── config/
+│           │   │   ├── ApplicationPropertiesDefaultProfileTest.java
+│           │   │   └── PaymentMethodSchemaInitializerTest.java
+│           │   ├── controller/
+│           │   │   ├── api/v1/
+│           │   │   │   ├── AuthApiControllerTest.java
+│           │   │   │   └── ProductApiControllerTest.java
+│           │   │   └── user/
+│           │   │       ├── AuthControllerTest.java
+│           │   │       ├── CartControllerTest.java
+│           │   │       ├── CompareControllerTest.java
+│           │   │       ├── MainControllerTest.java
+│           │   │       └── PaymentMethodControllerTest.java
+│           │   ├── model/
+│           │   │   └── PaymentMethodTest.java
+│           │   ├── service/
+│           │   │   ├── AuthServiceTest.java
+│           │   │   ├── CartServiceTest.java
+│           │   │   ├── MockitoNullSafety.java
+│           │   │   ├── OrderServiceTest.java
+│           │   │   ├── PaymentMethodServiceTest.java
+│           │   │   └── WishlistServiceTest.java
+│           │   ├── Port8080GuardTest.java
+│           │   └── SmartphoneShopApplicationTests.java
 │           └── resources/
 │               └── application-test.properties
 ├── frontend/
 │   ├── static/
 │   │   ├── admin/
-│   │   │   ├── css/
-│   │   │   │   └── style.css
-│   │   │   └── js/
-│   │   │       └── admin-shell.js
+│   │   │   ├── css/style.css
+│   │   │   └── js/admin-shell.js
 │   │   ├── customer/
-│   │   │   ├── css/
-│   │   │   │   └── style.css
-│   │   │   ├── images/                 # Image assets only (files omitted)
+│   │   │   ├── css/style.css
+│   │   │   ├── images/ (assets only)
 │   │   │   └── js/
 │   │   │       ├── auth-password-toggle.js
 │   │   │       └── order-success.js
-│   │   └── svg/                        # SVG assets only (files omitted)
-│   │       └── griddy/
-│   │           └── README.md
+│   │   └── svg/
+│   │       └── griddy/README.md
 │   └── templates/
 │       ├── admin/
-│       │   ├── error/
-│       │   │   └── access-denied-admin.html
+│       │   ├── error/access-denied-admin.html
 │       │   ├── chat.html
 │       │   ├── dashboard.html
 │       │   ├── orders.html
@@ -250,7 +258,7 @@ smartphone-shop/
 │           ├── success.html
 │           └── wishlist.html
 ├── frontend-next/
-│   ├── public/                         # SVG/image assets only (files omitted)
+│   ├── public/ (SVG/image assets)
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── products/
@@ -264,9 +272,8 @@ smartphone-shop/
 │   │   │   ├── globals.css
 │   │   │   ├── layout.tsx
 │   │   │   └── page.tsx
-│   │   ├── components/
-│   │   │   └── storefront/
-│   │   │       └── product-card.tsx
+│   │   ├── components/storefront/
+│   │   │   └── product-card.tsx
 │   │   └── lib/
 │   │       ├── api.ts
 │   │       └── format.ts
@@ -296,14 +303,13 @@ smartphone-shop/
 └── README.md
 ```
 
-## Quick Validation Commands
+## Quality and Validation
 
-```powershell
-# Backend
-.\mvnw.cmd test
+- Backend tests are located under `backend/src/test`
+- Frontend quality checks (lint/build) are managed inside `frontend-next/`
 
-# Frontend
-cd .\frontend-next
-npm.cmd run lint
-npm.cmd run build
-```
+## Roadmap
+
+- Continue migrating customer-facing pages to Next.js
+- Keep backend APIs backward-compatible during transition
+- Expand automated test coverage across critical commerce flows
