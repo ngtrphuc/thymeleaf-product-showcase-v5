@@ -35,6 +35,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import io.github.ngtrphuc.smartphone_shop.security.JwtAuthenticationFilter;
 import io.github.ngtrphuc.smartphone_shop.security.JwtProperties;
+import io.github.ngtrphuc.smartphone_shop.security.LoginRateLimitFilter;
 
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
@@ -43,14 +44,17 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final LoginRateLimitFilter loginRateLimitFilter;
 
     @Value("${app.cors.allowed-origins:http://localhost:3000}")
     private String allowedOrigins;
 
     public SecurityConfig(UserDetailsService userDetailsService,
-            JwtAuthenticationFilter jwtAuthenticationFilter) {
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            LoginRateLimitFilter loginRateLimitFilter) {
         this.userDetailsService = userDetailsService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.loginRateLimitFilter = loginRateLimitFilter;
     }
 
     @Bean
@@ -66,11 +70,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(value -> !value.isBlank())
-                .collect(Collectors.toList());
-        configuration.setAllowedOriginPatterns(origins.isEmpty() ? List.of("*") : origins);
+        List<String> origins = resolveAllowedOrigins();
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
@@ -124,7 +125,8 @@ public class SecurityConfig {
                             }
                         }))
                 .headers(this::configureSecurityHeaders)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, LoginRateLimitFilter.class);
 
         return http.build();
     }
@@ -190,5 +192,16 @@ public class SecurityConfig {
         return value
                 .replace("\\", "\\\\")
                 .replace("\"", "\\\"");
+    }
+
+    private List<String> resolveAllowedOrigins() {
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .collect(Collectors.toList());
+        if (origins.isEmpty()) {
+            throw new IllegalStateException("app.cors.allowed-origins must contain at least one origin.");
+        }
+        return origins;
     }
 }

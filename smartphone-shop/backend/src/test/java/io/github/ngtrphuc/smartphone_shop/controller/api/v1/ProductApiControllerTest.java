@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -15,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
@@ -42,8 +42,8 @@ class ProductApiControllerTest {
         iphone.setPrice(249800.0);
         iphone.setStock(5);
 
-        when(productRepository.findCatalogPage(
-                isNull(), isNull(), isNull(), eq("Apple"), isNull(), isNull(), isNull(), isNull(), eq("name_asc"),
+        when(productRepository.findAll(
+                any(Specification.class),
                 any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(iphone)));
         when(productRepository.findAllNamesOrdered())

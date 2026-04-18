@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +44,6 @@ public class WishlistService {
     @Transactional
     public AddResult addItem(String email, long productId) {
         String normalizedEmail = normalizeEmail(email);
-        cleanupOrphanedItems(normalizedEmail);
         if (!productRepository.existsById(productId)) {
             return AddResult.UNAVAILABLE;
         }
@@ -57,7 +57,6 @@ public class WishlistService {
     @Transactional
     public boolean removeItem(String email, long productId) {
         String normalizedEmail = normalizeEmail(email);
-        cleanupOrphanedItems(normalizedEmail);
         WishlistItemEntity existing =
                 wishlistItemRepository.findByUserEmailAndProductId(normalizedEmail, productId).orElse(null);
         if (existing == null) {
@@ -124,6 +123,14 @@ public class WishlistService {
                 .toList();
         if (!orphaned.isEmpty()) {
             wishlistItemRepository.deleteAll(orphaned);
+        }
+    }
+
+    @Scheduled(fixedDelayString = "${app.wishlist.cleanup-delay-ms:300000}")
+    @Transactional
+    public void cleanupOrphanedItemsForAllUsers() {
+        for (String email : wishlistItemRepository.findDistinctUserEmails()) {
+            cleanupOrphanedItems(email);
         }
     }
 

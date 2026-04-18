@@ -51,6 +51,9 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 - Catalog performance optimization:
   - Replaced in-memory batch scan/filter flow in `ProductApiController` with DB-side paging/filtering for brand, battery, and screen-size criteria
   - Preserved existing API response contract while removing full-table scan behavior under advanced filters
+- Admin product query optimization:
+  - Removed in-memory brand filtering from `/api/v1/admin/products`
+  - Moved admin brand filtering into repository query with paging + DB sort to avoid full-list scans
 - Admin dashboard stability fix:
   - Fixed lazy-loading errors on `/api/v1/admin/dashboard` by loading paged orders with items inside transaction scope
 - Chat SSE concurrency hardening:
@@ -58,6 +61,33 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 - JWT production hardening:
   - Added fail-fast startup validation for `prod` profile if JWT secret still uses the default placeholder
   - Kept local `dev/test` startup behavior unchanged
+- Login endpoint hardening:
+  - Added per-client rate limiting filter for `POST /api/v1/auth/login` (returns `429 TOO_MANY_REQUESTS` when threshold is exceeded)
+  - Configurable via `APP_LOGIN_RATE_LIMIT_MAX_ATTEMPTS` and `APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS`
+- Admin API modularization:
+  - Split the previous monolith into `AdminDashboardApiController`, `AdminProductApiController`, `AdminOrderApiController`, and `AdminChatApiController`
+  - Kept `/api/v1/admin/**` contracts stable while reducing controller size and coupling
+- Chat SSE maintainability:
+  - Extracted emitter lifecycle management into `ChatSseRegistry`
+  - `ChatService` now focuses on chat business behavior and repository/event orchestration
+- Wishlist hot-path optimization:
+  - Removed orphan cleanup calls from `addItem` / `removeItem`
+  - Added scheduled cleanup job `cleanupOrphanedItemsForAllUsers` (config: `app.wishlist.cleanup-delay-ms`)
+- Cache key stability:
+  - Replaced `Objects.hash(...)` cache keys for catalog with deterministic string keys via `CacheKeys.catalog(...)`
+- CORS hardening:
+  - Removed unsafe wildcard fallback for empty allowed-origins configuration
+  - Backend now fails fast if `app.cors.allowed-origins` resolves to an empty list
+- Frontend resiliency improvements:
+  - Added retry strategy for safe idempotent API requests in `frontend-next/src/lib/api.ts`
+  - Added automatic client-side redirect to `/login` on `401` for protected calls (with opt-out for auth endpoints)
+  - Added loading skeleton components for products and checkout flows
+- Production-readiness polish:
+  - Enabled graceful shutdown (`server.shutdown=graceful`, `spring.lifecycle.timeout-per-shutdown-phase=30s`)
+  - Enabled Hikari metrics/MBeans in `dev` and `prod` profiles for Prometheus/Grafana visibility
+- New regression coverage:
+  - Added Playwright checkout E2E tests (`frontend-next/tests/checkout.spec.ts`)
+  - Added Testcontainers integration test for DB-side product catalog filtering (`ProductCatalogSpecificationIntegrationTest`)
 - Architecture debt cleanup:
   - `OrderValidationException` moved to `common/exception`
   - `ChatWebSocketNotifier` moved to `infrastructure/websocket`
@@ -206,6 +236,14 @@ npm run dev
 - Backend profile defaults to `dev` (`spring.profiles.default=dev`)
 - Backend CORS default: `http://localhost:3000`
 - Frontend API base example is in `frontend-next/.env.example`
+- Frontend API retry defaults:
+  - `NEXT_PUBLIC_API_RETRY_COUNT=1`
+  - `NEXT_PUBLIC_API_RETRY_BASE_DELAY_MS=250`
+- Login rate-limit defaults:
+  - `APP_LOGIN_RATE_LIMIT_MAX_ATTEMPTS=8`
+  - `APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS=60`
+- Wishlist orphan cleanup scheduler default:
+  - `APP_WISHLIST_CLEANUP_DELAY_MS=300000` (5 minutes)
 - Dev bootstrap admin account (unless overridden by env vars):
   - Email: `admin@smartphone.local`
   - Password: `Admin@123456`
@@ -269,6 +307,7 @@ smartphone-shop/
 │       │   │       │   ├── UnauthorizedActionException.java
 │       │   │       │   └── ValidationException.java
 │       │   │       ├── common/support/
+│       │   │       │   ├── CacheKeys.java
 │       │   │       │   └── StorefrontSupport.java
 │       │   │       ├── config/
 │       │   │       │   ├── AdminAccountInitializer.java
@@ -279,7 +318,10 @@ smartphone-shop/
 │       │   │       │   └── WebSocketConfig.java
 │       │   │       ├── controller/
 │       │   │       │   └── api/v1/
-│       │   │       │   │   ├── AdminApiController.java
+│       │   │       │   │   ├── AdminDashboardApiController.java
+│       │   │       │   │   ├── AdminProductApiController.java
+│       │   │       │   │   ├── AdminOrderApiController.java
+│       │   │       │   │   ├── AdminChatApiController.java
 │       │   │       │   │   ├── AuthApiController.java
 │       │   │       │   │   ├── CartApiController.java
 │       │   │       │   │   ├── ChatApiController.java
@@ -311,15 +353,18 @@ smartphone-shop/
 │       │   │       │   ├── PaymentMethodRepository.java
 │       │   │       │   ├── ProductRepository.java
 │       │   │       │   ├── UserRepository.java
-│       │   │       │   └── WishlistItemRepository.java
+│       │   │       │   ├── WishlistItemRepository.java
+│       │   │       │   └── spec/ProductCatalogSpecifications.java
 │       │   │       ├── security/
 │       │   │       │   ├── JwtAuthenticationFilter.java
 │       │   │       │   ├── JwtProperties.java
 │       │   │       │   ├── JwtStompChannelInterceptor.java
-│       │   │       │   └── JwtTokenProvider.java
+│       │   │       │   ├── JwtTokenProvider.java
+│       │   │       │   └── LoginRateLimitFilter.java
 │       │   │       ├── service/
 │       │   │       │   ├── AuthService.java
 │       │   │       │   ├── CartService.java
+│       │   │       │   ├── ChatSseRegistry.java
 │       │   │       │   ├── ChatService.java
 │       │   │       │   ├── CompareService.java
 │       │   │       │   ├── CustomUserDetailsService.java
@@ -349,8 +394,12 @@ smartphone-shop/
 │           │   │   │   ├── CartApiControllerTest.java
 │           │   │   │   ├── OrderApiControllerTest.java
 │           │   │   │   └── ProductApiControllerTest.java
+│           │   ├── common/support/
+│           │   │   └── CacheKeysTest.java
 │           │   ├── model/
 │           │   │   └── PaymentMethodTest.java
+│           │   ├── repository/
+│           │   │   └── ProductCatalogSpecificationIntegrationTest.java
 │           │   ├── service/
 │           │   │   ├── AuthServiceTest.java
 │           │   │   ├── CartServiceTest.java
@@ -412,10 +461,13 @@ smartphone-shop/
 │   ├── eslint.config.mjs
 │   ├── next-env.d.ts
 │   ├── next.config.ts
+│   ├── playwright.config.ts
 │   ├── package-lock.json
 │   ├── package.json
 │   ├── postcss.config.mjs
 │   ├── README.md
+│   ├── tests/
+│   │   └── checkout.spec.ts
 │   └── tsconfig.json
 ├── scripts/
 │   ├── start-dev-infra.ps1
@@ -452,9 +504,9 @@ smartphone-shop/
 - Backend tests are located under `backend/src/test`
 - Frontend quality checks (lint/build) are managed inside `frontend-next/`
 - Latest local validation snapshot:
-  - `mvnw test`: passing
-  - `npm run lint`: passing (1 non-blocking hook warning)
-  - `npm run build`: passing
+  - `mvnw -Dtest=CacheKeysTest,ProductCatalogSpecificationIntegrationTest,ChatServiceTest,WishlistServiceTest,AdminApiControllerTest,ProductApiControllerTest,LoginRateLimitFilterTest test`: passing
+  - `cd frontend-next && npm run lint`: passing (1 existing non-blocking hook warning in `admin/chat/page.tsx`)
+  - `cd frontend-next && npm run test:e2e`: passing (2 checkout flow tests)
 
 ## Design Decisions
 
@@ -480,6 +532,6 @@ smartphone-shop/
 
 ## Optional Next Iterations
 
-1. Add E2E checkout/admin flows (Playwright) for full regression confidence.
+1. Expand Playwright coverage to admin order/product flows.
 1. Add Grafana contact points and notification channels (Slack/Email) for real alert delivery.
 1. Add deployment automation docs for a cloud target (Render/Fly.io/Azure/GCP).

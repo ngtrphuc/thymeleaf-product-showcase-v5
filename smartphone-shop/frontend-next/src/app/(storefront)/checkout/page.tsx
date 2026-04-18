@@ -11,6 +11,7 @@ import {
   type CartResponse,
   type PaymentMethodResponse,
 } from "@/lib/api";
+import { CheckoutSkeleton } from "@/components/storefront/checkout-skeleton";
 import { formatPriceVnd } from "@/lib/format";
 
 type PaymentMethodType = "CASH_ON_DELIVERY" | "BANK_TRANSFER" | "PAYPAY" | "MASTERCARD";
@@ -115,7 +116,7 @@ export default function CheckoutPage() {
   }
 
   if (loading) {
-    return <div className="glass-panel rounded-3xl p-8 text-center">Loading checkout...</div>;
+    return <CheckoutSkeleton />;
   }
 
   if (!cart || cart.items.length === 0) {

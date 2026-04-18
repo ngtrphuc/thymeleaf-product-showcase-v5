@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import io.github.ngtrphuc.smartphone_shop.model.WishlistItemEntity;
 
@@ -18,4 +19,7 @@ public interface WishlistItemRepository extends JpaRepository<WishlistItemEntity
     long countByUserEmail(String userEmail);
 
     void deleteByUserEmailAndProductId(String userEmail, Long productId);
+
+    @Query("SELECT DISTINCT w.userEmail FROM WishlistItemEntity w")
+    List<String> findDistinctUserEmails();
 }

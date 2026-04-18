@@ -1,5 +1,8 @@
 package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -11,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -20,6 +25,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.CartItemRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import io.github.ngtrphuc.smartphone_shop.service.ChatService;
 import io.github.ngtrphuc.smartphone_shop.service.OrderService;
+import io.github.ngtrphuc.smartphone_shop.model.Product;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -64,5 +70,29 @@ class AdminApiControllerTest {
                 .andExpect(jsonPath("$.totalItemsSold").value(150))
                 .andExpect(jsonPath("$.totalOrders").value(21))
                 .andExpect(jsonPath("$.recentOrders").isArray());
+    }
+
+    @Test
+    @WithMockUser(username = "admin@example.com", roles = "ADMIN")
+    void products_shouldApplyBrandFilterInRepository() throws Exception {
+        Product iphone = new Product();
+        iphone.setId(1L);
+        iphone.setName("Apple iPhone 17 Pro");
+        iphone.setPrice(249800.0);
+        iphone.setStock(5);
+
+        when(productRepository.findAdminProducts(
+                eq(null), eq(null), eq(null), eq(null), eq("Apple"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(iphone)));
+        when(productRepository.findAllNamesOrdered()).thenReturn(List.of("Apple iPhone 17 Pro"));
+
+        mockMvc.perform(get("/api/v1/admin/products")
+                .param("brand", "Apple"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.products[0].name").value("Apple iPhone 17 Pro"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        verify(productRepository).findAdminProducts(
+                eq(null), eq(null), eq(null), eq(null), eq("Apple"), any(Pageable.class));
     }
 }

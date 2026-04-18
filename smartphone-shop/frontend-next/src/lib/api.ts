@@ -199,6 +199,10 @@ export type AdminConversationsResponse = {
 };
 
 const DEFAULT_BACKEND_ORIGIN = "http://localhost:8080";
+const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const RETRY_SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const DEFAULT_RETRY_COUNT = Number.parseInt(process.env.NEXT_PUBLIC_API_RETRY_COUNT ?? "1", 10);
+const DEFAULT_RETRY_BASE_DELAY_MS = Number.parseInt(process.env.NEXT_PUBLIC_API_RETRY_BASE_DELAY_MS ?? "250", 10);
 
 export class ApiError extends Error {
   status: number;
@@ -233,10 +237,71 @@ export function toAssetUrl(path: string | null | undefined): string {
 
 type RequestOptions = RequestInit & {
   includeCredentials?: boolean;
+  skipAuthRedirect?: boolean;
   next?: {
     revalidate?: number;
   };
 };
+
+function normalizeMethod(method: string | undefined): string {
+  return (method ?? "GET").toUpperCase();
+}
+
+function resolveRetryCount(): number {
+  if (!Number.isFinite(DEFAULT_RETRY_COUNT)) {
+    return 1;
+  }
+  return Math.max(0, DEFAULT_RETRY_COUNT);
+}
+
+function resolveRetryDelay(attempt: number): number {
+  const safeBaseDelay = Number.isFinite(DEFAULT_RETRY_BASE_DELAY_MS) ? DEFAULT_RETRY_BASE_DELAY_MS : 250;
+  const baseDelay = Math.max(0, safeBaseDelay);
+  return baseDelay * (attempt + 1);
+}
+
+function shouldRetryRequest(status: number, method: string, attempt: number, maxRetries: number): boolean {
+  return attempt < maxRetries && RETRY_SAFE_METHODS.has(method) && RETRYABLE_STATUS_CODES.has(status);
+}
+
+function shouldRetryNetworkError(method: string, attempt: number, maxRetries: number): boolean {
+  return attempt < maxRetries && RETRY_SAFE_METHODS.has(method);
+}
+
+function shouldRedirectToLogin(status: number, options?: RequestOptions): boolean {
+  return (
+    status === 401 &&
+    options?.skipAuthRedirect !== true &&
+    typeof window !== "undefined" &&
+    typeof window.location !== "undefined"
+  );
+}
+
+function redirectToLoginPage(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const nextPath = `${window.location.pathname}${window.location.search}`;
+  const next = encodeURIComponent(nextPath);
+  window.location.assign(`/login?next=${next}`);
+}
+
+async function parseApiError(response: Response): Promise<ApiError> {
+  let message = `API request failed (${response.status}).`;
+  try {
+    const errorBody = (await response.json()) as { message?: string };
+    if (errorBody?.message) {
+      message = errorBody.message;
+    }
+  } catch {
+    // ignore parse failure
+  }
+  return new ApiError(message, response.status);
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function requestJson<T>(path: string, init?: RequestOptions): Promise<T> {
   const headers = new Headers(init?.headers);
@@ -244,30 +309,48 @@ async function requestJson<T>(path: string, init?: RequestOptions): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${getBackendOrigin()}${path}`, {
-    ...init,
-    headers,
-    credentials: init?.includeCredentials === false ? "omit" : "include",
-  });
+  const method = normalizeMethod(init?.method);
+  const maxRetries = resolveRetryCount();
 
-  if (!response.ok) {
-    let message = `API request failed (${response.status}).`;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const errorBody = (await response.json()) as { message?: string };
-      if (errorBody?.message) {
-        message = errorBody.message;
+      const response = await fetch(`${getBackendOrigin()}${path}`, {
+        ...init,
+        headers,
+        method,
+        credentials: init?.includeCredentials === false ? "omit" : "include",
+      });
+
+      if (response.ok) {
+        if (response.status === 204) {
+          return undefined as T;
+        }
+        return (await response.json()) as T;
       }
-    } catch {
-      // ignore parse failure
+
+      if (shouldRedirectToLogin(response.status, init)) {
+        redirectToLoginPage();
+      }
+
+      if (shouldRetryRequest(response.status, method, attempt, maxRetries)) {
+        await delay(resolveRetryDelay(attempt));
+        continue;
+      }
+
+      throw await parseApiError(response);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      if (shouldRetryNetworkError(method, attempt, maxRetries)) {
+        await delay(resolveRetryDelay(attempt));
+        continue;
+      }
+      throw new ApiError("Network request failed. Please try again.", 0);
     }
-    throw new ApiError(message, response.status);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
+  throw new ApiError("Network request failed. Please try again.", 0);
 }
 
 export async function fetchCatalogPage(searchParams: URLSearchParams): Promise<CatalogPageResponse> {
@@ -293,6 +376,7 @@ export async function fetchAuthMe(): Promise<AuthMeResponse> {
 export async function authLogin(email: string, password: string): Promise<AuthTokenResponse> {
   return requestJson<AuthTokenResponse>("/api/v1/auth/login", {
     method: "POST",
+    skipAuthRedirect: true,
     body: JSON.stringify({ email, password }),
   });
 }
@@ -300,6 +384,7 @@ export async function authLogin(email: string, password: string): Promise<AuthTo
 export async function authRegister(email: string, fullName: string, password: string): Promise<OperationStatusResponse> {
   return requestJson<OperationStatusResponse>("/api/v1/auth/register", {
     method: "POST",
+    skipAuthRedirect: true,
     body: JSON.stringify({ email, fullName, password }),
   });
 }

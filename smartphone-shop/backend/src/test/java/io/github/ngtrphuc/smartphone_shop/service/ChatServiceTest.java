@@ -35,12 +35,14 @@ class ChatServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    private ChatSseRegistry chatSseRegistry;
     private ChatService chatService;
 
     @BeforeEach
     @SuppressWarnings("unused")
     void setUp() {
-        chatService = new ChatService(chatMessageRepository, eventPublisher);
+        chatSseRegistry = new ChatSseRegistry();
+        chatService = new ChatService(chatMessageRepository, eventPublisher, chatSseRegistry);
     }
 
     @Test

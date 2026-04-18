@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
 import org.springframework.data.domain.PageRequest;
@@ -35,32 +33,23 @@ public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ChatSseRegistry chatSseRegistry;
 
-    private final Map<String, CopyOnWriteArrayList<SseEmitter>> userEmitters = new ConcurrentHashMap<>();
-    private final List<SseEmitter> adminEmitters = new CopyOnWriteArrayList<>();
-
-    public ChatService(ChatMessageRepository chatMessageRepository, ApplicationEventPublisher eventPublisher) {
+    public ChatService(ChatMessageRepository chatMessageRepository,
+            ApplicationEventPublisher eventPublisher,
+            ChatSseRegistry chatSseRegistry) {
         this.chatMessageRepository = chatMessageRepository;
         this.eventPublisher = eventPublisher;
+        this.chatSseRegistry = chatSseRegistry;
     }
 
     public SseEmitter subscribeUser(String email) {
         String normalizedEmail = normalizeConversationEmail(email);
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        userEmitters.computeIfAbsent(normalizedEmail, k -> new CopyOnWriteArrayList<>()).add(emitter);
-        emitter.onCompletion(() -> removeUserEmitter(normalizedEmail, emitter));
-        emitter.onTimeout(() -> removeUserEmitter(normalizedEmail, emitter));
-        emitter.onError(e -> removeUserEmitter(normalizedEmail, emitter));
-        return emitter;
+        return chatSseRegistry.subscribeUser(normalizedEmail, SSE_TIMEOUT_MS);
     }
 
     public SseEmitter subscribeAdmin() {
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        adminEmitters.add(emitter);
-        emitter.onCompletion(() -> adminEmitters.remove(emitter));
-        emitter.onTimeout(() -> adminEmitters.remove(emitter));
-        emitter.onError(e -> adminEmitters.remove(emitter));
-        return emitter;
+        return chatSseRegistry.subscribeAdmin(SSE_TIMEOUT_MS);
     }
 
     @Transactional
@@ -146,79 +135,17 @@ public class ChatService {
 
     @Scheduled(fixedDelay = SSE_HEARTBEAT_MS)
     public void pruneDeadEmitters() {
-        List<SseEmitter> deadAdmins = new CopyOnWriteArrayList<>();
-        for (SseEmitter emitter : adminEmitters) {
-            try {
-                emitter.send(SseEmitter.event().comment("heartbeat"));
-            } catch (IOException ex) {
-                emitter.complete();
-                deadAdmins.add(emitter);
-            }
-        }
-        adminEmitters.removeAll(deadAdmins);
-
-        for (Map.Entry<String, CopyOnWriteArrayList<SseEmitter>> entry : userEmitters.entrySet()) {
-            String email = entry.getKey();
-            CopyOnWriteArrayList<SseEmitter> emitters = entry.getValue();
-            List<SseEmitter> deadUsers = new CopyOnWriteArrayList<>();
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event().comment("heartbeat"));
-                } catch (IOException ex) {
-                    emitter.complete();
-                    deadUsers.add(emitter);
-                }
-            }
-            emitters.removeAll(deadUsers);
-            if (emitters.isEmpty()) {
-                userEmitters.remove(email, emitters);
-            }
-        }
+        chatSseRegistry.heartbeatAll(emitter -> emitter.send(SseEmitter.event().comment("heartbeat")));
     }
 
     private void pushToAdmins(String conversationEmail, ChatMessage msg) {
         ChatPayload payload = buildPayload(msg, conversationEmail);
-        List<SseEmitter> dead = new CopyOnWriteArrayList<>();
-        for (SseEmitter emitter : adminEmitters) {
-            try {
-                sendMessageEvent(emitter, payload);
-            } catch (IOException e) {
-                emitter.complete();
-                dead.add(emitter);
-            }
-        }
-        adminEmitters.removeAll(dead);
+        chatSseRegistry.withEachAdminEmitter(emitter -> sendMessageEvent(emitter, payload));
     }
 
     private void pushToUser(String email, ChatMessage msg) {
-        CopyOnWriteArrayList<SseEmitter> emitters = userEmitters.get(email);
-        if (emitters == null) {
-            return;
-        }
         ChatPayload payload = buildPayload(msg, email);
-        List<SseEmitter> dead = new CopyOnWriteArrayList<>();
-        for (SseEmitter emitter : emitters) {
-            try {
-                sendMessageEvent(emitter, payload);
-            } catch (IOException e) {
-                emitter.complete();
-                dead.add(emitter);
-            }
-        }
-        emitters.removeAll(dead);
-        if (emitters.isEmpty()) {
-            userEmitters.remove(email, emitters);
-        }
-    }
-
-    private void removeUserEmitter(String email, SseEmitter emitter) {
-        CopyOnWriteArrayList<SseEmitter> emitters = userEmitters.get(email);
-        if (emitters != null) {
-            emitters.remove(emitter);
-            if (emitters.isEmpty()) {
-                userEmitters.remove(email, emitters);
-            }
-        }
+        chatSseRegistry.withEachUserEmitter(email, emitter -> sendMessageEvent(emitter, payload));
     }
 
     private String normalizeMessageContent(String content) {

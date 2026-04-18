@@ -1,10 +1,6 @@
 package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
@@ -24,55 +20,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
-import io.github.ngtrphuc.smartphone_shop.api.dto.ChatMessageResponse;
-import io.github.ngtrphuc.smartphone_shop.api.dto.OperationStatusResponse;
-import io.github.ngtrphuc.smartphone_shop.api.dto.OrderResponse;
 import io.github.ngtrphuc.smartphone_shop.common.support.StorefrontSupport;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.CartItemRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
-import io.github.ngtrphuc.smartphone_shop.service.ChatService;
-import io.github.ngtrphuc.smartphone_shop.service.OrderService;
+import io.github.ngtrphuc.smartphone_shop.api.dto.OperationStatusResponse;
 
 @RestController
 @RequestMapping("/api/v1/admin")
-public class AdminApiController {
-
-    private static final int DEFAULT_PAGE_SIZE = 10;
+public class AdminProductApiController {
 
     private final ProductRepository productRepository;
     private final CartItemRepository cartItemRepository;
-    private final OrderService orderService;
-    private final ChatService chatService;
-    private final ApiMapper apiMapper;
 
-    public AdminApiController(ProductRepository productRepository,
-            CartItemRepository cartItemRepository,
-            OrderService orderService,
-            ChatService chatService,
-            ApiMapper apiMapper) {
+    public AdminProductApiController(ProductRepository productRepository,
+            CartItemRepository cartItemRepository) {
         this.productRepository = productRepository;
         this.cartItemRepository = cartItemRepository;
-        this.orderService = orderService;
-        this.chatService = chatService;
-        this.apiMapper = apiMapper;
-    }
-
-    @GetMapping("/dashboard")
-    public DashboardResponse dashboard(@RequestParam(name = "page", defaultValue = "0") int page) {
-        long totalOrders = orderService.countOrders();
-        int totalPages = totalOrders == 0 ? 0 : (int) Math.ceil((double) totalOrders / DEFAULT_PAGE_SIZE);
-        int safePage = totalPages == 0 ? 0 : Math.max(0, Math.min(page, totalPages - 1));
-
-        return new DashboardResponse(
-                productRepository.count(),
-                orderService.getTotalItemsSold(),
-                totalOrders,
-                orderService.getTotalRevenue(),
-                safePage,
-                totalPages,
-                orderService.getRecentOrders(safePage, DEFAULT_PAGE_SIZE).stream().map(apiMapper::toOrderResponse).toList());
     }
 
     @GetMapping("/products")
@@ -97,41 +61,17 @@ public class AdminApiController {
         int safePage = Math.max(page, 0);
         Sort requestedSort = Objects.requireNonNull(resolveAdminSort(normalizedSort));
 
-        List<Product> items;
-        int currentPage;
-        int totalPages;
-        long totalElements;
+        Page<Product> result = productRepository.findAdminProducts(
+                normalizedKeyword,
+                keywordId,
+                minStock,
+                maxStock,
+                normalizedBrand,
+                PageRequest.of(safePage, safeSize, requestedSort));
 
-        if (normalizedBrand == null) {
-            Page<Product> result = productRepository.findAdminProducts(
-                    normalizedKeyword,
-                    keywordId,
-                    minStock,
-                    maxStock,
-                    PageRequest.of(safePage, safeSize, requestedSort));
-            items = result.getContent();
-            totalElements = result.getTotalElements();
-            totalPages = result.getTotalPages();
-            currentPage = totalPages == 0 ? 0 : Math.max(0, Math.min(result.getNumber(), totalPages - 1));
-        } else {
-            List<Product> filtered = productRepository.findAllAdminProducts(
-                    normalizedKeyword,
-                    keywordId,
-                    minStock,
-                    maxStock).stream()
-                    .filter(product -> normalizedBrand.equalsIgnoreCase(StorefrontSupport.extractBrand(
-                            product != null ? product.getName() : null)))
-                    .toList();
-
-            List<Product> sorted = applySort(filtered, normalizedSort);
-            totalElements = sorted.size();
-            totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / safeSize);
-            currentPage = totalPages == 0 ? 0 : Math.max(0, Math.min(safePage, totalPages - 1));
-
-            int from = Math.min(currentPage * safeSize, sorted.size());
-            int to = Math.min(from + safeSize, sorted.size());
-            items = sorted.subList(from, to);
-        }
+        List<Product> items = result.getContent();
+        int totalPages = result.getTotalPages();
+        int currentPage = totalPages == 0 ? 0 : Math.max(0, Math.min(result.getNumber(), totalPages - 1));
 
         List<String> brands = productRepository.findAllNamesOrdered().stream()
                 .map(StorefrontSupport::extractBrand)
@@ -139,7 +79,13 @@ public class AdminApiController {
                 .sorted(String.CASE_INSENSITIVE_ORDER)
                 .toList();
 
-        return new AdminProductPageResponse(items, currentPage, totalPages, totalElements, safeSize, brands);
+        return new AdminProductPageResponse(
+                items,
+                currentPage,
+                totalPages,
+                result.getTotalElements(),
+                safeSize,
+                brands);
     }
 
     @PostMapping("/products")
@@ -169,73 +115,6 @@ public class AdminApiController {
         cartItemRepository.deleteByProductId(id);
         productRepository.deleteById(id);
         return new OperationStatusResponse(true, "Product deleted successfully.");
-    }
-
-    @GetMapping("/orders")
-    public AdminOrderPageResponse orders(
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "pageSize", defaultValue = "10") int pageSize) {
-        int safePage = Math.max(page, 0);
-        int safeSize = Math.max(1, Math.min(pageSize, 50));
-
-        long totalOrders = orderService.countOrders();
-        int totalPages = totalOrders == 0 ? 0 : (int) Math.ceil((double) totalOrders / safeSize);
-        int currentPage = totalPages == 0 ? 0 : Math.max(0, Math.min(safePage, totalPages - 1));
-
-        List<OrderResponse> orders = orderService.getAdminOrdersPage(currentPage, safeSize)
-                .stream()
-                .map(apiMapper::toOrderResponse)
-                .toList();
-        return new AdminOrderPageResponse(orders, currentPage, totalPages, totalOrders, safeSize);
-    }
-
-    @PostMapping("/orders/{id}/status")
-    public OperationStatusResponse updateOrderStatus(@PathVariable(name = "id") long id,
-            @RequestBody UpdateOrderStatusRequest request) {
-        if (request == null || request.status() == null || request.status().isBlank()) {
-            throw new IllegalArgumentException("Order status is required.");
-        }
-        orderService.updateStatus(id, request.status());
-        return new OperationStatusResponse(true, "Order status updated.");
-    }
-
-    @GetMapping("/chat/conversations")
-    public AdminConversationsResponse conversations() {
-        return new AdminConversationsResponse(
-                chatService.getAllConversationEmails(),
-                new LinkedHashMap<>(chatService.getUnreadCountsByAdminConversation()));
-    }
-
-    @GetMapping("/chat/history")
-    public List<ChatMessageResponse> chatHistory(@RequestParam(name = "email") String email) {
-        return chatService.getHistory(email)
-                .stream()
-                .map(apiMapper::toChatMessageResponse)
-                .toList();
-    }
-
-    @PostMapping("/chat/messages")
-    public ChatMessageResponse sendAdminMessage(@RequestBody AdminSendMessageRequest request) {
-        if (request == null || request.userEmail() == null || request.userEmail().isBlank()
-                || request.content() == null || request.content().isBlank()) {
-            throw new IllegalArgumentException("Conversation email and message content are required.");
-        }
-        return apiMapper.toChatMessageResponse(
-                chatService.saveAdminMessage(request.userEmail(), request.content()));
-    }
-
-    @PostMapping("/chat/read")
-    public OperationStatusResponse markConversationRead(@RequestBody MarkReadRequest request) {
-        if (request == null || request.userEmail() == null || request.userEmail().isBlank()) {
-            throw new IllegalArgumentException("Conversation email is required.");
-        }
-        chatService.markReadByAdmin(request.userEmail());
-        return new OperationStatusResponse(true, "Conversation marked as read.");
-    }
-
-    @GetMapping("/chat/unread-count")
-    public long unreadCount() {
-        return chatService.countAllUnreadByAdmin();
     }
 
     private void applyProductInput(Product target, Product request) {
@@ -362,51 +241,6 @@ public class AdminApiController {
         };
     }
 
-    private List<Product> applySort(List<Product> products, String sort) {
-        List<Product> sorted = new ArrayList<>(products);
-        switch (sort) {
-            case "id_desc" -> sorted.sort((left, right) -> Long.compare(safeId(right), safeId(left)));
-            case "name_asc" -> sorted.sort((left, right) -> safeName(left).compareTo(safeName(right)));
-            case "name_desc" -> sorted.sort((left, right) -> safeName(right).compareTo(safeName(left)));
-            case "price_asc" -> sorted.sort((left, right) -> Double.compare(safePrice(left), safePrice(right)));
-            case "price_desc" -> sorted.sort((left, right) -> Double.compare(safePrice(right), safePrice(left)));
-            case "stock_asc" -> sorted.sort((left, right) -> Integer.compare(safeStock(left), safeStock(right)));
-            case "stock_desc" -> sorted.sort((left, right) -> Integer.compare(safeStock(right), safeStock(left)));
-            default -> sorted.sort((left, right) -> safeName(left).compareTo(safeName(right)));
-        }
-        return sorted;
-    }
-
-    private long safeId(Product product) {
-        Long id = product != null ? product.getId() : null;
-        return id != null ? id : Long.MAX_VALUE;
-    }
-
-    private String safeName(Product product) {
-        String name = product != null ? product.getName() : null;
-        return name == null ? "" : name.trim().toLowerCase(Locale.ROOT);
-    }
-
-    private double safePrice(Product product) {
-        Double price = product != null ? product.getPrice() : null;
-        return price != null ? price : Double.MAX_VALUE;
-    }
-
-    private int safeStock(Product product) {
-        Integer stock = product != null ? product.getStock() : null;
-        return stock != null ? stock : Integer.MAX_VALUE;
-    }
-
-    public record DashboardResponse(
-            long totalProducts,
-            long totalItemsSold,
-            long totalOrders,
-            double totalRevenue,
-            int currentPage,
-            int totalPages,
-            List<OrderResponse> recentOrders) {
-    }
-
     public record AdminProductPageResponse(
             List<Product> products,
             int currentPage,
@@ -414,25 +248,5 @@ public class AdminApiController {
             long totalElements,
             int pageSize,
             List<String> brands) {
-    }
-
-    public record AdminOrderPageResponse(
-            List<OrderResponse> orders,
-            int currentPage,
-            int totalPages,
-            long totalElements,
-            int pageSize) {
-    }
-
-    public record UpdateOrderStatusRequest(String status) {
-    }
-
-    public record AdminConversationsResponse(List<String> emails, Map<String, Long> unreadCounts) {
-    }
-
-    public record AdminSendMessageRequest(String userEmail, String content) {
-    }
-
-    public record MarkReadRequest(String userEmail) {
     }
 }

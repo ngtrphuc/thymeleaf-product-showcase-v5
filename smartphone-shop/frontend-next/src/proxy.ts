@@ -10,6 +10,8 @@ function startsWithAny(pathname: string, rules: string[]): boolean {
 }
 
 function decodeJwtRole(token: string): string | null {
+  // This decode is only for client-side route UX (redirect hints).
+  // Real authorization is enforced by backend role checks.
   const segments = token.split(".");
   if (segments.length < 2) {
     return null;

@@ -7,6 +7,7 @@ import java.util.Set;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,8 +20,9 @@ import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
-import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
+import io.github.ngtrphuc.smartphone_shop.repository.spec.ProductCatalogSpecifications;
 import io.github.ngtrphuc.smartphone_shop.common.support.StorefrontSupport;
+import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
 
 @RestController
 @RequestMapping("/api/v1/products")
@@ -44,7 +46,7 @@ public class ProductApiController {
     @GetMapping
     @Cacheable(
             value = "catalogPublic",
-            key = "T(java.util.Objects).hash(#keyword,#sort,#brand,#priceRange,#priceMin,#priceMax,#batteryRange,#batteryMin,#batteryMax,#screenSize,#pageSize,#page)",
+            key = "T(io.github.ngtrphuc.smartphone_shop.common.support.CacheKeys).catalog(#keyword,#sort,#brand,#priceRange,#priceMin,#priceMax,#batteryRange,#batteryMin,#batteryMax,#screenSize,#pageSize,#page)",
             condition = "#authentication == null")
     public CatalogPageResponse products(
             @RequestParam(name = "keyword", required = false) String keyword,
@@ -83,6 +85,12 @@ public class ProductApiController {
         int effectivePageSize = resolvePageSize(pageSize);
         int safeRequestedPage = Math.max(page, 0);
         String normalizedSort = normalizeSort(sort);
+        Sort requestedSort = switch (normalizedSort) {
+            case "name_desc" -> Sort.by(Sort.Order.desc("name").ignoreCase());
+            case "price_asc" -> Sort.by("price").ascending();
+            case "price_desc" -> Sort.by("price").descending();
+            default -> Sort.by(Sort.Order.asc("name").ignoreCase());
+        };
         List<Product> products;
         long totalElements;
         int totalPages;
@@ -90,29 +98,29 @@ public class ProductApiController {
         int activeFilterCount = countActiveFilters(
                 keyword, brand, priceRange, priceMin, priceMax, batteryRange, batteryMin, batteryMax, screenSize);
 
-        Page<Product> productPage = productRepository.findCatalogPage(
-                blankToNull(keyword),
-                resolvedPriceMin,
-                resolvedPriceMax,
-                blankToNull(brand),
-                blankToNull(batteryRange),
-                batteryMin,
-                batteryMax,
-                blankToNull(screenSize),
-                normalizedSort,
-                PageRequest.of(safeRequestedPage, effectivePageSize));
+        Page<Product> productPage = productRepository.findAll(
+                ProductCatalogSpecifications.forCatalog(
+                        blankToNull(keyword),
+                        resolvedPriceMin,
+                        resolvedPriceMax,
+                        blankToNull(brand),
+                        blankToNull(batteryRange),
+                        batteryMin,
+                        batteryMax,
+                        blankToNull(screenSize)),
+                PageRequest.of(safeRequestedPage, effectivePageSize, requestedSort));
         if (productPage.isEmpty() && safeRequestedPage > 0 && productPage.getTotalPages() > 0) {
-            productPage = productRepository.findCatalogPage(
-                    blankToNull(keyword),
-                    resolvedPriceMin,
-                    resolvedPriceMax,
-                    blankToNull(brand),
-                    blankToNull(batteryRange),
-                    batteryMin,
-                    batteryMax,
-                    blankToNull(screenSize),
-                    normalizedSort,
-                    PageRequest.of(productPage.getTotalPages() - 1, effectivePageSize));
+            productPage = productRepository.findAll(
+                    ProductCatalogSpecifications.forCatalog(
+                            blankToNull(keyword),
+                            resolvedPriceMin,
+                            resolvedPriceMax,
+                            blankToNull(brand),
+                            blankToNull(batteryRange),
+                            batteryMin,
+                            batteryMax,
+                            blankToNull(screenSize)),
+                    PageRequest.of(productPage.getTotalPages() - 1, effectivePageSize, requestedSort));
         }
         products = productPage.getContent();
         totalElements = productPage.getTotalElements();

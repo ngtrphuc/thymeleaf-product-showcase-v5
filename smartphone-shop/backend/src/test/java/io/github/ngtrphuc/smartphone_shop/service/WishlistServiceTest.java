@@ -42,7 +42,6 @@ class WishlistServiceTest {
         WishlistService.AddResult result = wishlistService.addItem("USER@EXAMPLE.COM", 1L);
 
         assertEquals(WishlistService.AddResult.ALREADY_EXISTS, result);
-        verify(wishlistItemRepository).findByUserEmailOrderByCreatedAtDesc("user@example.com");
         verify(wishlistItemRepository).existsByUserEmailAndProductId("user@example.com", 1L);
         verify(wishlistItemRepository, never()).deleteByUserEmailAndProductId("user@example.com", 1L);
     }
@@ -98,6 +97,21 @@ class WishlistServiceTest {
         wishlistService.cleanupOrphanedItems("user@example.com");
 
         verify(wishlistItemRepository).deleteAll(List.of(orphan));
+    }
+
+    @Test
+    void cleanupOrphanedItemsForAllUsers_shouldProcessEachUser() {
+        when(wishlistItemRepository.findDistinctUserEmails())
+                .thenReturn(List.of("user-a@example.com", "user-b@example.com"));
+        when(wishlistItemRepository.findByUserEmailOrderByCreatedAtDesc("user-a@example.com"))
+                .thenReturn(List.of());
+        when(wishlistItemRepository.findByUserEmailOrderByCreatedAtDesc("user-b@example.com"))
+                .thenReturn(List.of());
+
+        wishlistService.cleanupOrphanedItemsForAllUsers();
+
+        verify(wishlistItemRepository).findByUserEmailOrderByCreatedAtDesc("user-a@example.com");
+        verify(wishlistItemRepository).findByUserEmailOrderByCreatedAtDesc("user-b@example.com");
     }
 
     @Test

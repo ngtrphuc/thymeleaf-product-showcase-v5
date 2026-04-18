@@ -49,6 +49,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .toArray(String[]::new);
-        return resolved.length == 0 ? new String[] {"*"} : resolved;
+        if (resolved.length == 0) {
+            throw new IllegalStateException("app.cors.allowed-origins must contain at least one origin.");
+        }
+        return resolved;
     }
 }
