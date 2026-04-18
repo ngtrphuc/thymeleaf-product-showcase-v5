@@ -26,7 +26,7 @@ public class DataInitializer {
         return args -> {
             Map<String, Product> existingByName = new LinkedHashMap<>();
             for (Product product : repository.findAll()) {
-                String key = normalizeKey(product.getName());
+                String key = canonicalProductKey(product.getName());
                 if (!key.isBlank()) {
                     existingByName.putIfAbsent(key, product);
                 }
@@ -190,11 +190,7 @@ public class DataInitializer {
         );
     }
 
-    private String normalizeKey(String name) {
-        return canonicalProductKey(name);
-    }
-
-    private String canonicalProductKey(String name) {
+    private static String canonicalProductKey(String name) {
         if (name == null) {
             return "";
         }
@@ -218,17 +214,10 @@ public class DataInitializer {
             String resolution,
             String battery,
             String charging,
-            String description) {
+        String description) {
 
         String key() {
-            if (name == null) {
-                return "";
-            }
-            String key = name.trim().toLowerCase(Locale.ROOT);
-            if (key.startsWith("apple iphone")) {
-                return "iphone" + key.substring("apple iphone".length());
-            }
-            return key;
+            return canonicalProductKey(name);
         }
     }
 }

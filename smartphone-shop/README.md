@@ -63,7 +63,11 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
   - Kept local `dev/test` startup behavior unchanged
 - Login endpoint hardening:
   - Added per-client rate limiting filter for `POST /api/v1/auth/login` (returns `429 TOO_MANY_REQUESTS` when threshold is exceeded)
-  - Configurable via `APP_LOGIN_RATE_LIMIT_MAX_ATTEMPTS` and `APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS`
+  - Backed by Caffeine TTL cache (instead of unbounded in-memory map cleanup heuristics)
+  - Configurable via `APP_LOGIN_RATE_LIMIT_MAX_ATTEMPTS`, `APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS`, and `APP_LOGIN_RATE_LIMIT_MAX_CLIENTS`
+- Cart cleanup optimization:
+  - Removed aggressive `cleanupDbCart(...)` calls from item mutation hot-paths (`add/increase/decrease/remove`)
+  - Added scheduled cleanup job `cleanupDbCartForAllUsers` (config: `app.cart.cleanup-delay-ms`)
 - Admin API modularization:
   - Split the previous monolith into `AdminDashboardApiController`, `AdminProductApiController`, `AdminOrderApiController`, and `AdminChatApiController`
   - Kept `/api/v1/admin/**` contracts stable while reducing controller size and coupling
@@ -74,7 +78,16 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
   - Removed orphan cleanup calls from `addItem` / `removeItem`
   - Added scheduled cleanup job `cleanupOrphanedItemsForAllUsers` (config: `app.wishlist.cleanup-delay-ms`)
 - Cache key stability:
-  - Replaced `Objects.hash(...)` cache keys for catalog with deterministic string keys via `CacheKeys.catalog(...)`
+  - Replaced delimiter-based catalog cache keys with SHA-256 hashed keys via `CacheKeys.catalog(...)`
+  - Added dedicated hashed key builder for product detail via `CacheKeys.productDetail(...)`
+- Product API cache safety:
+  - Product catalog/detail now cache public payload for all sessions
+  - User-specific `wishlisted` flags are overlaid after cache retrieval to avoid cross-user cache leakage
+- JWT cookie deployment safety:
+  - Added `app.jwt.cookie.secure` override for explicit secure-cookie policy
+  - Default remains dev-friendly (`false`) and prod-safe (`true`)
+- Data initialization cleanup:
+  - Unified duplicated product key normalization logic in `DataInitializer` (`canonicalProductKey(...)`)
 - CORS hardening:
   - Removed unsafe wildcard fallback for empty allowed-origins configuration
   - Backend now fails fast if `app.cors.allowed-origins` resolves to an empty list
@@ -242,8 +255,14 @@ npm run dev
 - Login rate-limit defaults:
   - `APP_LOGIN_RATE_LIMIT_MAX_ATTEMPTS=8`
   - `APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS=60`
+  - `APP_LOGIN_RATE_LIMIT_MAX_CLIENTS=50000`
 - Wishlist orphan cleanup scheduler default:
   - `APP_WISHLIST_CLEANUP_DELAY_MS=300000` (5 minutes)
+- Cart cleanup scheduler default:
+  - `APP_CART_CLEANUP_DELAY_MS=300000` (5 minutes)
+- JWT cookie secure policy:
+  - `APP_JWT_COOKIE_SECURE=false` by default (`application.properties`)
+  - `APP_JWT_COOKIE_SECURE=true` by default in production profile (`application-prod.properties`)
 - Dev bootstrap admin account (unless overridden by env vars):
   - Email: `admin@smartphone.local`
   - Password: `Admin@123456`
@@ -519,9 +538,13 @@ smartphone-shop/
 - Keep legacy customer assets only (`frontend/static/customer/images`):
   - Preserves product image compatibility for backend `/images/**` mapping.
   - Removes template/CSS/JS debt while avoiding asset migration churn.
-- Cache only public product reads:
-  - Prevents user-specific response leakage (e.g., wishlist context).
-  - Use explicit cache eviction on admin product writes.
+- Cache public product payload + overlay user context:
+  - Keeps cache hit-rate high for both anonymous and authenticated traffic.
+  - Prevents user-specific response leakage by computing wishlist flags after cache retrieval.
+  - Uses explicit cache eviction on admin product writes.
+- Scheduled cart/wishlist cleanup over hot-path cleanup:
+  - Reduces repeated read/write overhead on every cart or wishlist mutation.
+  - Keeps data hygiene via bounded periodic maintenance jobs.
 
 ## Portfolio Guide
 

@@ -1,8 +1,7 @@
 package io.github.ngtrphuc.smartphone_shop.security;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -10,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,21 +23,29 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     private static final String TOO_MANY_REQUESTS_CODE = "TOO_MANY_REQUESTS";
     private static final String TOO_MANY_REQUESTS_MESSAGE = "Too many login attempts. Please try again later.";
 
-    private final Map<String, AttemptWindow> attemptsByClient = new ConcurrentHashMap<>();
+    private final Cache<String, AttemptWindow> attemptsByClient;
     private final int maxAttempts;
     private final long windowMillis;
 
     public LoginRateLimitFilter(
             @Value("${app.security.login-rate-limit.max-attempts:8}") int maxAttempts,
-            @Value("${app.security.login-rate-limit.window-seconds:60}") long windowSeconds) {
+            @Value("${app.security.login-rate-limit.window-seconds:60}") long windowSeconds,
+            @Value("${app.security.login-rate-limit.max-clients:50000}") long maxClients) {
         if (maxAttempts < 1) {
             throw new IllegalStateException("app.security.login-rate-limit.max-attempts must be greater than 0.");
         }
         if (windowSeconds < 1) {
             throw new IllegalStateException("app.security.login-rate-limit.window-seconds must be greater than 0.");
         }
+        if (maxClients < 1) {
+            throw new IllegalStateException("app.security.login-rate-limit.max-clients must be greater than 0.");
+        }
         this.maxAttempts = maxAttempts;
         this.windowMillis = windowSeconds * 1000L;
+        this.attemptsByClient = Caffeine.newBuilder()
+                .expireAfterWrite(windowSeconds, TimeUnit.SECONDS)
+                .maximumSize(maxClients)
+                .build();
     }
 
     @Override
@@ -54,7 +63,7 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         long now = System.currentTimeMillis();
         String clientKey = resolveClientKey(request);
 
-        AttemptWindow updated = attemptsByClient.compute(clientKey, (key, existing) -> {
+        AttemptWindow updated = attemptsByClient.asMap().compute(clientKey, (key, existing) -> {
             if (existing == null || now - existing.windowStartMillis >= windowMillis) {
                 return new AttemptWindow(now, 1);
             }
@@ -73,7 +82,6 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        cleanupExpiredEntries(now);
         filterChain.doFilter(request, response);
     }
 
@@ -87,13 +95,6 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         }
         String remoteAddr = request.getRemoteAddr();
         return (remoteAddr == null || remoteAddr.isBlank()) ? "unknown" : remoteAddr;
-    }
-
-    private void cleanupExpiredEntries(long now) {
-        if (attemptsByClient.size() < 5000) {
-            return;
-        }
-        attemptsByClient.entrySet().removeIf(entry -> now - entry.getValue().windowStartMillis >= windowMillis);
     }
 
     private record AttemptWindow(long windowStartMillis, int attempts) {

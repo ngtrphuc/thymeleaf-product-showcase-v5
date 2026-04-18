@@ -40,7 +40,7 @@ class AuthApiControllerTest {
     @Test
     void me_shouldReturnAnonymousPayloadWhenNotLoggedIn() {
         AuthApiController controller = new AuthApiController(
-                authService, userRepository, new ApiMapper(), authenticationManager, jwtTokenProvider);
+                authService, userRepository, new ApiMapper(), authenticationManager, jwtTokenProvider, false);
 
         AuthMeResponse response = controller.me(
                 new AnonymousAuthenticationToken("key", "anonymousUser", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
@@ -52,7 +52,7 @@ class AuthApiControllerTest {
     @Test
     void register_shouldReturnConflictWhenEmailExists() {
         AuthApiController controller = new AuthApiController(
-                authService, userRepository, new ApiMapper(), authenticationManager, jwtTokenProvider);
+                authService, userRepository, new ApiMapper(), authenticationManager, jwtTokenProvider, false);
         when(authService.register("user@example.com", "Tester", "secret123")).thenReturn(false);
 
         ResponseEntity<OperationStatusResponse> response = controller.register(
@@ -67,7 +67,7 @@ class AuthApiControllerTest {
     @Test
     void me_shouldReturnUserPayloadWhenAuthenticated() {
         AuthApiController controller = new AuthApiController(
-                authService, userRepository, new ApiMapper(), authenticationManager, jwtTokenProvider);
+                authService, userRepository, new ApiMapper(), authenticationManager, jwtTokenProvider, false);
         User user = new User();
         user.setEmail("user@example.com");
         user.setFullName("Tester");

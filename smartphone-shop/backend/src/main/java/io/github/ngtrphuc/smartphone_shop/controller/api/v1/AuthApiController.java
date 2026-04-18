@@ -3,6 +3,7 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseCookie;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -32,17 +33,20 @@ public class AuthApiController {
     private final ApiMapper apiMapper;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final boolean forceSecureJwtCookie;
 
     public AuthApiController(AuthService authService,
             UserRepository userRepository,
             ApiMapper apiMapper,
             AuthenticationManager authenticationManager,
-            JwtTokenProvider jwtTokenProvider) {
+            JwtTokenProvider jwtTokenProvider,
+            @Value("${app.jwt.cookie.secure:false}") boolean forceSecureJwtCookie) {
         this.authService = authService;
         this.userRepository = userRepository;
         this.apiMapper = apiMapper;
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.forceSecureJwtCookie = forceSecureJwtCookie;
     }
 
     @GetMapping("/me")
@@ -108,9 +112,10 @@ public class AuthApiController {
     }
 
     private ResponseCookie buildJwtCookie(String token, long maxAgeSeconds, boolean secureRequest) {
+        boolean secure = forceSecureJwtCookie || secureRequest;
         return ResponseCookie.from(JWT_COOKIE_NAME, token)
                 .httpOnly(true)
-                .secure(secureRequest)
+                .secure(secure)
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(Math.max(maxAgeSeconds, 0))

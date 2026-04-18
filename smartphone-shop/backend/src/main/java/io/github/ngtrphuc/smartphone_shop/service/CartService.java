@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.lang.Nullable;
 
@@ -80,9 +81,6 @@ public class CartService {
 
     @Transactional
     public void mergeSessionCartToDb(@Nullable HttpSession session, String email) {
-        if (isLoggedIn(email)) {
-            cleanupDbCart(email);
-        }
         List<CartItem> sessionCart = getSessionCart(session);
         if (sessionCart.isEmpty()) {
             return;
@@ -230,7 +228,6 @@ public class CartService {
         int quantityToAdd = Math.max(1, requestedQuantity);
 
         if (isLoggedIn(email)) {
-            cleanupDbCart(email);
             Optional<CartItemEntity> existing
                     = cartItemRepository.findByUserEmailAndProductId(email, productId);
             if (existing.isPresent()) {
@@ -283,7 +280,6 @@ public class CartService {
             return;
         }
         if (isLoggedIn(email)) {
-            cleanupDbCart(email);
             cartItemRepository.findByUserEmailAndProductId(email, productId).ifPresent(e -> {
                 if (e.getQuantity() < maxStock) {
                     e.setQuantity(e.getQuantity() + 1);
@@ -305,7 +301,6 @@ public class CartService {
     @Transactional
     public void decreaseItem(String email, @Nullable HttpSession session, long productId) {
         if (isLoggedIn(email)) {
-            cleanupDbCart(email);
             cartItemRepository.findByUserEmailAndProductId(email, productId).ifPresent(e -> {
                 if (e.getQuantity() > 1) {
                     e.setQuantity(e.getQuantity() - 1);
@@ -332,7 +327,6 @@ public class CartService {
     @Transactional
     public void removeItem(String email, @Nullable HttpSession session, long productId) {
         if (isLoggedIn(email)) {
-            cleanupDbCart(email);
             cartItemRepository.deleteByUserEmailAndProductId(email, productId);
         } else {
             getSessionCart(session).removeIf(i -> i.getId() != null && i.getId() == productId);
@@ -361,6 +355,14 @@ public class CartService {
     @Transactional(readOnly = true)
     public List<CartItem> getUserCart(String email) {
         return getDbCartSnapshot(email);
+    }
+
+    @Scheduled(fixedDelayString = "${app.cart.cleanup-delay-ms:300000}")
+    @Transactional
+    public void cleanupDbCartForAllUsers() {
+        for (String email : cartItemRepository.findDistinctUserEmails()) {
+            cleanupDbCart(email);
+        }
     }
 
     public double calculateTotal(List<CartItem> cart) {

@@ -3,8 +3,10 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Supplier;
 
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
+import io.github.ngtrphuc.smartphone_shop.common.support.CacheKeys;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.spec.ProductCatalogSpecifications;
 import io.github.ngtrphuc.smartphone_shop.common.support.StorefrontSupport;
@@ -30,24 +33,25 @@ public class ProductApiController {
 
     private static final int DESKTOP_PAGE_SIZE = 9;
     private static final int COMPACT_PAGE_SIZE = 8;
+    private static final String CATALOG_PUBLIC_CACHE = "catalogPublic";
+    private static final String PRODUCT_DETAIL_PUBLIC_CACHE = "productDetailPublic";
 
     private final ProductRepository productRepository;
     private final WishlistService wishlistService;
     private final ApiMapper apiMapper;
+    private final CacheManager cacheManager;
 
     public ProductApiController(ProductRepository productRepository,
             WishlistService wishlistService,
-            ApiMapper apiMapper) {
+            ApiMapper apiMapper,
+            CacheManager cacheManager) {
         this.productRepository = productRepository;
         this.wishlistService = wishlistService;
         this.apiMapper = apiMapper;
+        this.cacheManager = cacheManager;
     }
 
     @GetMapping
-    @Cacheable(
-            value = "catalogPublic",
-            key = "T(io.github.ngtrphuc.smartphone_shop.common.support.CacheKeys).catalog(#keyword,#sort,#brand,#priceRange,#priceMin,#priceMax,#batteryRange,#batteryMin,#batteryMax,#screenSize,#pageSize,#page)",
-            condition = "#authentication == null")
     public CatalogPageResponse products(
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "sort", required = false) String sort,
@@ -62,7 +66,68 @@ public class ProductApiController {
             @RequestParam(name = "pageSize", required = false) Integer pageSize,
             @RequestParam(name = "page", defaultValue = "0") int page,
             Authentication authentication) {
+        String cacheKey = CacheKeys.catalog(
+                keyword,
+                sort,
+                brand,
+                priceRange,
+                priceMin,
+                priceMax,
+                batteryRange,
+                batteryMin,
+                batteryMax,
+                screenSize,
+                pageSize,
+                page);
+        CatalogPageResponse publicResponse = getOrLoadCache(
+                CATALOG_PUBLIC_CACHE,
+                cacheKey,
+                () -> buildCatalogPublicResponse(
+                        keyword,
+                        sort,
+                        brand,
+                        priceRange,
+                        priceMin,
+                        priceMax,
+                        batteryRange,
+                        batteryMin,
+                        batteryMax,
+                        screenSize,
+                        pageSize,
+                        page));
+        Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
+        if (wishlistedProductIds.isEmpty()) {
+            return publicResponse;
+        }
+        return applyWishlistToCatalog(publicResponse, wishlistedProductIds);
+    }
 
+    @GetMapping("/{id}")
+    public ProductDetailResponse product(@PathVariable(name = "id") long id, Authentication authentication) {
+        ProductDetailResponse publicResponse = getOrLoadCache(
+                PRODUCT_DETAIL_PUBLIC_CACHE,
+                CacheKeys.productDetail(id),
+                () -> buildProductDetailPublicResponse(id));
+        Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
+        if (wishlistedProductIds.isEmpty()) {
+            return publicResponse;
+        }
+        return applyWishlistToProductDetail(publicResponse, wishlistedProductIds);
+    }
+
+    private CatalogPageResponse buildCatalogPublicResponse(
+            String keyword,
+            String sort,
+            String brand,
+            String priceRange,
+            Double priceMin,
+            Double priceMax,
+            String batteryRange,
+            Integer batteryMin,
+            Integer batteryMax,
+            String screenSize,
+            Integer pageSize,
+            int page) {
         Double resolvedPriceMin = priceMin;
         Double resolvedPriceMax = priceMax;
         if (priceRange != null) {
@@ -128,12 +193,9 @@ public class ProductApiController {
         safePage = Math.max(0, Math.min(productPage.getNumber(), totalPages - 1));
 
         List<String> brands = resolveAvailableBrands();
-        Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
         return new CatalogPageResponse(
                 products.stream()
-                        .map(product -> apiMapper.toProductSummary(
-                                product,
-                                product != null && product.getId() != null && wishlistedProductIds.contains(product.getId())))
+                        .map(product -> apiMapper.toProductSummary(product, false))
                         .toList(),
                 safePage,
                 totalPages,
@@ -144,23 +206,16 @@ public class ProductApiController {
                 activeFilterCount > 0);
     }
 
-    @GetMapping("/{id}")
-    @Cacheable(value = "productDetailPublic", key = "#id", condition = "#authentication == null")
-    public ProductDetailResponse product(@PathVariable(name = "id") long id, Authentication authentication) {
+    private ProductDetailResponse buildProductDetailPublicResponse(long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
-        Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
-        boolean wishlisted = wishlistedProductIds.contains(id);
         List<ProductSummary> recommendedProducts = resolveRecommendedProducts(product).stream()
-                .map(recommended -> apiMapper.toProductSummary(
-                        recommended,
-                        recommended != null && recommended.getId() != null
-                                && wishlistedProductIds.contains(recommended.getId())))
+                .map(recommended -> apiMapper.toProductSummary(recommended, false))
                 .toList();
         return new ProductDetailResponse(
-                apiMapper.toProductSummary(product, wishlisted),
+                apiMapper.toProductSummary(product, false),
                 recommendedProducts,
-                wishlisted);
+                false);
     }
 
     private List<Product> resolveRecommendedProducts(Product currentProduct) {
@@ -189,6 +244,63 @@ public class ProductApiController {
             return Set.of();
         }
         return wishlistService.getWishlistedProductIds(authentication.getName());
+    }
+
+    private CatalogPageResponse applyWishlistToCatalog(CatalogPageResponse source, Set<Long> wishlistedProductIds) {
+        List<ProductSummary> products = source.products().stream()
+                .map(product -> applyWishlistFlag(product, wishlistedProductIds))
+                .toList();
+        return new CatalogPageResponse(
+                products,
+                source.currentPage(),
+                source.totalPages(),
+                source.totalElements(),
+                source.pageSize(),
+                source.brands(),
+                source.activeFilterCount(),
+                source.hasActiveFilters());
+    }
+
+    private ProductDetailResponse applyWishlistToProductDetail(ProductDetailResponse source, Set<Long> wishlistedProductIds) {
+        ProductSummary product = applyWishlistFlag(source.product(), wishlistedProductIds);
+        List<ProductSummary> recommendedProducts = source.recommendedProducts().stream()
+                .map(item -> applyWishlistFlag(item, wishlistedProductIds))
+                .toList();
+        boolean wishlisted = product != null && product.id() != null && wishlistedProductIds.contains(product.id());
+        return new ProductDetailResponse(product, recommendedProducts, wishlisted);
+    }
+
+    private ProductSummary applyWishlistFlag(ProductSummary product, Set<Long> wishlistedProductIds) {
+        if (product == null || product.id() == null) {
+            return product;
+        }
+        boolean wishlisted = wishlistedProductIds.contains(product.id());
+        if (wishlisted == product.wishlisted()) {
+            return product;
+        }
+        return new ProductSummary(
+                product.id(),
+                product.name(),
+                product.brand(),
+                product.price(),
+                product.imageUrl(),
+                product.stock(),
+                product.available(),
+                product.lowStock(),
+                product.availabilityLabel(),
+                product.monthlyInstallmentAmount(),
+                product.storage(),
+                product.ram(),
+                product.size(),
+                wishlisted);
+    }
+
+    private <T> T getOrLoadCache(String cacheName, String key, Supplier<T> valueLoader) {
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache == null) {
+            return valueLoader.get();
+        }
+        return cache.get(key, valueLoader::get);
     }
 
     private int countActiveFilters(String keyword, String brand, String priceRange,

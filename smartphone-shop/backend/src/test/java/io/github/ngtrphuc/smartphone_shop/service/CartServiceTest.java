@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -195,5 +196,16 @@ class CartServiceTest {
         assertEquals(CartService.AddItemResult.LIMIT_REACHED, second);
         assertEquals(6, existing.getQuantity());
         verify(cartItemRepository).save(existing);
+    }
+
+    @Test
+    void cleanupDbCartForAllUsers_shouldScanDistinctEmails() {
+        when(cartItemRepository.findDistinctUserEmails()).thenReturn(List.of("a@example.com", "b@example.com"));
+        when(cartItemRepository.findByUserEmail(anyString())).thenReturn(List.of());
+
+        cartService.cleanupDbCartForAllUsers();
+
+        verify(cartItemRepository).findByUserEmail("a@example.com");
+        verify(cartItemRepository).findByUserEmail("b@example.com");
     }
 }

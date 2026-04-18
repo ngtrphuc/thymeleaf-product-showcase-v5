@@ -10,6 +10,8 @@ import io.github.ngtrphuc.smartphone_shop.model.CartItemEntity;
 public interface CartItemRepository extends JpaRepository<CartItemEntity, Long> {
     List<CartItemEntity> findByUserEmail(String userEmail);
     Optional<CartItemEntity> findByUserEmailAndProductId(String userEmail, Long productId);
+    @Query("SELECT DISTINCT c.userEmail FROM CartItemEntity c")
+    List<String> findDistinctUserEmails();
     void deleteByUserEmail(String userEmail);
     void deleteByUserEmailAndProductId(String userEmail, Long productId);
     void deleteByProductId(Long productId);
