@@ -1,13 +1,7 @@
 import Link from "next/link";
+import { AdminHeaderNav } from "@/components/admin/admin-header-nav";
 import { AdminSessionActions } from "@/components/admin/admin-session-actions";
-import { ExpandingNav } from "@/components/ui/expanding-nav";
-
-const adminLinks = [
-  { href: "/admin", label: "Dashboard", icon: "dashboard" },
-  { href: "/admin/products", label: "Products", icon: "box" },
-  { href: "/admin/orders", label: "Orders", icon: "orders" },
-  { href: "/admin/chat", label: "Chat", icon: "chat" },
-];
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 export default function AdminLayout({
   children,
@@ -20,9 +14,18 @@ export default function AdminLayout({
             <Link href="/admin" className="text-lg font-bold text-slate-900">
               Admin Panel
             </Link>
-            <ExpandingNav items={adminLinks} ariaLabel="Admin navigation" />
+            <AdminHeaderNav />
           </div>
-          <AdminSessionActions />
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/products"
+              className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
+            >
+              <GriddyIcon name="home" />
+              HOME
+            </Link>
+            <AdminSessionActions />
+          </div>
         </div>
       </header>
       <main className="flex-1">{children}</main>

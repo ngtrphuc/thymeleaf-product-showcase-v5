@@ -344,6 +344,115 @@ input[type="number"] {
   background-size: 32px 32px;
 }
 
+.catalog-flip-stage {
+  perspective: 1800px;
+}
+
+.catalog-flip-grid {
+  perspective: 1800px;
+  transform-style: preserve-3d;
+}
+
+.catalog-flip-card {
+  transform-origin: center center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform, opacity, filter;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card {
+  animation: catalog-card-flip-in 720ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--card-delay, 0ms);
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card {
+  animation: catalog-card-flip-out 280ms cubic-bezier(0.55, 0.08, 0.68, 0.53) both;
+  animation-delay: calc(var(--card-delay, 0ms) * 0.32);
+}
+
+@keyframes catalog-card-flip-in {
+  0% {
+    opacity: 0;
+    filter: blur(10px);
+    transform: perspective(1800px) rotateY(-86deg) scale(0.88) translateY(18px);
+  }
+
+  60% {
+    opacity: 1;
+    filter: blur(0);
+    transform: perspective(1800px) rotateY(14deg) scale(1.01) translateY(-3px);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: perspective(1800px) rotateY(0deg) scale(1) translateY(0);
+  }
+}
+
+@keyframes catalog-card-flip-out {
+  0% {
+    opacity: 1;
+    filter: blur(0);
+    transform: perspective(1800px) rotateY(0deg) scale(1) translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: perspective(1800px) rotateY(84deg) scale(0.9) translateY(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-flip-stage.is-entering .catalog-flip-card,
+  .catalog-flip-stage.is-exiting .catalog-flip-card {
+    animation: none !important;
+  }
+}
+
+.compare-picker-flip-stage {
+  perspective: 1600px;
+}
+
+.compare-picker-flip-card {
+  transform-origin: center center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform, opacity, filter;
+}
+
+.compare-picker-flip-stage.is-entering .compare-picker-flip-card {
+  animation: compare-picker-card-flip-vertical 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--card-delay, 0ms);
+}
+
+@keyframes compare-picker-card-flip-vertical {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+    transform: perspective(1600px) rotateX(-82deg) scale(0.92) translateY(18px);
+  }
+
+  62% {
+    opacity: 1;
+    filter: blur(0);
+    transform: perspective(1600px) rotateX(12deg) scale(1.01) translateY(-2px);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: perspective(1600px) rotateX(0deg) scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compare-picker-flip-stage.is-entering .compare-picker-flip-card {
+    animation: none !important;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;

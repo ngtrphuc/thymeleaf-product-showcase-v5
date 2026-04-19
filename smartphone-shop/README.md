@@ -223,6 +223,8 @@ This boots:
 - Backend at `http://localhost:8080`
 - Next.js frontend at `http://localhost:3000`
 
+Opening `http://localhost:8080/` now shows a small backend landing page by default, with links to Swagger, health, and the separate storefront. If you want the old automatic redirect behavior, set `APP_FRONTEND_REDIRECT_ON_ROOT=true`.
+
 ### Option B (manual start)
 
 1. Start infrastructure:
@@ -255,6 +257,7 @@ PowerShell note:
 
 - Backend profile defaults to `dev` (`spring.profiles.default=dev`)
 - Backend CORS default: `http://localhost:3000`
+- Root redirect to frontend: `APP_FRONTEND_REDIRECT_ON_ROOT=false` by default
 - Frontend API base example is in `frontend-next/.env.example`
 - Frontend API retry defaults:
   - `NEXT_PUBLIC_API_RETRY_COUNT=1`

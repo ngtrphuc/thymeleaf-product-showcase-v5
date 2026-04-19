@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { fetchCatalogPage } from "@/lib/api";
-import { ProductCard } from "@/components/storefront/product-card";
 import { CatalogFilters } from "@/components/storefront/catalog-filters";
-import { GriddyIcon } from "@/components/ui/griddy-icon";
+import { CatalogPagedGrid } from "@/components/storefront/catalog-paged-grid";
+import { CatalogViewportSync } from "@/components/storefront/catalog-viewport-sync";
 
 type SearchValue = string | string[] | undefined;
 
@@ -26,6 +25,10 @@ function positiveInt(value: string | undefined, fallback: number): number {
   return parsed;
 }
 
+function resolvePageSize(value: string | undefined): number {
+  return value === "8" ? 8 : 9;
+}
+
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const resolved: Record<string, SearchValue> = await (
     searchParams ?? Promise.resolve({} as Record<string, SearchValue>)
@@ -43,6 +46,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const batteryMax = readFirst(resolved.batteryMax)?.trim() ?? "";
   const screenSize = readFirst(resolved.screenSize)?.trim() ?? "";
   const page = positiveInt(readFirst(resolved.page), 0);
+  const pageSize = resolvePageSize(readFirst(resolved.pageSize)?.trim());
 
   const query = new URLSearchParams();
   if (keyword.length > 0) query.set("keyword", keyword);
@@ -57,6 +61,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   if (batteryMax.length > 0) query.set("batteryMax", batteryMax);
   if (screenSize.length > 0) query.set("screenSize", screenSize);
   query.set("page", String(page));
+  query.set("pageSize", String(pageSize));
 
   const catalog = await fetchCatalogPage(query);
 
@@ -74,6 +79,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   return (
     <div className="space-y-6">
+      <CatalogViewportSync />
+
       <header className="glass-panel rounded-3xl p-6 sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
           Migration Track
@@ -107,7 +114,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           Showing <strong>{catalog.products.length}</strong> / <strong>{catalog.totalElements}</strong>
         </p>
         <p>
-          Page <strong>{currentPage + 1}</strong> / <strong>{totalPages}</strong>
+          Page <strong>{currentPage + 1}</strong> / <strong>{totalPages}</strong> · <strong>{catalog.pageSize}</strong>{" "}
+          items per page
         </p>
       </section>
 
@@ -117,54 +125,31 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           <p className="mt-2 text-sm text-slate-600">Try removing a filter or broadening your keyword.</p>
         </section>
       ) : (
-        <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {catalog.products.map((product) => (
-            <ProductCard key={product.id ?? `${product.name}-${product.brand}`} product={product} />
-          ))}
-        </section>
+        <CatalogPagedGrid
+          key={`${pageSize}:${currentPage}:${catalog.products.map((product) => product.id ?? product.name).join("|")}`}
+          products={catalog.products}
+          paginationItems={[
+            {
+              href: pageHref(previousPage),
+              label: "Previous",
+              disabled: currentPage === 0,
+              icon: "arrow-left",
+            },
+            ...Array.from({ length: totalPages }).map((_, index) => ({
+              href: pageHref(index),
+              label: String(index + 1),
+              active: index === currentPage,
+            })),
+            {
+              href: pageHref(nextPage),
+              label: "Next",
+              disabled: currentPage >= totalPages - 1,
+              icon: "arrow-right" as const,
+              iconTrailing: true,
+            },
+          ]}
+        />
       )}
-
-      <nav className="glass-panel flex items-center justify-between rounded-2xl p-4">
-        <Link
-          href={pageHref(previousPage)}
-          className={`ui-btn inline-flex items-center gap-2 px-4 py-2 text-sm ${
-            currentPage === 0
-              ? "pointer-events-none border border-[var(--color-border)] bg-slate-100 text-slate-400"
-              : "ui-btn-secondary"
-          }`}
-        >
-          <GriddyIcon name="arrow-left" />
-          Previous
-        </Link>
-
-        <div className="hidden gap-2 sm:flex">
-          {Array.from({ length: totalPages }).map((_, index) => (
-            <Link
-              key={index}
-              href={pageHref(index)}
-              className={`ui-btn px-3 py-1.5 text-sm ${
-                index === currentPage
-                  ? "ui-btn-primary"
-                  : "ui-btn-secondary"
-              }`}
-            >
-              {index + 1}
-            </Link>
-          ))}
-        </div>
-
-        <Link
-          href={pageHref(nextPage)}
-          className={`ui-btn inline-flex items-center gap-2 px-4 py-2 text-sm ${
-            currentPage >= totalPages - 1
-              ? "pointer-events-none border border-[var(--color-border)] bg-slate-100 text-slate-400"
-              : "ui-btn-secondary"
-          }`}
-        >
-          Next
-          <GriddyIcon name="arrow-right" />
-        </Link>
-      </nav>
     </div>
   );
 }

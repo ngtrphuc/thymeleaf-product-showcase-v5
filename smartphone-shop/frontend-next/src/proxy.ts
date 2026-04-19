@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CUSTOMER_PROTECTED = ["/cart", "/checkout", "/profile", "/orders", "/wishlist", "/compare", "/chat"];
+const CUSTOMER_PROTECTED = ["/cart", "/checkout", "/profile", "/orders", "/wishlist", "/chat"];
 const ADMIN_PROTECTED = ["/admin"];
 const AUTH_ROUTES = ["/login", "/register"];
 

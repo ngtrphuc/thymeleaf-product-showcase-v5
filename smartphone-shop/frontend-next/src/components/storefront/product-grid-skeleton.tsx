@@ -18,8 +18,8 @@ export function ProductGridSkeleton() {
         </div>
       </section>
 
-      <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, index) => (
+      <section className="grid grid-cols-2 gap-5 lg:grid-cols-3">
+        {Array.from({ length: 8 }).map((_, index) => (
           <div key={index} className="glass-panel rounded-2xl p-4">
             <Skeleton className="h-52 w-full rounded-2xl" />
             <Skeleton className="mt-3 h-5 w-3/4" />

@@ -5,14 +5,15 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ClipboardList,
   Heart,
+  LayoutDashboard,
   LogIn,
-  MessageSquare,
+  LogOut,
   ShoppingCart,
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
 import { Dock, DockIcon, DockItem, DockLabel } from "@/components/ui/dock";
-import { getBackendOrigin, type AuthMeResponse } from "@/lib/api";
+import { ApiError, authLogout, getBackendOrigin, type AuthMeResponse } from "@/lib/api";
 
 type NavItem = {
   key: string;
@@ -24,7 +25,6 @@ type NavItem = {
 const authenticatedDockItems: NavItem[] = [
   { key: "cart", label: "Cart", href: "/cart", icon: ShoppingCart },
   { key: "orders", label: "Orders", href: "/orders", icon: ClipboardList },
-  { key: "chat", label: "Chat", href: "/chat", icon: MessageSquare },
   { key: "wishlist", label: "Wishlist", href: "/wishlist", icon: Heart },
   { key: "compare", label: "Compare", href: "/compare", icon: SlidersHorizontal },
   { key: "profile", label: "Profile", href: "/profile", icon: UserRound },
@@ -35,10 +35,21 @@ const guestDockItems: NavItem[] = [
   { key: "login", label: "Login", icon: LogIn },
 ];
 
+const adminDockItems: NavItem[] = [
+  { key: "admin-panel", label: "Admin Panel", href: "/admin", icon: LayoutDashboard },
+  { key: "logout", label: "Logout", icon: LogOut },
+];
+
 export function StorefrontHeaderDockNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authState, setAuthState] = useState<AuthMeResponse>({
+    authenticated: false,
+    email: null,
+    role: null,
+    fullName: null,
+  });
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -51,18 +62,33 @@ export function StorefrontHeaderDockNav() {
 
         if (!response.ok) {
           if (alive) {
-            setAuthenticated(false);
+            setAuthState({
+              authenticated: false,
+              email: null,
+              role: null,
+              fullName: null,
+            });
           }
           return;
         }
 
         const body = (await response.json()) as AuthMeResponse;
         if (alive) {
-          setAuthenticated(Boolean(body?.authenticated));
+          setAuthState({
+            authenticated: Boolean(body?.authenticated),
+            email: body?.email ?? null,
+            role: body?.role ?? null,
+            fullName: body?.fullName ?? null,
+          });
         }
       } catch {
         if (alive) {
-          setAuthenticated(false);
+          setAuthState({
+            authenticated: false,
+            email: null,
+            role: null,
+            fullName: null,
+          });
         }
       }
     }
@@ -73,10 +99,12 @@ export function StorefrontHeaderDockNav() {
     };
   }, []);
 
-  const dockItems = useMemo(
-    () => (authenticated ? authenticatedDockItems : guestDockItems),
-    [authenticated],
-  );
+  const dockItems = useMemo(() => {
+    if (authState.role === "ROLE_ADMIN") {
+      return adminDockItems;
+    }
+    return authState.authenticated ? authenticatedDockItems : guestDockItems;
+  }, [authState]);
 
   function isActive(item: NavItem): boolean {
     if (!item.href) {
@@ -85,10 +113,31 @@ export function StorefrontHeaderDockNav() {
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   }
 
-  function onNavigate(item: NavItem) {
+  async function onNavigate(item: NavItem) {
+    if (loggingOut) {
+      return;
+    }
+
     if (item.key === "login") {
       const next = encodeURIComponent(pathname || "/products");
       router.push(`/login?next=${next}`);
+      return;
+    }
+
+    if (item.key === "logout") {
+      setLoggingOut(true);
+      try {
+        await authLogout();
+        router.push("/login");
+        router.refresh();
+      } catch (error) {
+        if (error instanceof ApiError) {
+          console.error(error.message);
+        } else {
+          console.error("Logout failed.");
+        }
+        setLoggingOut(false);
+      }
       return;
     }
 
@@ -106,7 +155,7 @@ export function StorefrontHeaderDockNav() {
             key={item.key}
             ariaLabel={item.label}
             active={isActive(item)}
-            onClick={() => onNavigate(item)}
+            onClick={() => void onNavigate(item)}
           >
             <DockIcon>
               <Icon className="h-4 w-4" />

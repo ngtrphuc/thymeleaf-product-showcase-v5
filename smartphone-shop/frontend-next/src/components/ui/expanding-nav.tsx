@@ -8,6 +8,7 @@ type ExpandingNavItem = {
   href: string;
   label: string;
   icon: string;
+  badge?: number | string;
 };
 
 type ExpandingNavProps = {
@@ -39,6 +40,11 @@ export function ExpandingNav({ items, ariaLabel }: ExpandingNavProps) {
           >
             <GriddyIcon name={item.icon} className="ui-expand-icon" />
             <span className="ui-expand-label">{item.label}</span>
+            {item.badge ? (
+              <span className="ml-2 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-black px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                {item.badge}
+              </span>
+            ) : null}
           </Link>
         );
       })}

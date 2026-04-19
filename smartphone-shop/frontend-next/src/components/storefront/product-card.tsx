@@ -27,6 +27,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700">
           {product.brand}
         </div>
+        {product.id ? <QuickProductActions productId={productId} initiallyWishlisted={product.wishlisted} /> : null}
       </div>
 
       <div className="space-y-3 p-5">
@@ -48,8 +49,6 @@ export function ProductCard({ product }: ProductCardProps) {
         >
           {product.availabilityLabel || "Unavailable"}
         </p>
-
-        {product.id ? <QuickProductActions productId={productId} initiallyWishlisted={product.wishlisted} /> : null}
 
         <Link
           href={`/products/${productId}`}

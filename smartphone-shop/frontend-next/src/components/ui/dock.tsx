@@ -89,7 +89,7 @@ export function DockItem({ children, onClick, ariaLabel, className, active = fal
         "group/dockitem relative flex h-11 w-11 origin-bottom items-center justify-center rounded-xl border transition-[transform,background-color,color,border-color,box-shadow] duration-200 ease-out",
         active
           ? "border-transparent bg-[var(--color-primary)] text-black"
-          : "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] hover:border-[var(--color-border-2)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text)]",
+          : "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] hover:border-white/10 hover:bg-white hover:text-black",
         className ?? "",
       ].join(" ")}
       style={{

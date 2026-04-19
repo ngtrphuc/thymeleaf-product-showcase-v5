@@ -175,7 +175,7 @@ export default function ProfilePage() {
             type="button"
             onClick={() => void logout()}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-slate-800"
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-text-muted)] transition-[background-color,color,border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white hover:text-black"
           >
             <GriddyIcon name="logout" />
             Logout

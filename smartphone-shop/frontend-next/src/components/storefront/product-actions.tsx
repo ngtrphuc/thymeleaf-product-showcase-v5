@@ -29,10 +29,22 @@ export function ProductActions({
   maxQuantity,
 }: ProductActionsProps) {
   const router = useRouter();
+  const inversePrimaryButtonClass =
+    "border border-white/10 bg-white text-black hover:border-white/12 hover:bg-[var(--color-surface-soft)] hover:text-white";
+  const inverseSecondaryButtonClass =
+    "border border-[var(--color-border-2)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] hover:border-white/10 hover:bg-white hover:text-black";
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+
+  function handleBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(backHref);
+  }
 
   async function runAction(action: "cart" | "wishlist" | "compare" | "buyNow") {
     setLoadingAction(action);
@@ -73,25 +85,26 @@ export function ProductActions({
             type="button"
             onClick={() => runAction("compare")}
             disabled={loadingAction !== null}
-            className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
           >
             <GriddyIcon name="clipboard" />
             {loadingAction === "compare" ? "Adding..." : "Compare"}
           </button>
           <Link
             href={editHref}
-            className="ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            className={`ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inversePrimaryButtonClass}`}
           >
             <GriddyIcon name="box" />
             Edit
           </Link>
-          <Link
-            href={backHref}
-            className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+          <button
+            type="button"
+            onClick={handleBack}
+            className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
           >
             <GriddyIcon name="arrow-left" />
             Back
-          </Link>
+          </button>
         </div>
       ) : isAuthenticated ? (
         <div className="space-y-2">
@@ -101,7 +114,7 @@ export function ProductActions({
                 type="button"
                 onClick={() => setQuantity((prev) => clampQuantity(prev - 1, maxQuantity))}
                 disabled={loadingAction !== null}
-                className="ui-btn ui-btn-secondary h-8 w-8 p-0 text-base"
+                className={`ui-btn ui-btn-secondary h-8 w-8 p-0 text-base ${inverseSecondaryButtonClass}`}
                 aria-label="Decrease quantity"
               >
                 -
@@ -121,7 +134,7 @@ export function ProductActions({
                 type="button"
                 onClick={() => setQuantity((prev) => clampQuantity(prev + 1, maxQuantity))}
                 disabled={loadingAction !== null}
-                className="ui-btn ui-btn-secondary h-8 w-8 p-0 text-base"
+                className={`ui-btn ui-btn-secondary h-8 w-8 p-0 text-base ${inverseSecondaryButtonClass}`}
                 aria-label="Increase quantity"
               >
                 +
@@ -132,7 +145,7 @@ export function ProductActions({
               type="button"
               onClick={() => runAction("buyNow")}
               disabled={loadingAction !== null}
-              className="ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+              className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
             >
               <GriddyIcon name="credit-card" />
               {loadingAction === "buyNow" ? "Processing..." : "Buy Now"}
@@ -142,7 +155,7 @@ export function ProductActions({
               type="button"
               onClick={() => runAction("cart")}
               disabled={loadingAction !== null}
-              className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+              className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
             >
               <GriddyIcon name="cart" />
               {loadingAction === "cart" ? "Adding..." : "Add to Cart"}
@@ -154,7 +167,7 @@ export function ProductActions({
               type="button"
               onClick={() => runAction("wishlist")}
               disabled={loadingAction !== null}
-              className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+              className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
             >
               <GriddyIcon name="heart-outline" />
               {loadingAction === "wishlist" ? "Adding..." : "Wishlist"}
@@ -163,48 +176,39 @@ export function ProductActions({
               type="button"
               onClick={() => runAction("compare")}
               disabled={loadingAction !== null}
-              className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+              className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
             >
               <GriddyIcon name="clipboard" />
               {loadingAction === "compare" ? "Adding..." : "Compare"}
             </button>
-            <Link
-              href={backHref}
-              className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            <button
+              type="button"
+              onClick={handleBack}
+              className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
             >
               <GriddyIcon name="arrow-left" />
               Back
-            </Link>
+            </button>
           </div>
         </div>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => runAction("cart")}
-            disabled={loadingAction !== null}
-            className="ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
-          >
-            <GriddyIcon name="cart" />
-            {loadingAction === "cart" ? "Adding..." : "Add to Cart"}
-          </button>
-          <button
-            type="button"
-            onClick={() => runAction("wishlist")}
-            disabled={loadingAction !== null}
-            className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
-          >
-            <GriddyIcon name="heart-outline" />
-            {loadingAction === "wishlist" ? "Adding..." : "Wishlist"}
-          </button>
+        <div className="grid gap-2 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => runAction("compare")}
             disabled={loadingAction !== null}
-            className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
           >
             <GriddyIcon name="clipboard" />
             {loadingAction === "compare" ? "Adding..." : "Compare"}
+          </button>
+          <button
+            type="button"
+            onClick={handleBack}
+            className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
+          >
+            <GriddyIcon name="arrow-left" />
+            Back
           </button>
         </div>
       )}

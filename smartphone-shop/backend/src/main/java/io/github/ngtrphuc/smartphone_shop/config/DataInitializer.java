@@ -8,6 +8,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -20,9 +22,11 @@ import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 public class DataInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+    private static final String CATALOG_PUBLIC_CACHE = "catalogPublic";
+    private static final String PRODUCT_DETAIL_PUBLIC_CACHE = "productDetailPublic";
 
     @Bean
-    public CommandLineRunner initDatabase(ProductRepository repository) {
+    public CommandLineRunner initDatabase(ProductRepository repository, CacheManager cacheManager) {
         return args -> {
             Map<String, Product> existingByName = new LinkedHashMap<>();
             for (Product product : repository.findAll()) {
@@ -54,8 +58,20 @@ public class DataInitializer {
             }
 
             repository.saveAll(toSave);
+            clearStorefrontCache(cacheManager, CATALOG_PUBLIC_CACHE);
+            clearStorefrontCache(cacheManager, PRODUCT_DETAIL_PUBLIC_CACHE);
             log.info("Product catalog synced. Inserted: {}, Updated: {}", inserted, updated);
         };
+    }
+
+    private void clearStorefrontCache(CacheManager cacheManager, String cacheName) {
+        if (cacheManager == null) {
+            return;
+        }
+        Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.clear();
+        }
     }
 
     private void applySeed(Product product, ProductSeed seed) {

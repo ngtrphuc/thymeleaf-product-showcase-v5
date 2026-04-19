@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { StorefrontChatBubble } from "@/components/storefront/storefront-chat-bubble";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 import { StorefrontHeaderDockNav } from "@/components/storefront/storefront-header-dock-nav";
 
@@ -17,6 +18,7 @@ export default function StorefrontLayout({
         </div>
       </header>
       <main className="flex-1">{children}</main>
+      <StorefrontChatBubble />
     </div>
   );
 }

@@ -1,7 +1,7 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   ApiError,
   fetchAdminChatHistory,
@@ -26,6 +26,7 @@ function formatChatClock(value: string): string {
 }
 
 export default function AdminChatPage() {
+  const selectedEmailRef = useRef<string | null>(null);
   const [conversations, setConversations] = useState<AdminConversationsResponse | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessageResponse[]>([]);
@@ -40,7 +41,7 @@ export default function AdminChatPage() {
     try {
       const data = await fetchAdminConversations();
       setConversations(data);
-      if (!selectedEmail && data.emails.length > 0) {
+      if (!selectedEmailRef.current && data.emails.length > 0) {
         setSelectedEmail(data.emails[0]);
       }
     } catch (err) {
@@ -72,11 +73,15 @@ export default function AdminChatPage() {
   }
 
   useEffect(() => {
+    selectedEmailRef.current = selectedEmail;
+  }, [selectedEmail]);
+
+  useEffect(() => {
     void loadConversations();
     const timer = setInterval(() => {
       void loadConversations();
-      if (selectedEmail) {
-        void loadHistory(selectedEmail);
+      if (selectedEmailRef.current) {
+        void loadHistory(selectedEmailRef.current);
       }
     }, 8000);
 
@@ -223,4 +228,3 @@ export default function AdminChatPage() {
     </div>
   );
 }
-

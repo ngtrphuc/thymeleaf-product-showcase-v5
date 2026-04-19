@@ -1,10 +1,8 @@
-﻿export function formatPriceVnd(value: number | null | undefined): string {
+export function formatPriceVnd(value: number | null | undefined): string {
   const amount = value ?? 0;
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
+  return `￥${new Intl.NumberFormat("ja-JP", {
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(amount)}`;
 }
 
 export function formatDateTime(value: string | null | undefined): string {
