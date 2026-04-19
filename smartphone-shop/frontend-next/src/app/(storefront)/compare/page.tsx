@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import Image from "next/image";
@@ -25,7 +25,9 @@ export default function ComparePage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTargetIndex, setPickerTargetIndex] = useState<number | null>(null);
   const [pickerKeyword, setPickerKeyword] = useState("");
   const [pickerLoading, setPickerLoading] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
@@ -111,11 +113,18 @@ export default function ComparePage() {
     }
   }
 
-  async function onOpenPicker() {
-    setPickerOpen((prev) => !prev);
-    if (!pickerOpen && pickerData === null) {
+  async function onOpenPicker(targetIndex: number) {
+    setPickerTargetIndex(targetIndex);
+    setPickerOpen(true);
+    if (pickerData === null) {
       await loadPickerProducts(pickerKeyword);
     }
+  }
+
+  function onClosePicker() {
+    setPickerOpen(false);
+    setPickerTargetIndex(null);
+    setPickerError(null);
   }
 
   async function onSearchPicker(event: FormEvent<HTMLFormElement>) {
@@ -123,14 +132,22 @@ export default function ComparePage() {
     await loadPickerProducts(pickerKeyword);
   }
 
-  async function onAddToCompare(productId: number) {
+  async function onSelectProductForSlot(productId: number) {
     setBusy(true);
     setError(null);
     setMessage(null);
     try {
+      const targetItem =
+        pickerTargetIndex !== null && compare?.products ? compare.products[pickerTargetIndex] ?? null : null;
+
+      if (targetItem?.id && targetItem.id !== productId) {
+        await removeCompareItem(targetItem.id);
+      }
+
       const data = await addCompareItem(productId);
       setCompare(data);
-      setMessage("Product added to compare list.");
+      setMessage("Product added to compare slot.");
+      onClosePicker();
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -147,6 +164,9 @@ export default function ComparePage() {
   }
 
   const items = compare?.products ?? [];
+  const maxCompare = compare?.maxCompare ?? 3;
+  const slots = Array.from({ length: maxCompare }, (_, index) => items[index] ?? null);
+  const targetItem = pickerTargetIndex !== null ? slots[pickerTargetIndex] : null;
 
   return (
     <div className="space-y-6">
@@ -154,23 +174,38 @@ export default function ComparePage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Compare Products</h1>
-            <p className="mt-2 text-sm text-slate-600">Limit: {compare?.maxCompare ?? 0} products.</p>
+            <p className="mt-2 text-sm text-slate-600">Limit: {maxCompare} products. Add directly at each compare slot.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              void onOpenPicker();
-            }}
-            className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
-          >
-            <GriddyIcon name="package" />
-            {pickerOpen ? "Close Product List" : "Add Product"}
-          </button>
+          {items.length > 0 ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => mutate(() => clearCompare())}
+              className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
+            >
+              <GriddyIcon name="close-circle" />
+              Clear Compare List
+            </button>
+          ) : null}
         </div>
       </header>
 
       {pickerOpen ? (
         <section className="glass-panel space-y-4 rounded-3xl p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-slate-700">
+              {pickerTargetIndex !== null ? `Adding product to slot #${pickerTargetIndex + 1}` : "Select product to compare"}
+            </p>
+            <button
+              type="button"
+              onClick={onClosePicker}
+              className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-3 py-1.5 text-xs"
+            >
+              <GriddyIcon name="close-circle" />
+              Close
+            </button>
+          </div>
+
           <form onSubmit={onSearchPicker} className="flex flex-wrap items-center gap-2">
             <input
               value={pickerKeyword}
@@ -193,9 +228,14 @@ export default function ComparePage() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {pickerData.products.map((product) => {
-                const compared = !!product.id && (compare?.ids ?? []).includes(product.id);
+                const inCompare = !!product.id && (compare?.ids ?? []).includes(product.id);
+                const sameAsTarget = !!product.id && !!targetItem?.id && targetItem.id === product.id;
+                const selectable = !!product.id && (!inCompare || sameAsTarget);
                 return (
-                  <article key={product.id ?? `${product.name}-${product.brand}`} className="rounded-2xl border border-[var(--color-border)] bg-white p-3">
+                  <article
+                    key={product.id ?? `${product.name}-${product.brand}`}
+                    className="rounded-2xl border border-[var(--color-border)] bg-white p-3"
+                  >
                     <div className="flex items-center gap-3">
                       <Image
                         src={toAssetUrl(product.imageUrl)}
@@ -215,16 +255,22 @@ export default function ComparePage() {
                     </div>
                     <button
                       type="button"
-                      disabled={busy || compared || !product.id}
+                      disabled={busy || !selectable}
                       onClick={() => {
                         if (product.id) {
-                          void onAddToCompare(product.id);
+                          void onSelectProductForSlot(product.id);
                         }
                       }}
                       className="ui-btn ui-btn-primary mt-3 inline-flex w-full items-center justify-center gap-2 px-3 py-2 text-xs"
                     >
-                      <GriddyIcon name={compared ? "check" : "clipboard"} />
-                      {compared ? "Already Added" : "Add to Compare"}
+                      <GriddyIcon name={sameAsTarget ? "check" : "clipboard"} />
+                      {sameAsTarget
+                        ? "Selected in this slot"
+                        : inCompare
+                          ? "Already in compare"
+                          : pickerTargetIndex !== null
+                            ? `Add to Slot #${pickerTargetIndex + 1}`
+                            : "Add to Compare"}
                     </button>
                   </article>
                 );
@@ -237,70 +283,92 @@ export default function ComparePage() {
       {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
-      {items.length === 0 ? (
-        <div className="glass-panel rounded-3xl p-8 text-center text-slate-700">No products in compare list.</div>
-      ) : (
-        <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
-              <article key={item.id ?? item.name} className="glass-panel rounded-3xl p-4">
-                <Image
-                  src={toAssetUrl(item.imageUrl)}
-                  alt={item.name}
-                  width={520}
-                  height={520}
-                  className="aspect-square w-full rounded-2xl bg-[var(--color-surface-soft)] object-contain p-2"
-                  unoptimized
-                />
-                <h2 className="mt-3 text-lg font-semibold text-slate-900">{item.name}</h2>
-                <p className="text-sm text-slate-600">{item.storage || "N/A"} / {item.ram || "N/A"}</p>
-                <p className="mt-1 text-xl font-bold text-[var(--color-primary-strong)]">{formatPriceVnd(item.price)}</p>
-                <div className="mt-3 flex gap-2">
-                  {item.id ? (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void onAddToCart(item.id ?? 0)}
-                      className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
-                    >
-                      <GriddyIcon name="cart" />
-                      Add to Cart
-                    </button>
-                  ) : null}
-                  <Link
-                    href={`/products/${item.id ?? ""}`}
-                    className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {slots.map((item, index) =>
+          item ? (
+            <article key={item.id ?? `${item.name}-${index}`} className="glass-panel rounded-3xl p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Slot #{index + 1}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void onOpenPicker(index);
+                  }}
+                  className="ui-btn ui-btn-secondary inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs"
+                >
+                  <GriddyIcon name="package" />
+                  Add
+                </button>
+              </div>
+              <Image
+                src={toAssetUrl(item.imageUrl)}
+                alt={item.name}
+                width={520}
+                height={520}
+                className="aspect-square w-full rounded-2xl bg-[var(--color-surface-soft)] object-contain p-2"
+                unoptimized
+              />
+              <h2 className="mt-3 text-lg font-semibold text-slate-900">{item.name}</h2>
+              <p className="text-sm text-slate-600">
+                {item.storage || "N/A"} / {item.ram || "N/A"}
+              </p>
+              <p className="mt-1 text-xl font-bold text-[var(--color-primary-strong)]">{formatPriceVnd(item.price)}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {item.id ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void onAddToCart(item.id ?? 0)}
+                    className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
                   >
-                    <GriddyIcon name="eye" />
-                    View
-                  </Link>
-                  {item.id ? (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => mutate(() => removeCompareItem(item.id ?? 0))}
-                      className="ui-btn ui-btn-danger inline-flex items-center gap-2 px-4 py-2 text-sm"
-                    >
-                      <GriddyIcon name="trash" />
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => mutate(() => clearCompare())}
-            className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
-          >
-            <GriddyIcon name="close-circle" />
-            Clear Compare List
-          </button>
-        </>
-      )}
+                    <GriddyIcon name="cart" />
+                    Add to Cart
+                  </button>
+                ) : null}
+                <Link
+                  href={`/products/${item.id ?? ""}`}
+                  className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
+                >
+                  <GriddyIcon name="box" />
+                  View
+                </Link>
+                {item.id ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => mutate(() => removeCompareItem(item.id ?? 0))}
+                    className="ui-btn ui-btn-danger inline-flex items-center gap-2 px-4 py-2 text-sm"
+                  >
+                    <GriddyIcon name="trash" />
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+            </article>
+          ) : (
+            <article
+              key={`slot-${index}`}
+              className="glass-panel flex min-h-[420px] flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--color-border-2)] p-4 text-center"
+            >
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-border-2)] bg-[var(--color-surface-soft)]">
+                <GriddyIcon name="package" />
+              </div>
+              <p className="text-sm font-semibold text-slate-900">Slot #{index + 1} is empty</p>
+              <p className="mt-1 max-w-[240px] text-xs text-slate-600">Pick any product from catalog and add it to this compare slot.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  void onOpenPicker(index);
+                }}
+                className="ui-btn ui-btn-primary mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm"
+              >
+                <GriddyIcon name="package" />
+                Add Product
+              </button>
+            </article>
+          )
+        )}
+      </div>
     </div>
   );
 }

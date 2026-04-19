@@ -5,6 +5,8 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, authLogin } from "@/lib/api";
+import { PasswordField } from "@/components/auth/password-field";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -61,22 +63,22 @@ export default function LoginPage() {
           />
         </label>
 
-        <label className="block space-y-1">
-          <span className="text-sm text-slate-700">Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="ui-input w-full px-3 py-2 text-sm"
-            required
-          />
-        </label>
+        <PasswordField
+          id="password"
+          name="password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+          required
+        />
 
         <button
           type="submit"
           disabled={loading}
-          className="ui-btn ui-btn-primary w-full px-4 py-2.5 text-sm"
+          className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm"
         >
+          <GriddyIcon name="login" />
           {loading ? "Signing in..." : "Sign In"}
         </button>
       </form>

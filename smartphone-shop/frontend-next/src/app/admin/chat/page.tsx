@@ -14,6 +14,17 @@ import {
 import { formatDateTime } from "@/lib/format";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
+function formatChatClock(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return formatDateTime(value);
+  }
+  return date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function AdminChatPage() {
   const [conversations, setConversations] = useState<AdminConversationsResponse | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
@@ -132,13 +143,13 @@ export default function AdminChatPage() {
                       type="button"
                       onClick={() => setSelectedEmail(email)}
                       className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
-                        active ? "bg-[var(--color-primary)] text-white" : "bg-white text-slate-800"
+                        active ? "bg-[var(--color-primary)] text-black" : "bg-white text-slate-800"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate">{email}</span>
                         {unread > 0 ? (
-                          <span className={`rounded-full px-2 py-0.5 text-xs ${active ? "bg-white/20" : "bg-slate-100"}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-xs ${active ? "bg-black/10" : "bg-slate-100"}`}>
                             {unread}
                           </span>
                         ) : null}
@@ -166,15 +177,26 @@ export default function AdminChatPage() {
                 {messages.length === 0 ? (
                   <p className="text-sm text-slate-600">No messages yet.</p>
                 ) : (
-                  messages.map((message) => (
-                    <article key={message.id} className="rounded-lg bg-slate-50 p-2 text-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-slate-900">{message.senderRole}</span>
-                        <span className="text-xs text-slate-500">{formatDateTime(message.createdAt)}</span>
+                  messages.map((message) => {
+                    const isAdmin = message.senderRole === "ADMIN";
+                    const sideClass = isAdmin ? "justify-end" : "justify-start";
+                    const toneClass = isAdmin
+                      ? "bg-[var(--color-primary)] text-black"
+                      : "bg-slate-50 text-slate-800";
+                    const metaClass = isAdmin ? "text-black/60" : "text-slate-500";
+                    return (
+                      <div key={message.id} className={`flex ${sideClass}`}>
+                        <div className={`flex max-w-[88%] flex-col gap-1 ${isAdmin ? "items-end" : "items-start"}`}>
+                          <article className={`inline-block w-fit break-words rounded-lg p-2 text-sm ${toneClass}`}>
+                            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                          </article>
+                          <p className={`px-1 text-[11px] ${metaClass}`}>
+                            {message.senderRole} | {formatChatClock(message.createdAt)}
+                          </p>
+                        </div>
                       </div>
-                      <p className="mt-1 text-slate-700">{message.content}</p>
-                    </article>
-                  ))
+                    );
+                  })
                 )}
               </div>
 

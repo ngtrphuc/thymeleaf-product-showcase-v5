@@ -1,16 +1,6 @@
 import Link from "next/link";
-import { ExpandingNav } from "@/components/ui/expanding-nav";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
-
-const storefrontLinks = [
-  { href: "/products", label: "Products", icon: "package" },
-  { href: "/cart", label: "Cart", icon: "cart" },
-  { href: "/orders", label: "Orders", icon: "orders" },
-  { href: "/chat", label: "Chat Shop", icon: "chat" },
-  { href: "/wishlist", label: "Wishlist", icon: "wishlist" },
-  { href: "/compare", label: "Compare", icon: "clipboard" },
-  { href: "/profile", label: "Profile", icon: "profile" },
-];
+import { StorefrontHeaderDockNav } from "@/components/storefront/storefront-header-dock-nav";
 
 export default function StorefrontLayout({
   children,
@@ -23,7 +13,7 @@ export default function StorefrontLayout({
             <GriddyIcon name="spark" className="h-[1.15rem] w-[1.15rem]" />
             Smartphone Shop
           </Link>
-          <ExpandingNav items={storefrontLinks} ariaLabel="Storefront navigation" />
+          <StorefrontHeaderDockNav />
         </div>
       </header>
       <main className="flex-1">{children}</main>

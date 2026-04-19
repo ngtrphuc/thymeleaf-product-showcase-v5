@@ -1,4 +1,4 @@
-﻿export type ProductSummary = {
+export type ProductSummary = {
   id: number | null;
   name: string;
   brand: string;
@@ -12,6 +12,13 @@
   storage: string;
   ram: string;
   size: string;
+  os: string | null;
+  chipset: string | null;
+  speed: string | null;
+  resolution: string | null;
+  battery: string | null;
+  charging: string | null;
+  description: string | null;
   wishlisted: boolean;
 };
 

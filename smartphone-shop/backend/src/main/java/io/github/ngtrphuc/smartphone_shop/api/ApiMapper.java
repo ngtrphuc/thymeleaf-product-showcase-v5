@@ -36,6 +36,13 @@ public class ApiMapper {
                 product.getStorage(),
                 product.getRam(),
                 product.getSize(),
+                product.getOs(),
+                product.getChipset(),
+                product.getSpeed(),
+                product.getResolution(),
+                product.getBattery(),
+                product.getCharging(),
+                product.getDescription(),
                 wishlisted);
     }
 

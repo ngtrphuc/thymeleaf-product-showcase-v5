@@ -4,6 +4,8 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, authRegister } from "@/lib/api";
+import { PasswordField } from "@/components/auth/password-field";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -73,33 +75,32 @@ export default function RegisterPage() {
           />
         </label>
 
-        <label className="block space-y-1">
-          <span className="text-sm text-slate-700">Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="ui-input w-full px-3 py-2 text-sm"
-            required
-          />
-        </label>
+        <PasswordField
+          id="password"
+          name="password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          required
+        />
 
-        <label className="block space-y-1">
-          <span className="text-sm text-slate-700">Confirm Password</span>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            className="ui-input w-full px-3 py-2 text-sm"
-            required
-          />
-        </label>
+        <PasswordField
+          id="confirm-password"
+          name="confirmPassword"
+          label="Confirm Password"
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          autoComplete="new-password"
+          required
+        />
 
         <button
           type="submit"
           disabled={loading}
-          className="ui-btn ui-btn-primary w-full px-4 py-2.5 text-sm"
+          className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm"
         >
+          <GriddyIcon name="user" />
           {loading ? "Creating account..." : "Create Account"}
         </button>
       </form>

@@ -6,6 +6,17 @@ import { ApiError, fetchChatHistory, markChatRead, sendChatMessage, type ChatMes
 import { formatDateTime } from "@/lib/format";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
+function formatChatClock(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return formatDateTime(value);
+  }
+  return date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function StorefrontChatPage() {
   const [messages, setMessages] = useState<ChatMessageResponse[]>([]);
   const [draft, setDraft] = useState("");
@@ -86,18 +97,22 @@ export default function StorefrontChatPage() {
           <div className="max-h-[360px] min-h-[120px] space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-white p-3">
             {messages.map((message) => {
               const isUser = message.senderRole === "USER";
+              const sideClass = isUser ? "justify-end" : "justify-start";
+              const toneClass = isUser
+                ? "bg-[var(--color-primary)] text-black"
+                : "bg-slate-100 text-slate-800";
+              const metaClass = isUser ? "text-black/60" : "text-slate-500";
               return (
-                <article
-                  key={message.id}
-                  className={`max-w-[88%] rounded-xl px-3 py-2 text-sm ${
-                    isUser ? "ml-auto bg-[var(--color-primary)] text-white" : "bg-slate-100 text-slate-800"
-                  }`}
-                >
-                  <p>{message.content}</p>
-                  <p className={`mt-1 text-[11px] ${isUser ? "text-white/80" : "text-slate-500"}`}>
-                    {isUser ? "You" : "Shop"} | {formatDateTime(message.createdAt)}
-                  </p>
-                </article>
+                <div key={message.id} className={`flex ${sideClass}`}>
+                  <div className={`flex max-w-[88%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
+                    <article className={`inline-block w-fit break-words rounded-xl px-3 py-2 text-sm ${toneClass}`}>
+                      <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    </article>
+                    <p className={`px-1 text-[11px] ${metaClass}`}>
+                      {isUser ? "You" : "Shop"} | {formatChatClock(message.createdAt)}
+                    </p>
+                  </div>
+                </div>
               );
             })}
           </div>

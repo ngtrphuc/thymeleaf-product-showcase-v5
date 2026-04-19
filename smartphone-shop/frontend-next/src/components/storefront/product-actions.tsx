@@ -1,32 +1,58 @@
-﻿"use client";
+"use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { addCartItem, addCompareItem, addWishlistItem, ApiError } from "@/lib/api";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 type ProductActionsProps = {
   productId: number;
+  isAdmin?: boolean;
+  isAuthenticated?: boolean;
+  editHref?: string;
+  backHref?: string;
+  maxQuantity?: number | null;
 };
 
-export function ProductActions({ productId }: ProductActionsProps) {
+function clampQuantity(nextValue: number, maxQuantity?: number | null): number {
+  const upperBound = maxQuantity && maxQuantity > 0 ? maxQuantity : 99;
+  return Math.max(1, Math.min(nextValue, upperBound));
+}
+
+export function ProductActions({
+  productId,
+  isAdmin = false,
+  isAuthenticated = false,
+  editHref = "/admin/products",
+  backHref = "/products",
+  maxQuantity,
+}: ProductActionsProps) {
+  const router = useRouter();
+  const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
-  async function runAction(action: "cart" | "wishlist" | "compare") {
+  async function runAction(action: "cart" | "wishlist" | "compare" | "buyNow") {
     setLoadingAction(action);
     setMessage(null);
     setError(null);
     try {
       if (action === "cart") {
-        await addCartItem(productId, 1);
-        setMessage("Added to cart.");
+        await addCartItem(productId, quantity);
+        setMessage(`Added ${quantity} item(s) to cart.`);
       } else if (action === "wishlist") {
         await addWishlistItem(productId);
         setMessage("Added to wishlist.");
-      } else {
+      } else if (action === "compare") {
         await addCompareItem(productId);
         setMessage("Added to compare list.");
+      } else {
+        await addCartItem(productId, quantity);
+        router.push("/checkout");
+        router.refresh();
+        return;
       }
     } catch (err) {
       if (err instanceof ApiError) {
@@ -41,35 +67,147 @@ export function ProductActions({ productId }: ProductActionsProps) {
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-2 sm:grid-cols-3">
-        <button
-          type="button"
-          onClick={() => runAction("cart")}
-          disabled={loadingAction !== null}
-          className="ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
-        >
-          <GriddyIcon name="cart" />
-          {loadingAction === "cart" ? "Adding..." : "Add to Cart"}
-        </button>
-        <button
-          type="button"
-          onClick={() => runAction("wishlist")}
-          disabled={loadingAction !== null}
-          className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
-        >
-          <GriddyIcon name="heart-outline" />
-          {loadingAction === "wishlist" ? "Adding..." : "Wishlist"}
-        </button>
-        <button
-          type="button"
-          onClick={() => runAction("compare")}
-          disabled={loadingAction !== null}
-          className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
-        >
-          <GriddyIcon name="clipboard" />
-          {loadingAction === "compare" ? "Adding..." : "Compare"}
-        </button>
-      </div>
+      {isAdmin ? (
+        <div className="grid gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => runAction("compare")}
+            disabled={loadingAction !== null}
+            className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+          >
+            <GriddyIcon name="clipboard" />
+            {loadingAction === "compare" ? "Adding..." : "Compare"}
+          </button>
+          <Link
+            href={editHref}
+            className="ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+          >
+            <GriddyIcon name="box" />
+            Edit
+          </Link>
+          <Link
+            href={backHref}
+            className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+          >
+            <GriddyIcon name="arrow-left" />
+            Back
+          </Link>
+        </div>
+      ) : isAuthenticated ? (
+        <div className="space-y-2">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="glass-panel flex items-center justify-between rounded-xl px-2 py-1.5">
+              <button
+                type="button"
+                onClick={() => setQuantity((prev) => clampQuantity(prev - 1, maxQuantity))}
+                disabled={loadingAction !== null}
+                className="ui-btn ui-btn-secondary h-8 w-8 p-0 text-base"
+                aria-label="Decrease quantity"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min={1}
+                max={maxQuantity ?? 99}
+                value={quantity}
+                onChange={(event) => {
+                  const raw = Number.parseInt(event.target.value || "1", 10);
+                  setQuantity(clampQuantity(Number.isNaN(raw) ? 1 : raw, maxQuantity));
+                }}
+                className="ui-input mx-2 h-8 w-16 px-2 py-1 text-center text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setQuantity((prev) => clampQuantity(prev + 1, maxQuantity))}
+                disabled={loadingAction !== null}
+                className="ui-btn ui-btn-secondary h-8 w-8 p-0 text-base"
+                aria-label="Increase quantity"
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => runAction("buyNow")}
+              disabled={loadingAction !== null}
+              className="ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            >
+              <GriddyIcon name="credit-card" />
+              {loadingAction === "buyNow" ? "Processing..." : "Buy Now"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => runAction("cart")}
+              disabled={loadingAction !== null}
+              className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            >
+              <GriddyIcon name="cart" />
+              {loadingAction === "cart" ? "Adding..." : "Add to Cart"}
+            </button>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => runAction("wishlist")}
+              disabled={loadingAction !== null}
+              className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            >
+              <GriddyIcon name="heart-outline" />
+              {loadingAction === "wishlist" ? "Adding..." : "Wishlist"}
+            </button>
+            <button
+              type="button"
+              onClick={() => runAction("compare")}
+              disabled={loadingAction !== null}
+              className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            >
+              <GriddyIcon name="clipboard" />
+              {loadingAction === "compare" ? "Adding..." : "Compare"}
+            </button>
+            <Link
+              href={backHref}
+              className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+            >
+              <GriddyIcon name="arrow-left" />
+              Back
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => runAction("cart")}
+            disabled={loadingAction !== null}
+            className="ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+          >
+            <GriddyIcon name="cart" />
+            {loadingAction === "cart" ? "Adding..." : "Add to Cart"}
+          </button>
+          <button
+            type="button"
+            onClick={() => runAction("wishlist")}
+            disabled={loadingAction !== null}
+            className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+          >
+            <GriddyIcon name="heart-outline" />
+            {loadingAction === "wishlist" ? "Adding..." : "Wishlist"}
+          </button>
+          <button
+            type="button"
+            onClick={() => runAction("compare")}
+            disabled={loadingAction !== null}
+            className="ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
+          >
+            <GriddyIcon name="clipboard" />
+            {loadingAction === "compare" ? "Adding..." : "Compare"}
+          </button>
+        </div>
+      )}
       {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>

@@ -18,7 +18,7 @@ export default function AdminLayout({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/admin" className="text-lg font-bold text-slate-900">
-              Admin Console
+              Admin Panel
             </Link>
             <ExpandingNav items={adminLinks} ariaLabel="Admin navigation" />
           </div>
@@ -29,3 +29,4 @@ export default function AdminLayout({
     </div>
   );
 }
+

@@ -9,6 +9,7 @@ import {
   type AdminOrderPageResponse,
 } from "@/lib/api";
 import { formatDateTime, formatPriceVnd } from "@/lib/format";
+import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge";
 
 const ORDER_STATUSES = ["pending", "processing", "shipped", "delivered", "cancelled"];
 
@@ -91,6 +92,15 @@ export default function AdminOrdersPage() {
               </div>
 
               <p className="mt-2 text-sm text-slate-700">{order.statusSummary}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                <span>Payment:</span>
+                <PaymentMethodBadge
+                  method={order.paymentMethod}
+                  label={order.paymentMethod}
+                  textClassName="font-semibold text-slate-900"
+                />
+                <span>- {order.paymentPlan}</span>
+              </div>
               <p className="mt-1 text-sm text-slate-700">Shipping: {order.shippingAddress}</p>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">

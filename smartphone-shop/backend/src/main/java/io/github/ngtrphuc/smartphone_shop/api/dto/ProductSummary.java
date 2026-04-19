@@ -16,6 +16,13 @@ public record ProductSummary(
         String storage,
         String ram,
         String size,
+        String os,
+        String chipset,
+        String speed,
+        String resolution,
+        String battery,
+        String charging,
+        String description,
         boolean wishlisted) implements Serializable {
 
     private static final long serialVersionUID = 1L;

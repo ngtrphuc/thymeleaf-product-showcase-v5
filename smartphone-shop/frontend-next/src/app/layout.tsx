@@ -1,15 +1,17 @@
-﻿import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata } from "next";
+import { DM_Mono, DM_Sans } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const dmMono = DM_Mono({
+  variable: "--font-dm-mono",
   subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
@@ -26,9 +28,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full bg-[var(--color-page)] text-[var(--color-text)]">
-        <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(900px_circle_at_8%_0%,rgba(0,0,0,0.08),transparent_45%),radial-gradient(840px_circle_at_92%_8%,rgba(0,0,0,0.06),transparent_40%),linear-gradient(180deg,#ffffff_0%,#f2f2f2_100%)]" />
+    <html lang="en" className={`${dmSans.variable} ${dmMono.variable} h-full antialiased`}>
+      <body className="page-bg-grid min-h-full bg-[var(--color-page)] text-[var(--color-text)]">
+        <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(900px_circle_at_10%_-10%,rgba(255,255,255,0.10),transparent_38%),radial-gradient(760px_circle_at_96%_2%,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,#0d0d10_0%,#060608_100%)]" />
         {children}
       </body>
     </html>

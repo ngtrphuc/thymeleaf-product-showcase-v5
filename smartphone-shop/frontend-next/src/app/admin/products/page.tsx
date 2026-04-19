@@ -1,17 +1,20 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
 import {
   ApiError,
   createAdminProduct,
   deleteAdminProduct,
   fetchAdminProducts,
+  toAssetUrl,
   updateAdminProduct,
   type AdminProduct,
   type AdminProductPageResponse,
 } from "@/lib/api";
 import { formatPriceVnd } from "@/lib/format";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 const EMPTY_PRODUCT: AdminProduct = {
   id: null,
@@ -190,8 +193,9 @@ export default function AdminProductsPage() {
         <button
           type="submit"
           disabled={saving}
-          className="ui-btn ui-btn-primary sm:col-span-2 px-4 py-2.5 text-sm"
+          className="ui-btn ui-btn-primary sm:col-span-2 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm"
         >
+          <GriddyIcon name="box" />
           {saving ? "Saving..." : "Create Product"}
         </button>
       </form>
@@ -240,26 +244,40 @@ export default function AdminProductsPage() {
                           type="button"
                           onClick={() => void onUpdate()}
                           disabled={saving}
-                          className="ui-btn ui-btn-primary px-3 py-1.5 text-xs"
+                          className="ui-btn ui-btn-primary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
                         >
+                          <GriddyIcon name="check" />
                           Save
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditId(null)}
-                          className="ui-btn ui-btn-secondary px-3 py-1.5 text-xs"
+                          className="ui-btn ui-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
                         >
+                          <GriddyIcon name="ban" />
                           Cancel
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="font-semibold text-slate-900">{product.name}</p>
-                        <p className="text-sm text-slate-600">
-                          {formatPriceVnd(product.price)} - Stock: {product.stock}
-                        </p>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)]">
+                          <Image
+                            src={toAssetUrl(product.imageUrl)}
+                            alt={product.name}
+                            fill
+                            className="object-contain p-1.5"
+                            sizes="64px"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-slate-900">{product.name}</p>
+                          <p className="text-sm text-slate-600">
+                            {formatPriceVnd(product.price)} - Stock: {product.stock}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -268,16 +286,18 @@ export default function AdminProductsPage() {
                             setEditId(product.id ?? null);
                             setEditProduct(product);
                           }}
-                          className="ui-btn ui-btn-secondary px-3 py-1.5 text-xs"
+                          className="ui-btn ui-btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
                         >
+                          <GriddyIcon name="clipboard" />
                           Edit
                         </button>
                         {product.id ? (
                           <button
                             type="button"
                             onClick={() => void onDelete(product.id ?? 0)}
-                            className="ui-btn ui-btn-danger px-3 py-1.5 text-xs"
+                            className="ui-btn ui-btn-danger inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
                           >
+                            <GriddyIcon name="trash" />
                             Delete
                           </button>
                         ) : null}
@@ -293,4 +313,3 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-

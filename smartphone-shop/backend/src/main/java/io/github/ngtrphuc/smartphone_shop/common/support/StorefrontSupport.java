@@ -40,7 +40,7 @@ public final class StorefrontSupport {
             case PAYPAY -> "PayPay";
             case KOMBINI -> "Kombini";
             case VISA -> "Visa";
-            case MASTERCARD -> "MasterCard";
+            case MASTERCARD -> "Credit Card";
         };
     }
 

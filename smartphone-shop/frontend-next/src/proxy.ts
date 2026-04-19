@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const CUSTOMER_PROTECTED = ["/cart", "/checkout", "/profile", "/orders", "/wishlist", "/compare", "/chat"];
 const ADMIN_PROTECTED = ["/admin"];
@@ -44,10 +44,6 @@ export function proxy(request: NextRequest) {
     if (role !== "ROLE_ADMIN") {
       return NextResponse.redirect(new URL("/products", request.url));
     }
-  }
-
-  if (token && role === "ROLE_ADMIN" && pathname === "/") {
-    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   if (token && startsWithAny(pathname, AUTH_ROUTES)) {

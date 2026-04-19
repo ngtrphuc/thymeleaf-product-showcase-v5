@@ -12,6 +12,8 @@ import {
   updateProfile,
   type ProfileResponse,
 } from "@/lib/api";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
+import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -173,8 +175,9 @@ export default function ProfilePage() {
             type="button"
             onClick={() => void logout()}
             disabled={saving}
-            className="rounded-xl border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-slate-800"
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-slate-800"
           >
+            <GriddyIcon name="logout" />
             Logout
           </button>
         </div>
@@ -233,8 +236,9 @@ export default function ProfilePage() {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white"
+          className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black"
         >
+          <GriddyIcon name="check" />
           {saving ? "Saving..." : "Save Profile"}
         </button>
       </form>
@@ -250,11 +254,12 @@ export default function ProfilePage() {
               <article key={method.id} className="rounded-xl border border-[var(--color-border)] bg-white p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-slate-900">
-                      {method.displayName}
-                      {method.isDefault ? " (Default)" : ""}
-                    </p>
-                    <p className="text-xs text-slate-600">{method.maskedDetail ?? "No detail"}</p>
+                    <PaymentMethodBadge
+                      method={method.type}
+                      label={`${method.displayName}${method.isDefault ? " (Default)" : ""}`}
+                      textClassName="font-semibold text-slate-900"
+                    />
+                    {method.maskedDetail ? <p className="text-xs text-slate-600">{method.maskedDetail}</p> : null}
                   </div>
                   <div className="flex gap-2">
                     {!method.isDefault ? (
@@ -262,8 +267,9 @@ export default function ProfilePage() {
                         type="button"
                         disabled={saving}
                         onClick={() => void setDefault(method.id)}
-                        className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold"
+                        className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold"
                       >
+                        <GriddyIcon name="check" />
                         Set Default
                       </button>
                     ) : null}
@@ -271,8 +277,9 @@ export default function ProfilePage() {
                       type="button"
                       disabled={saving}
                       onClick={() => void removePayment(method.id)}
-                      className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"
+                      className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700"
                     >
+                      <GriddyIcon name="trash" />
                       Remove
                     </button>
                   </div>
@@ -284,6 +291,9 @@ export default function ProfilePage() {
 
         <div className="rounded-xl border border-[var(--color-border)] bg-white p-4">
           <h3 className="text-sm font-semibold text-slate-900">Add Payment Method</h3>
+          <div className="mt-2">
+            <PaymentMethodBadge method={newPaymentType} />
+          </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <select
               value={newPaymentType}
@@ -293,7 +303,7 @@ export default function ProfilePage() {
               <option value="CASH_ON_DELIVERY">Cash on Delivery</option>
               <option value="BANK_TRANSFER">Bank Transfer</option>
               <option value="PAYPAY">PayPay</option>
-              <option value="MASTERCARD">MasterCard</option>
+              <option value="MASTERCARD">Credit Card</option>
             </select>
             <input
               value={newPaymentDetail}
@@ -307,8 +317,9 @@ export default function ProfilePage() {
             type="button"
             disabled={saving}
             onClick={() => void addPayment()}
-            className="mt-3 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white"
+            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black"
           >
+            <GriddyIcon name="credit-card" />
             Add Method
           </button>
         </div>

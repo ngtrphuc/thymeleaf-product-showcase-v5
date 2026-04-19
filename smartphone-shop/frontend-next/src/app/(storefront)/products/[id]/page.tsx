@@ -1,5 +1,6 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { ApiError, fetchProductDetail, toAssetUrl, type ProductSummary } from "@/lib/api";
 import { formatPriceVnd } from "@/lib/format";
@@ -21,8 +22,37 @@ function AvailabilityBadge({ product }: { product: ProductSummary }) {
   );
 }
 
+function decodeJwtRole(token: string): string | null {
+  const segments = token.split(".");
+  if (segments.length < 2) {
+    return null;
+  }
+
+  try {
+    const encoded = segments[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=");
+    const payload = JSON.parse(Buffer.from(padded, "base64").toString("utf-8")) as { role?: string };
+    return payload.role ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function SpecItem({ label, value }: { label: string; value: string | number | null | undefined }) {
+  return (
+    <div>
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="font-semibold text-slate-900">{value || "N/A"}</dd>
+    </div>
+  );
+}
+
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { id } = await params;
+  const jwt = (await cookies()).get("jwt")?.value;
+  const role = jwt ? decodeJwtRole(jwt) : null;
+  const isAdmin = role === "ROLE_ADMIN";
+  const isAuthenticated = !!jwt;
 
   let detail;
   try {
@@ -63,30 +93,42 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           <h1 className="text-3xl font-bold text-slate-900">{product.name}</h1>
           <AvailabilityBadge product={product} />
           <p className="text-3xl font-bold text-[var(--color-primary-strong)]">{formatPriceVnd(product.price)}</p>
+
           <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
             <dl className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <dt className="text-slate-500">Storage</dt>
-                <dd className="font-semibold text-slate-900">{product.storage || "N/A"}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">RAM</dt>
-                <dd className="font-semibold text-slate-900">{product.ram || "N/A"}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Screen</dt>
-                <dd className="font-semibold text-slate-900">{product.size || "N/A"}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Stock</dt>
-                <dd className="font-semibold text-slate-900">{product.stock ?? 0}</dd>
-              </div>
+              <SpecItem label="Storage" value={product.storage} />
+              <SpecItem label="RAM" value={product.ram} />
+              <SpecItem label="Screen" value={product.size} />
+              <SpecItem label="Resolution" value={product.resolution} />
+              <SpecItem label="Operating System" value={product.os} />
+              <SpecItem label="Chipset" value={product.chipset} />
+              <SpecItem label="CPU Speed" value={product.speed} />
+              <SpecItem label="Battery" value={product.battery} />
+              <SpecItem label="Charging" value={product.charging} />
+              <SpecItem label="Stock" value={product.stock} />
             </dl>
           </div>
+
+          {product.description ? (
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
+              <h2 className="text-sm font-semibold text-slate-900">Product Description</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{product.description}</p>
+            </div>
+          ) : null}
+
           <p className="text-sm text-slate-600">
             Estimated installment from <strong>{formatPriceVnd(product.monthlyInstallmentAmount)}</strong> / month.
           </p>
-          {product.id ? <ProductActions productId={product.id} /> : null}
+          {product.id ? (
+            <ProductActions
+              productId={product.id}
+              isAdmin={isAdmin}
+              isAuthenticated={isAuthenticated && !isAdmin}
+              editHref="/admin/products"
+              backHref="/products"
+              maxQuantity={product.stock}
+            />
+          ) : null}
         </div>
       </section>
 

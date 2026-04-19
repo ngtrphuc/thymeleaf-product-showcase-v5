@@ -301,6 +301,13 @@ public class ProductApiController {
                 product.storage(),
                 product.ram(),
                 product.size(),
+                product.os(),
+                product.chipset(),
+                product.speed(),
+                product.resolution(),
+                product.battery(),
+                product.charging(),
+                product.description(),
                 wishlisted);
     }
 

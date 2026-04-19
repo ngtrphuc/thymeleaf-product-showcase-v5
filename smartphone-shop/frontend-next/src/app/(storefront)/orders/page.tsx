@@ -4,6 +4,8 @@
 import { useEffect, useState } from "react";
 import { ApiError, cancelOrder, fetchOrders, type OrderResponse } from "@/lib/api";
 import { formatDateTime, formatPriceVnd } from "@/lib/format";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
+import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderResponse[]>([]);
@@ -83,9 +85,15 @@ export default function OrdersPage() {
               </div>
 
               <p className="mt-3 text-sm text-slate-700">{order.statusSummary}</p>
-              <p className="mt-1 text-sm text-slate-700">
-                Payment: <strong>{order.paymentMethod}</strong> - {order.paymentPlan}
-              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                <span>Payment:</span>
+                <PaymentMethodBadge
+                  method={order.paymentMethod}
+                  label={order.paymentMethod}
+                  textClassName="font-semibold text-slate-900"
+                />
+                <span>- {order.paymentPlan}</span>
+              </div>
               <p className="mt-1 text-sm text-slate-700">Shipping: {order.shippingAddress}</p>
               <p className="mt-2 text-xl font-bold text-slate-900">{formatPriceVnd(order.totalAmount)}</p>
 
@@ -102,8 +110,9 @@ export default function OrdersPage() {
                   type="button"
                   disabled={busyOrderId === order.id}
                   onClick={() => void onCancel(order.id)}
-                  className="mt-4 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
                 >
+                  <GriddyIcon name="ban" />
                   {busyOrderId === order.id ? "Cancelling..." : "Cancel Order"}
                 </button>
               ) : null}

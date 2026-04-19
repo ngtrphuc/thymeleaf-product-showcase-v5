@@ -13,6 +13,7 @@ import {
   type CartResponse,
 } from "@/lib/api";
 import { formatPriceVnd } from "@/lib/format";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartResponse | null>(null);
@@ -82,8 +83,9 @@ export default function CartPage() {
           <p className="text-slate-700">Your cart is currently empty.</p>
           <Link
             href="/products"
-            className="ui-btn ui-btn-primary mt-4 inline-flex px-4 py-2 text-sm"
+            className="ui-btn ui-btn-primary mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm"
           >
+            <GriddyIcon name="package" />
             Browse Products
           </Link>
         </div>
@@ -120,8 +122,9 @@ export default function CartPage() {
                       type="button"
                       disabled={busy}
                       onClick={() => mutate(() => removeCartItem(item.id))}
-                      className="ui-btn ui-btn-danger ml-2 px-3 py-1.5 text-sm"
+                      className="ui-btn ui-btn-danger ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm"
                     >
+                      <GriddyIcon name="trash" />
                       Remove
                     </button>
                   </div>
@@ -138,14 +141,16 @@ export default function CartPage() {
                 type="button"
                 disabled={busy}
                 onClick={() => mutate(() => clearCart())}
-                className="ui-btn ui-btn-secondary px-4 py-2 text-sm"
+                className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
               >
+                <GriddyIcon name="close-circle" />
                 Clear Cart
               </button>
               <Link
                 href="/checkout"
-                className="ui-btn ui-btn-primary px-4 py-2 text-sm"
+                className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
               >
+                <GriddyIcon name="credit-card" />
                 Proceed to Checkout
               </Link>
             </div>

@@ -13,6 +13,8 @@ import {
 } from "@/lib/api";
 import { CheckoutSkeleton } from "@/components/storefront/checkout-skeleton";
 import { formatPriceVnd } from "@/lib/format";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
+import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge";
 
 type PaymentMethodType = "CASH_ON_DELIVERY" | "BANK_TRANSFER" | "PAYPAY" | "MASTERCARD";
 type PaymentPlanType = "FULL_PAYMENT" | "INSTALLMENT";
@@ -173,6 +175,9 @@ export default function CheckoutPage() {
           </label>
 
           <h2 className="pt-2 text-lg font-semibold text-slate-900">Payment</h2>
+          <div className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2">
+            <PaymentMethodBadge method={paymentMethod} />
+          </div>
 
           <label className="block space-y-1">
             <span className="text-sm text-slate-700">Payment Method</span>
@@ -184,7 +189,7 @@ export default function CheckoutPage() {
               <option value="CASH_ON_DELIVERY">Cash on Delivery</option>
               <option value="BANK_TRANSFER">Bank Transfer</option>
               <option value="PAYPAY">PayPay</option>
-              <option value="MASTERCARD">MasterCard</option>
+              <option value="MASTERCARD">Credit Card</option>
             </select>
           </label>
 
@@ -257,10 +262,14 @@ export default function CheckoutPage() {
               <p className="font-semibold text-slate-800">Saved payment methods</p>
               <ul className="mt-2 space-y-1">
                 {paymentMethods.map((method) => (
-                  <li key={method.id}>
-                    {method.displayName}
-                    {method.maskedDetail ? ` (${method.maskedDetail})` : ""}
-                    {method.isDefault ? " - default" : ""}
+                  <li key={method.id} className="flex flex-wrap items-center gap-2">
+                    <PaymentMethodBadge
+                      method={method.type}
+                      label={method.displayName}
+                      textClassName="text-xs text-slate-700"
+                    />
+                    {method.maskedDetail ? <span>({method.maskedDetail})</span> : null}
+                    {method.isDefault ? <span>- default</span> : null}
                   </li>
                 ))}
               </ul>
@@ -270,8 +279,9 @@ export default function CheckoutPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="ui-btn ui-btn-primary w-full px-4 py-2.5 text-sm"
+            className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm"
           >
+            <GriddyIcon name="check" />
             {submitting ? "Placing order..." : "Place Order"}
           </button>
         </section>

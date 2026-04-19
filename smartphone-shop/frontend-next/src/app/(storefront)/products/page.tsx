@@ -1,19 +1,14 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { fetchCatalogPage } from "@/lib/api";
 import { ProductCard } from "@/components/storefront/product-card";
+import { CatalogFilters } from "@/components/storefront/catalog-filters";
+import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 type SearchValue = string | string[] | undefined;
 
 type ProductsPageProps = {
   searchParams?: Promise<Record<string, SearchValue>>;
 };
-
-const SORT_OPTIONS = [
-  { label: "Name A-Z", value: "name_asc" },
-  { label: "Name Z-A", value: "name_desc" },
-  { label: "Price Low to High", value: "price_asc" },
-  { label: "Price High to Low", value: "price_desc" },
-];
 
 function readFirst(value: SearchValue): string | undefined {
   if (Array.isArray(value)) {
@@ -35,15 +30,32 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const resolved: Record<string, SearchValue> = await (
     searchParams ?? Promise.resolve({} as Record<string, SearchValue>)
   );
+
   const keyword = readFirst(resolved.keyword)?.trim() ?? "";
   const brand = readFirst(resolved.brand)?.trim() ?? "";
   const sort = readFirst(resolved.sort)?.trim() ?? "name_asc";
+  const storage = readFirst(resolved.storage)?.trim() ?? "";
+  const priceRange = readFirst(resolved.priceRange)?.trim() ?? "";
+  const priceMin = readFirst(resolved.priceMin)?.trim() ?? "";
+  const priceMax = readFirst(resolved.priceMax)?.trim() ?? "";
+  const batteryRange = readFirst(resolved.batteryRange)?.trim() ?? "";
+  const batteryMin = readFirst(resolved.batteryMin)?.trim() ?? "";
+  const batteryMax = readFirst(resolved.batteryMax)?.trim() ?? "";
+  const screenSize = readFirst(resolved.screenSize)?.trim() ?? "";
   const page = positiveInt(readFirst(resolved.page), 0);
 
   const query = new URLSearchParams();
   if (keyword.length > 0) query.set("keyword", keyword);
   if (brand.length > 0) query.set("brand", brand);
   if (sort.length > 0) query.set("sort", sort);
+  if (storage.length > 0) query.set("storage", storage);
+  if (priceRange.length > 0) query.set("priceRange", priceRange);
+  if (priceMin.length > 0) query.set("priceMin", priceMin);
+  if (priceMax.length > 0) query.set("priceMax", priceMax);
+  if (batteryRange.length > 0) query.set("batteryRange", batteryRange);
+  if (batteryMin.length > 0) query.set("batteryMin", batteryMin);
+  if (batteryMax.length > 0) query.set("batteryMax", batteryMax);
+  if (screenSize.length > 0) query.set("screenSize", screenSize);
   query.set("page", String(page));
 
   const catalog = await fetchCatalogPage(query);
@@ -73,59 +85,22 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         </p>
       </header>
 
-      <section className="glass-panel rounded-3xl p-5">
-        <form className="grid gap-4 md:grid-cols-3">
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Keyword</span>
-            <input
-              name="keyword"
-              defaultValue={keyword}
-              placeholder="Example: iPhone, Samsung"
-              className="ui-input px-3 py-2 text-sm"
-            />
-          </label>
-
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Brand</span>
-            <select
-              name="brand"
-              defaultValue={brand}
-              className="ui-input px-3 py-2 text-sm"
-            >
-              <option value="">All brands</option>
-              {catalog.brands.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Sort</span>
-            <select
-              name="sort"
-              defaultValue={sort}
-              className="ui-input px-3 py-2 text-sm"
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="md:col-span-3">
-            <button
-              type="submit"
-              className="ui-btn ui-btn-primary inline-flex items-center px-5 py-2.5 text-sm"
-            >
-              Apply Filters
-            </button>
-          </div>
-        </form>
-      </section>
+      <CatalogFilters
+        brands={catalog.brands}
+        initialValues={{
+          keyword,
+          brand,
+          sort,
+          storage,
+          priceRange,
+          priceMin,
+          priceMax,
+          batteryRange,
+          batteryMin,
+          batteryMax,
+          screenSize,
+        }}
+      />
 
       <section className="flex items-center justify-between rounded-2xl px-2 text-sm text-slate-600">
         <p>
@@ -152,12 +127,13 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       <nav className="glass-panel flex items-center justify-between rounded-2xl p-4">
         <Link
           href={pageHref(previousPage)}
-          className={`ui-btn px-4 py-2 text-sm ${
+          className={`ui-btn inline-flex items-center gap-2 px-4 py-2 text-sm ${
             currentPage === 0
               ? "pointer-events-none border border-[var(--color-border)] bg-slate-100 text-slate-400"
               : "ui-btn-secondary"
           }`}
         >
+          <GriddyIcon name="arrow-left" />
           Previous
         </Link>
 
@@ -179,13 +155,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
         <Link
           href={pageHref(nextPage)}
-          className={`ui-btn px-4 py-2 text-sm ${
+          className={`ui-btn inline-flex items-center gap-2 px-4 py-2 text-sm ${
             currentPage >= totalPages - 1
               ? "pointer-events-none border border-[var(--color-border)] bg-slate-100 text-slate-400"
               : "ui-btn-secondary"
           }`}
         >
           Next
+          <GriddyIcon name="arrow-right" />
         </Link>
       </nav>
     </div>
