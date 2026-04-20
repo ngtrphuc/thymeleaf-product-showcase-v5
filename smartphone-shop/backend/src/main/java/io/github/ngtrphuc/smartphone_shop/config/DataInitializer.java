@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.lang.NonNull;
 
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
@@ -45,30 +47,34 @@ public class DataInitializer {
                 boolean isNew = product == null;
                 if (isNew) {
                     product = new Product();
+                    applySeed(product, seed);
+                    toSave.add(product);
+                    inserted++;
+                    continue;
                 }
 
-                applySeed(product, seed);
-                toSave.add(product);
-
-                if (isNew) {
-                    inserted++;
-                } else {
+                if (needsUpdate(product, seed)) {
+                    applySeed(product, seed);
+                    toSave.add(product);
                     updated++;
                 }
             }
 
-            repository.saveAll(toSave);
-            clearStorefrontCache(cacheManager, CATALOG_PUBLIC_CACHE);
-            clearStorefrontCache(cacheManager, PRODUCT_DETAIL_PUBLIC_CACHE);
+            if (!toSave.isEmpty()) {
+                repository.saveAll(toSave);
+                clearStorefrontCache(cacheManager, CATALOG_PUBLIC_CACHE);
+                clearStorefrontCache(cacheManager, PRODUCT_DETAIL_PUBLIC_CACHE);
+            }
             log.info("Product catalog synced. Inserted: {}, Updated: {}", inserted, updated);
         };
     }
 
-    private void clearStorefrontCache(CacheManager cacheManager, String cacheName) {
+    private void clearStorefrontCache(CacheManager cacheManager, @NonNull String cacheName) {
         if (cacheManager == null) {
             return;
         }
-        Cache cache = cacheManager.getCache(cacheName);
+        String resolvedCacheName = Objects.requireNonNull(cacheName, "Cache name must not be null.");
+        Cache cache = cacheManager.getCache(resolvedCacheName);
         if (cache != null) {
             cache.clear();
         }
@@ -91,6 +97,23 @@ public class DataInitializer {
         product.setBattery(seed.battery());
         product.setCharging(seed.charging());
         product.setDescription(seed.description());
+    }
+
+    private boolean needsUpdate(Product product, ProductSeed seed) {
+        return !Objects.equals(product.getName(), seed.name())
+                || !Objects.equals(product.getPrice(), seed.price())
+                || product.getStock() == null
+                || !Objects.equals(product.getImageUrl(), seed.imageUrl())
+                || !Objects.equals(product.getOs(), seed.os())
+                || !Objects.equals(product.getRam(), seed.ram())
+                || !Objects.equals(product.getChipset(), seed.chipset())
+                || !Objects.equals(product.getSpeed(), seed.speed())
+                || !Objects.equals(product.getStorage(), seed.storage())
+                || !Objects.equals(product.getSize(), seed.size())
+                || !Objects.equals(product.getResolution(), seed.resolution())
+                || !Objects.equals(product.getBattery(), seed.battery())
+                || !Objects.equals(product.getCharging(), seed.charging())
+                || !Objects.equals(product.getDescription(), seed.description());
     }
 
     private List<ProductSeed> seeds() {

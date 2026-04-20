@@ -12,6 +12,10 @@ public interface CartItemRepository extends JpaRepository<CartItemEntity, Long> 
     Optional<CartItemEntity> findByUserEmailAndProductId(String userEmail, Long productId);
     @Query("SELECT DISTINCT c.userEmail FROM CartItemEntity c")
     List<String> findDistinctUserEmails();
+
+    @Query("SELECT COALESCE(SUM(c.quantity), 0) FROM CartItemEntity c WHERE c.userEmail = :email")
+    long sumQuantityByUserEmail(@Param("email") String email);
+
     void deleteByUserEmail(String userEmail);
     void deleteByUserEmailAndProductId(String userEmail, Long productId);
     void deleteByProductId(Long productId);

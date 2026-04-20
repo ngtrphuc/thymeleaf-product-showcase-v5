@@ -12,19 +12,37 @@ type ProductCardProps = {
 
 export function ProductCard({ product }: ProductCardProps) {
   const productId = product.id ?? 0;
+  const productHref = product.id ? `/products/${productId}` : null;
 
   return (
     <article className="glass-panel group overflow-hidden rounded-3xl">
       <div className="relative aspect-square overflow-hidden bg-[var(--color-surface-soft)]">
-        <Image
-          src={toAssetUrl(product.imageUrl)}
-          alt={product.name}
-          width={640}
-          height={640}
-          className="h-full w-full object-contain p-2 transition duration-300 group-hover:scale-[1.03]"
-          unoptimized
-        />
-        <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700">
+        {productHref ? (
+          <Link
+            href={productHref}
+            aria-label={`View details for ${product.name}`}
+            className="block h-full w-full"
+          >
+            <Image
+              src={toAssetUrl(product.imageUrl)}
+              alt={product.name}
+              width={640}
+              height={640}
+              className="h-full w-full object-contain p-2 transition duration-300 group-hover:scale-[1.03]"
+              unoptimized
+            />
+          </Link>
+        ) : (
+          <Image
+            src={toAssetUrl(product.imageUrl)}
+            alt={product.name}
+            width={640}
+            height={640}
+            className="h-full w-full object-contain p-2 transition duration-300 group-hover:scale-[1.03]"
+            unoptimized
+          />
+        )}
+        <div className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700">
           {product.brand}
         </div>
         {product.id ? <QuickProductActions productId={productId} initiallyWishlisted={product.wishlisted} /> : null}
@@ -50,13 +68,15 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.availabilityLabel || "Unavailable"}
         </p>
 
-        <Link
-          href={`/products/${productId}`}
-          className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center px-4 py-2.5 text-sm"
-        >
-          <GriddyIcon name="eye" className="mr-1" />
-          View Details
-        </Link>
+        {productHref ? (
+          <Link
+            href={productHref}
+            className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center px-4 py-2.5 text-sm"
+          >
+            <GriddyIcon name="eye" className="mr-1" />
+            View Details
+          </Link>
+        ) : null}
       </div>
     </article>
   );

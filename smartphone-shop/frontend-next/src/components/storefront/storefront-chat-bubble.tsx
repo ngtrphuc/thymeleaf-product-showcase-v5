@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { MessageSquare, X } from "lucide-react";
 import {
   ApiError,
-  fetchAuthMe,
+  fetchAuthMeCached,
   fetchChatHistory,
   fetchChatUnreadCount,
   markChatRead,
@@ -51,7 +51,7 @@ export function StorefrontChatBubble() {
 
     async function resolveAuth() {
       try {
-        const response = await fetchAuthMe();
+        const response = await fetchAuthMeCached();
         if (alive) {
           setAuthState(response);
         }

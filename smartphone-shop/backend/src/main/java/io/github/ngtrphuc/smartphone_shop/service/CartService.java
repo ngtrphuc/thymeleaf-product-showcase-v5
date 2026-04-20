@@ -357,6 +357,11 @@ public class CartService {
         return getDbCartSnapshot(email);
     }
 
+    @Transactional(readOnly = true)
+    public int countUserCartItems(String email) {
+        return Math.toIntExact(cartItemRepository.sumQuantityByUserEmail(email));
+    }
+
     @Scheduled(fixedDelayString = "${app.cart.cleanup-delay-ms:300000}")
     @Transactional
     public void cleanupDbCartForAllUsers() {

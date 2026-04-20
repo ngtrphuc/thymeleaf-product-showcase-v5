@@ -93,6 +93,54 @@ textarea {
   box-shadow: var(--shadow-hover);
 }
 
+.brand-glow-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-text);
+  box-shadow: none;
+  transform: translateY(0);
+  isolation: isolate;
+  transition:
+    transform 220ms ease,
+    color 220ms ease,
+    text-shadow 220ms ease;
+}
+
+.brand-glow-link::after {
+  content: "";
+  position: absolute;
+  inset: -0.2rem -0.35rem;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    55% 65% at 50% 50%,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(130, 214, 255, 0.12) 45%,
+    rgba(130, 214, 255, 0) 100%
+  );
+  filter: blur(8px);
+  transition: opacity 220ms ease;
+  z-index: -1;
+}
+
+.brand-glow-link:hover,
+.brand-glow-link:focus-visible {
+  transform: translateY(-1.5px);
+  color: #ffffff;
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.28);
+}
+
+.brand-glow-link:hover::after,
+.brand-glow-link:focus-visible::after {
+  opacity: 1;
+}
+
 .ui-btn {
   display: inline-flex;
   align-items: center;
@@ -216,6 +264,7 @@ input[type="number"] {
 .ui-expand-link {
   --expand-collapsed-width: 2.8rem;
   --expand-open-width: 9rem;
+  position: relative;
   width: var(--expand-collapsed-width);
   min-width: var(--expand-collapsed-width);
   height: 2.6rem;
@@ -280,6 +329,33 @@ input[type="number"] {
 
 .ui-expand-link:active {
   transform: translateY(0);
+}
+
+.ui-expand-badge-corner {
+  position: absolute;
+  top: 0.22rem;
+  right: 0.22rem;
+  min-width: 0.96rem;
+  height: 0.96rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+  padding: 0 0.16rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .ui-expand-badge-corner {
+    top: 0.2rem;
+    right: 0.2rem;
+  }
 }
 
 @media (max-width: 640px) {

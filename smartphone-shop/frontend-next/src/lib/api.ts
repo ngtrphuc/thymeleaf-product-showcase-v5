@@ -210,6 +210,11 @@ const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
 const RETRY_SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const DEFAULT_RETRY_COUNT = Number.parseInt(process.env.NEXT_PUBLIC_API_RETRY_COUNT ?? "1", 10);
 const DEFAULT_RETRY_BASE_DELAY_MS = Number.parseInt(process.env.NEXT_PUBLIC_API_RETRY_BASE_DELAY_MS ?? "250", 10);
+const DEFAULT_AUTH_ME_CACHE_TTL_MS = Number.parseInt(process.env.NEXT_PUBLIC_AUTH_ME_CACHE_TTL_MS ?? "30000", 10);
+
+let authMeCache: AuthMeResponse | null = null;
+let authMeCacheAt = 0;
+let authMeInFlight: Promise<AuthMeResponse> | null = null;
 
 export class ApiError extends Error {
   status: number;
@@ -377,29 +382,72 @@ export async function fetchProductDetail(id: string): Promise<ProductDetailRespo
 }
 
 export async function fetchAuthMe(): Promise<AuthMeResponse> {
-  return requestJson<AuthMeResponse>("/api/v1/auth/me");
+  const response = await requestJson<AuthMeResponse>("/api/v1/auth/me");
+  authMeCache = response;
+  authMeCacheAt = Date.now();
+  return response;
+}
+
+export function invalidateAuthMeCache(): void {
+  authMeCache = null;
+  authMeCacheAt = 0;
+  authMeInFlight = null;
+}
+
+type FetchAuthMeCachedOptions = {
+  ttlMs?: number;
+  force?: boolean;
+};
+
+export async function fetchAuthMeCached(options?: FetchAuthMeCachedOptions): Promise<AuthMeResponse> {
+  const configuredTtlMs = Number.isFinite(DEFAULT_AUTH_ME_CACHE_TTL_MS) ? DEFAULT_AUTH_ME_CACHE_TTL_MS : 30000;
+  const ttlCandidate = options?.ttlMs;
+  const ttlMs = Math.max(0, Number.isFinite(ttlCandidate) ? (ttlCandidate ?? configuredTtlMs) : configuredTtlMs);
+  const now = Date.now();
+  if (!options?.force && authMeCache && now - authMeCacheAt < ttlMs) {
+    return authMeCache;
+  }
+  if (!options?.force && authMeInFlight) {
+    return authMeInFlight;
+  }
+
+  authMeInFlight = fetchAuthMe()
+    .catch((error) => {
+      invalidateAuthMeCache();
+      throw error;
+    })
+    .finally(() => {
+      authMeInFlight = null;
+    });
+  return authMeInFlight;
 }
 
 export async function authLogin(email: string, password: string): Promise<AuthTokenResponse> {
-  return requestJson<AuthTokenResponse>("/api/v1/auth/login", {
+  const response = await requestJson<AuthTokenResponse>("/api/v1/auth/login", {
     method: "POST",
     skipAuthRedirect: true,
     body: JSON.stringify({ email, password }),
   });
+  invalidateAuthMeCache();
+  return response;
 }
 
 export async function authRegister(email: string, fullName: string, password: string): Promise<OperationStatusResponse> {
-  return requestJson<OperationStatusResponse>("/api/v1/auth/register", {
+  const response = await requestJson<OperationStatusResponse>("/api/v1/auth/register", {
     method: "POST",
     skipAuthRedirect: true,
     body: JSON.stringify({ email, fullName, password }),
   });
+  invalidateAuthMeCache();
+  return response;
 }
 
 export async function authLogout(): Promise<OperationStatusResponse> {
-  return requestJson<OperationStatusResponse>("/api/v1/auth/logout", {
+  const response = await requestJson<OperationStatusResponse>("/api/v1/auth/logout", {
     method: "POST",
   });
+  invalidateAuthMeCache();
+  return response;
 }
 
 export async function fetchCart(): Promise<CartResponse> {

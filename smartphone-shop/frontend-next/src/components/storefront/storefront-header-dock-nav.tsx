@@ -13,7 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { Dock, DockIcon, DockItem, DockLabel } from "@/components/ui/dock";
-import { ApiError, authLogout, getBackendOrigin, type AuthMeResponse } from "@/lib/api";
+import { ApiError, authLogout, fetchAuthMeCached, type AuthMeResponse } from "@/lib/api";
 
 type NavItem = {
   key: string;
@@ -56,23 +56,7 @@ export function StorefrontHeaderDockNav() {
 
     async function resolveAuth() {
       try {
-        const response = await fetch(`${getBackendOrigin()}/api/v1/auth/me`, {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          if (alive) {
-            setAuthState({
-              authenticated: false,
-              email: null,
-              role: null,
-              fullName: null,
-            });
-          }
-          return;
-        }
-
-        const body = (await response.json()) as AuthMeResponse;
+        const body = await fetchAuthMeCached();
         if (alive) {
           setAuthState({
             authenticated: Boolean(body?.authenticated),

@@ -152,6 +152,14 @@ public class ApiMapper {
         int cartItemCount = cartItems.stream()
                 .mapToInt(CartItem::getQuantity)
                 .sum();
+        return toProfileResponse(user, deliveredOrderCount, pendingOrderCount, cartItemCount, paymentMethods);
+    }
+
+    public ProfileResponse toProfileResponse(User user,
+            long deliveredOrderCount,
+            long pendingOrderCount,
+            int cartItemCount,
+            List<PaymentMethod> paymentMethods) {
         return new ProfileResponse(
                 user.getId(),
                 user.getEmail(),

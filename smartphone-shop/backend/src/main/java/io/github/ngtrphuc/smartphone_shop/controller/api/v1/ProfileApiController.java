@@ -1,7 +1,7 @@
 package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
-import java.util.List;
 import java.util.regex.Pattern;
+import java.util.List;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
-import io.github.ngtrphuc.smartphone_shop.model.CartItem;
-import io.github.ngtrphuc.smartphone_shop.model.Order;
 import io.github.ngtrphuc.smartphone_shop.model.PaymentMethod;
 import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
@@ -77,10 +75,16 @@ public class ProfileApiController {
         String email = authentication.getName();
         User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found."));
-        List<Order> orders = orderService.getOrdersByUser(email);
-        List<CartItem> cartItems = cartService.getUserCart(email);
+        long deliveredOrderCount = orderService.countDeliveredOrdersByUser(email);
+        long pendingOrderCount = orderService.countPendingOrdersByUser(email);
+        int cartItemCount = cartService.countUserCartItems(email);
         List<PaymentMethod> paymentMethods = paymentMethodService.getUserPaymentMethods(email);
-        return apiMapper.toProfileResponse(user, orders, cartItems, paymentMethods);
+        return apiMapper.toProfileResponse(
+                user,
+                deliveredOrderCount,
+                pendingOrderCount,
+                cartItemCount,
+                paymentMethods);
     }
 
     private String normalizeRequiredField(String value, String emptyMessage, String tooLongMessage, int maxLength) {

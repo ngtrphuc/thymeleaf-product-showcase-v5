@@ -42,4 +42,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT COALESCE(SUM(oi.quantity), 0) FROM OrderItem oi WHERE oi.order.status != 'cancelled'")
     Long sumItemsSoldExcludingCancelled();
+
+    @Query("""
+            SELECT COUNT(o)
+            FROM Order o
+            WHERE o.userEmail = :email
+              AND LOWER(COALESCE(o.status, '')) = 'delivered'
+            """)
+    long countDeliveredByUserEmail(@Param("email") String email);
+
+    @Query("""
+            SELECT COUNT(o)
+            FROM Order o
+            WHERE o.userEmail = :email
+              AND LOWER(COALESCE(o.status, '')) NOT IN ('delivered', 'cancelled')
+            """)
+    long countPendingByUserEmail(@Param("email") String email);
 }

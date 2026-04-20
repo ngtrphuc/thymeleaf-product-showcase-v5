@@ -16,6 +16,19 @@ type ExpandingNavProps = {
   ariaLabel: string;
 };
 
+function formatBadgeValue(value: number | string): string {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      return "";
+    }
+    if (value > 99) {
+      return "99+";
+    }
+    return `${Math.max(0, Math.trunc(value))}`;
+  }
+  return value.trim();
+}
+
 function isItemActive(pathname: string, href: string): boolean {
   if (href === "/admin") {
     return pathname === "/admin";
@@ -30,6 +43,7 @@ export function ExpandingNav({ items, ariaLabel }: ExpandingNavProps) {
     <nav className="ui-expand-nav" aria-label={ariaLabel}>
       {items.map((item) => {
         const active = isItemActive(pathname, item.href);
+        const badgeValue = item.badge ? formatBadgeValue(item.badge) : "";
         return (
           <Link
             key={item.href}
@@ -40,9 +54,9 @@ export function ExpandingNav({ items, ariaLabel }: ExpandingNavProps) {
           >
             <GriddyIcon name={item.icon} className="ui-expand-icon" />
             <span className="ui-expand-label">{item.label}</span>
-            {item.badge ? (
-              <span className="ml-2 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-black px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
-                {item.badge}
+            {badgeValue ? (
+              <span className="ui-expand-badge-corner" aria-label={`${item.label} unread: ${badgeValue}`}>
+                {badgeValue}
               </span>
             ) : null}
           </Link>

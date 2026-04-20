@@ -36,7 +36,7 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, productRepository);
+        orderService = new OrderService(orderRepository, productRepository, null);
     }
 
     @Test

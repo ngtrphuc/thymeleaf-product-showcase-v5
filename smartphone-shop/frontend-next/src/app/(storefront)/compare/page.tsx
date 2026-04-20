@@ -59,8 +59,11 @@ function writeStoredSlotIds(slotIds: Array<number | null>) {
   if (typeof window === "undefined") {
     return;
   }
-
-  window.localStorage.setItem(COMPARE_SLOT_STORAGE_KEY, JSON.stringify(slotIds));
+  try {
+    window.localStorage.setItem(COMPARE_SLOT_STORAGE_KEY, JSON.stringify(slotIds));
+  } catch {
+    // Ignore storage write errors (private mode, storage quota, etc.).
+  }
 }
 
 function reconcileSlotIds(
@@ -107,7 +110,7 @@ function buildSlots(
 
 export default function ComparePage() {
   const [compare, setCompare] = useState<CompareResponse | null>(null);
-  const [slotProductIds, setSlotProductIds] = useState<Array<number | null>>([]);
+  const [slotProductIds, setSlotProductIds] = useState<Array<number | null>>(() => readStoredSlotIds(3));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -128,7 +131,7 @@ export default function ComparePage() {
 
   function applyCompareState(
     data: CompareResponse,
-    preferredSlotIds: Array<number | null> = readStoredSlotIds(data.maxCompare),
+    preferredSlotIds: Array<number | null> = normalizeSlotIds(slotProductIds, data.maxCompare),
   ) {
     const nextSlotIds = reconcileSlotIds(preferredSlotIds, data);
     setCompare(data);

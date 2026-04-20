@@ -3,7 +3,6 @@ package io.github.ngtrphuc.smartphone_shop.controller;
 import java.net.URI;
 import java.util.Objects;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -17,7 +16,6 @@ public class RootController {
 
     private final String frontendUrl;
 
-    @Autowired
     public RootController(@Value("${app.frontend.url:http://localhost:3000}") String frontendUrl) {
         this.frontendUrl = frontendUrl;
     }

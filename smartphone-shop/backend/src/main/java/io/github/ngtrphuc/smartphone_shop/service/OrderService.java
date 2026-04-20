@@ -12,10 +12,14 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import io.github.ngtrphuc.smartphone_shop.common.support.CacheKeys;
 import io.github.ngtrphuc.smartphone_shop.common.exception.OrderValidationException;
 import io.github.ngtrphuc.smartphone_shop.common.exception.UnauthorizedActionException;
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;
@@ -28,6 +32,8 @@ import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 @Service
 public class OrderService {
 
+    private static final String CATALOG_PUBLIC_CACHE = "catalogPublic";
+    private static final String PRODUCT_DETAIL_PUBLIC_CACHE = "productDetailPublic";
     private static final Set<String> ALLOWED_STATUSES = Set.of(
             "pending", "processing", "shipped", "delivered", "cancelled");
     private static final Set<String> ALLOWED_PAYMENT_METHODS = Set.of(
@@ -40,10 +46,14 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final CacheManager cacheManager;
 
-    public OrderService(OrderRepository orderRepository, ProductRepository productRepository) {
+    public OrderService(OrderRepository orderRepository,
+            ProductRepository productRepository,
+            @Nullable CacheManager cacheManager) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
+        this.cacheManager = cacheManager;
     }
 
     @Transactional
@@ -118,7 +128,9 @@ public class OrderService {
         }
 
         applyStockDelta(lockedProducts, requestedQuantities, -1, false);
-        return orderRepository.save(order);
+        Order saved = orderRepository.save(order);
+        evictStorefrontCaches(requestedQuantities.keySet());
+        return saved;
     }
 
     @Transactional
@@ -188,6 +200,16 @@ public class OrderService {
         return orderRepository.count();
     }
 
+    @Transactional(readOnly = true)
+    public long countDeliveredOrdersByUser(String email) {
+        return orderRepository.countDeliveredByUserEmail(email);
+    }
+
+    @Transactional(readOnly = true)
+    public long countPendingOrdersByUser(String email) {
+        return orderRepository.countPendingByUserEmail(email);
+    }
+
     @Transactional
     public void updateStatus(long orderId, String newStatus) {
         Order order = orderRepository.findByIdWithItemsForUpdate(orderId)
@@ -203,17 +225,23 @@ public class OrderService {
         }
 
         Map<Long, Integer> itemQuantities = extractOrderQuantities(order.getItems());
+        boolean stockChanged = false;
         if ("cancelled".equals(oldStatus) && !"cancelled".equals(targetStatus)) {
             Map<Long, Product> lockedProducts = loadProductsForUpdate(itemQuantities.keySet());
             validateRequestedStock(itemQuantities, lockedProducts);
             applyStockDelta(lockedProducts, itemQuantities, -1, false);
+            stockChanged = true;
         } else if (!"cancelled".equals(oldStatus) && "cancelled".equals(targetStatus)) {
             Map<Long, Product> lockedProducts = loadProductsForUpdate(itemQuantities.keySet());
             applyStockDelta(lockedProducts, itemQuantities, 1, true);
+            stockChanged = true;
         }
 
         order.setStatus(targetStatus);
         orderRepository.save(order);
+        if (stockChanged) {
+            evictStorefrontCaches(itemQuantities.keySet());
+        }
     }
 
     @Transactional
@@ -238,6 +266,7 @@ public class OrderService {
         applyStockDelta(lockedProducts, itemQuantities, 1, true);
         order.setStatus("cancelled");
         orderRepository.save(order);
+        evictStorefrontCaches(itemQuantities.keySet());
         return true;
     }
 
@@ -411,5 +440,30 @@ public class OrderService {
             throw new OrderValidationException(product.getName() + " has an invalid price.");
         }
         return price;
+    }
+
+    private void evictStorefrontCaches(Iterable<Long> productIds) {
+        if (cacheManager == null) {
+            return;
+        }
+
+        Cache catalogCache = cacheManager.getCache(CATALOG_PUBLIC_CACHE);
+        if (catalogCache != null) {
+            catalogCache.clear();
+        }
+
+        Cache detailCache = cacheManager.getCache(PRODUCT_DETAIL_PUBLIC_CACHE);
+        if (detailCache == null) {
+            return;
+        }
+        for (Long productId : productIds) {
+            if (productId == null) {
+                continue;
+            }
+            String detailKey = Objects.requireNonNull(
+                    CacheKeys.productDetail(productId),
+                    "Product detail cache key must not be null.");
+            detailCache.evict(detailKey);
+        }
     }
 }
