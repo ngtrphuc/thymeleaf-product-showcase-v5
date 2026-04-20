@@ -451,7 +451,6 @@ export default function ComparePage() {
                         />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
-                          <p className="truncate text-xs text-slate-600">{product.brand}</p>
                           <p className="mt-0.5 text-xs text-slate-600">
                             {product.storage || "N/A"} / {product.ram || "N/A"}
                           </p>

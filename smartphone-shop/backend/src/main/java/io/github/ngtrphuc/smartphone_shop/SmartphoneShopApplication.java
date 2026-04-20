@@ -13,6 +13,7 @@ public class SmartphoneShopApplication {
     public static void main(String[] args) {
         DevInfrastructureBootstrap.ensureStartedForDevIfNeeded(args);
         Port8080Guard.releaseForDevIfNeeded(args);
+        DevFrontendBootstrap.ensureStartedForDevIfNeeded(args);
         SpringApplication.run(SmartphoneShopApplication.class, args);
     }
 }

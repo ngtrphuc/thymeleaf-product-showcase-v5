@@ -223,7 +223,9 @@ This boots:
 - Backend at `http://localhost:8080`
 - Next.js frontend at `http://localhost:3000`
 
-Opening `http://localhost:8080/` now shows a small backend landing page by default, with links to Swagger, health, and the separate storefront. If you want the old automatic redirect behavior, set `APP_FRONTEND_REDIRECT_ON_ROOT=true`.
+Opening `http://localhost:8080/` redirects straight to the Next.js storefront at `http://localhost:3000/`. Use API endpoints such as `/swagger-ui/index.html` or `/actuator/health` directly when you want backend-only surfaces.
+
+On Windows local dev, starting Spring Boot also auto-starts the Next.js frontend if `http://localhost:3000` is not already running, so the root redirect does not land on a dead port. Disable that behavior only if needed with `SMARTPHONE_SHOP_DEV_AUTO_START_FRONTEND=false`.
 
 ### Option B (manual start)
 
@@ -257,7 +259,6 @@ PowerShell note:
 
 - Backend profile defaults to `dev` (`spring.profiles.default=dev`)
 - Backend CORS default: `http://localhost:3000`
-- Root redirect to frontend: `APP_FRONTEND_REDIRECT_ON_ROOT=false` by default
 - Frontend API base example is in `frontend-next/.env.example`
 - Frontend API retry defaults:
   - `NEXT_PUBLIC_API_RETRY_COUNT=1`
