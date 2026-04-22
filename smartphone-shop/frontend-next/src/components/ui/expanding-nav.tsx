@@ -48,7 +48,7 @@ export function ExpandingNav({ items, ariaLabel }: ExpandingNavProps) {
           <Link
             key={item.href}
             href={item.href}
-            className={`ui-expand-link${active ? " is-active" : ""}`}
+            className={`ui-expand-link ui-header-contrast ui-negative-hover${active ? " is-active" : ""}`}
             aria-current={active ? "page" : undefined}
             title={item.label}
           >

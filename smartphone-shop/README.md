@@ -1,4 +1,4 @@
-﻿# Smartphone Shop
+# Smartphone Shop
 
 Smartphone Shop is an e-commerce web application focused on smartphone retail flows.
 The project is now API-first with Next.js as the primary UI for both storefront and admin operations.
@@ -33,7 +33,7 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 - [x] Monitoring dashboard + alerting provisioning
 - [x] Portfolio polish baseline (screenshots checklist + project narrative)
 
-## Progress Snapshot (Updated: 2026-04-19)
+## Progress Snapshot (Updated: 2026-04-22)
 
 ### Completed recently
 
@@ -222,6 +222,14 @@ This boots:
 - PostgreSQL + Redis via Docker Compose
 - Backend at `http://localhost:8080`
 - Next.js frontend at `http://localhost:3000`
+- Health checks for both ports before marking startup as ready
+
+Windows script hardening (`scripts/start-dev-stack.ps1`):
+
+- Auto-installs frontend dependencies if `frontend-next/node_modules` is missing
+- Detects stale smartphone-shop processes on `:3000` / `:8080` and restarts safely
+- Starts frontend first, then backend, to avoid redirect-to-dead-port behavior
+- Disables backend auto-start frontend hook when using the stack script (prevents duplicate frontend race)
 
 Opening `http://localhost:8080/` redirects straight to the Next.js storefront at `http://localhost:3000/`. Use API endpoints such as `/swagger-ui/index.html` or `/actuator/health` directly when you want backend-only surfaces.
 
@@ -281,6 +289,7 @@ PowerShell note:
 ### Troubleshooting local startup
 
 - `ERR_CONNECTION_REFUSED` on `http://localhost:3000`:
+  - Prefer running .\scripts\start-dev-stack.ps1 (it auto-recovers missing deps and startup order).
   - Ensure frontend is running in `frontend-next` and logs `Ready`.
   - Start with `npm.cmd run dev` on Windows PowerShell.
   - Check port conflicts: `Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue`.
@@ -311,214 +320,118 @@ Access points:
 
 ```text
 smartphone-shop/
-├── .github/
-│   └── workflows/
-│       └── smartphone-shop-ci.yml
-├── .mvn/
-│   └── wrapper/
-│       └── maven-wrapper.properties
-├── backend/
-│   └── src/
-│       ├── main/
-│       │   ├── java/
-│       │   │   └── io/github/ngtrphuc/smartphone_shop/
-│       │   │       ├── api/
-│       │   │       │   ├── dto/ (REST response/request DTOs)
-│       │   │       │   ├── ApiExceptionHandler.java
-│       │   │       │   └── ApiMapper.java
-│       │   │       ├── common/
-│       │   │       │   ├── exception/ (business + validation exceptions)
-│       │   │       │   └── support/
-│       │   │       │       ├── CacheKeys.java
-│       │   │       │       └── StorefrontSupport.java
-│       │   │       ├── config/
-│       │   │       │   ├── AdminAccountInitializer.java
-│       │   │       │   ├── DataInitializer.java
-│       │   │       │   ├── PaymentMethodSchemaInitializer.java
-│       │   │       │   ├── SecurityConfig.java
-│       │   │       │   ├── WebConfig.java
-│       │   │       │   └── WebSocketConfig.java
-│       │   │       ├── controller/
-│       │   │       │   ├── RootController.java
-│       │   │       │   └── api/v1/
-│       │   │       │       ├── AdminDashboardApiController.java
-│       │   │       │       ├── AdminProductApiController.java
-│       │   │       │       ├── AdminOrderApiController.java
-│       │   │       │       ├── AdminChatApiController.java
-│       │   │       │       ├── AuthApiController.java
-│       │   │       │       ├── CartApiController.java
-│       │   │       │       ├── ChatApiController.java
-│       │   │       │       ├── CompareApiController.java
-│       │   │       │       ├── OrderApiController.java
-│       │   │       │       ├── PaymentMethodApiController.java
-│       │   │       │       ├── ProductApiController.java
-│       │   │       │       ├── ProfileApiController.java
-│       │   │       │       └── WishlistApiController.java
-│       │   │       ├── event/
-│       │   │       │   └── ChatMessageCreatedEvent.java
-│       │   │       ├── infrastructure/
-│       │   │       │   └── websocket/
-│       │   │       │       └── ChatWebSocketNotifier.java
-│       │   │       ├── model/ (JPA/domain models)
-│       │   │       ├── repository/
-│       │   │       │   ├── spec/
-│       │   │       │   │   └── ProductCatalogSpecifications.java
-│       │   │       │   └── *Repository.java
-│       │   │       ├── security/
-│       │   │       │   ├── JwtAuthenticationFilter.java
-│       │   │       │   ├── JwtProperties.java
-│       │   │       │   ├── JwtStompChannelInterceptor.java
-│       │   │       │   ├── JwtTokenProvider.java
-│       │   │       │   └── LoginRateLimitFilter.java
-│       │   │       ├── service/
-│       │   │       │   ├── AuthService.java
-│       │   │       │   ├── CartService.java
-│       │   │       │   ├── ChatSseRegistry.java
-│       │   │       │   ├── ChatService.java
-│       │   │       │   ├── CompareService.java
-│       │   │       │   ├── CustomUserDetailsService.java
-│       │   │       │   ├── OrderService.java
-│       │   │       │   ├── PaymentMethodService.java
-│       │   │       │   └── WishlistService.java
-│       │   │       ├── DevFrontendBootstrap.java
-│       │   │       ├── DevInfrastructureBootstrap.java
-│       │   │       ├── Port8080Guard.java
-│       │   │       └── SmartphoneShopApplication.java
-│       │   └── resources/
-│       │       ├── db/migration/
-│       │       │   └── V1__baseline_schema.sql
-│       │       ├── application.properties
-│       │       ├── application-dev.properties
-│       │       └── application-prod.properties
-│       └── test/
-│           ├── java/io/github/ngtrphuc/smartphone_shop/
-│           │   ├── config/ (profile + schema initializer tests)
-│           │   ├── controller/
-│           │   │   ├── RootControllerTest.java
-│           │   │   └── api/v1/ (admin/auth/cart/order/product API tests)
-│           │   ├── common/support/
-│           │   │   └── CacheKeysTest.java
-│           │   ├── model/
-│           │   │   └── PaymentMethodTest.java
-│           │   ├── repository/
-│           │   │   └── ProductCatalogSpecificationIntegrationTest.java
-│           │   ├── service/ (auth/cart/chat/compare/order/payment/wishlist tests)
-│           │   ├── DevFrontendBootstrapTest.java
-│           │   ├── Port8080GuardTest.java
-│           │   └── SmartphoneShopApplicationTests.java
-│           └── resources/
-│               └── application-test.properties
-├── frontend/
-│   ├── static/
-│   │   └── customer/
-│   │       └── images/ (legacy shared product assets still served by backend)
-│   └── templates/ (legacy Thymeleaf templates removed)
-├── frontend-next/
-│   ├── public/ (SVG/icon/payment assets)
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── (auth)/
-│   │   │   │   ├── layout.tsx
-│   │   │   │   ├── login/page.tsx
-│   │   │   │   └── register/page.tsx
-│   │   │   ├── (storefront)/
-│   │   │   │   ├── layout.tsx
-│   │   │   │   ├── cart/page.tsx
-│   │   │   │   ├── chat/page.tsx
-│   │   │   │   ├── checkout/page.tsx
-│   │   │   │   ├── compare/page.tsx
-│   │   │   │   ├── orders/page.tsx
-│   │   │   │   ├── profile/page.tsx
-│   │   │   │   ├── wishlist/page.tsx
-│   │   │   │   └── products/
-│   │   │   │       ├── [id]/
-│   │   │   │       │   ├── loading.tsx
-│   │   │   │       │   ├── not-found.tsx
-│   │   │   │       │   └── page.tsx
-│   │   │   │       ├── error.tsx
-│   │   │   │       ├── loading.tsx
-│   │   │   │       └── page.tsx
-│   │   │   ├── admin/
-│   │   │   │   ├── layout.tsx
-│   │   │   │   ├── chat/page.tsx
-│   │   │   │   ├── orders/page.tsx
-│   │   │   │   ├── page.tsx
-│   │   │   │   └── products/page.tsx
-│   │   │   ├── globals.css
-│   │   │   ├── layout.tsx
-│   │   │   └── page.tsx
-│   │   ├── components/admin/
-│   │   │   ├── admin-header-nav.tsx
-│   │   │   └── admin-session-actions.tsx
-│   │   ├── components/storefront/
-│   │   │   ├── catalog-filters.tsx
-│   │   │   ├── catalog-paged-grid.tsx
-│   │   │   ├── catalog-viewport-sync.tsx
-│   │   │   ├── checkout-skeleton.tsx
-│   │   │   ├── filter-dropdown.tsx
-│   │   │   ├── payment-method-badge.tsx
-│   │   │   ├── product-actions.tsx
-│   │   │   ├── product-card.tsx
-│   │   │   ├── product-detail-skeleton.tsx
-│   │   │   ├── product-grid-skeleton.tsx
-│   │   │   ├── quick-product-actions.tsx
-│   │   │   ├── storefront-chat-bubble.tsx
-│   │   │   └── storefront-header-dock-nav.tsx
-│   │   ├── components/ui/
-│   │   │   ├── dock.tsx
-│   │   │   ├── expanding-nav.tsx
-│   │   │   ├── griddy-icon.tsx
-│   │   │   ├── skeleton.tsx
-│   │   │   └── vercel-tabs.tsx
-│   │   └── lib/
-│   │       ├── api.ts
-│   │       └── format.ts
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── AGENTS.md
-│   ├── CLAUDE.md
-│   ├── eslint.config.mjs
-│   ├── next-env.d.ts
-│   ├── next.config.ts
-│   ├── playwright.config.ts
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── postcss.config.mjs
-│   ├── README.md
-│   ├── src/proxy.ts
-│   ├── tests/
-│   │   └── checkout.spec.ts
-│   └── tsconfig.json
-├── scripts/
-│   ├── start-dev-infra.ps1
-│   ├── start-frontend-dev.ps1
-│   ├── start-dev-stack.ps1
-│   └── start-dev-stack.sh
-├── docs/
-│   ├── portfolio.md
-│   └── screenshots/
-│       └── README.md
-├── monitoring/
-│   ├── alerts/
-│   │   └── smartphone-shop-alerts.yml
-│   ├── alertmanager/
-│   │   └── alertmanager.yml
-│   ├── grafana/
-│   │   └── provisioning/
-│   │       ├── dashboards/
-│   │       │   ├── dashboard.yml
-│   │       │   └── json/smartphone-shop-overview.json
-│   │       └── datasources/prometheus.yml
-│   └── prometheus.yml
-├── .editorconfig
-├── .gitattributes
-├── .gitignore
-├── docker-compose.yml
-├── mvnw
-├── mvnw.cmd
-├── pom.xml
-└── README.md
+├── 📁 .data/
+│   └── 📁 logs/                        (local runtime logs)
+├── 📁 .github/
+│   └── 📁 workflows/
+│       └── 📄 smartphone-shop-ci.yml
+├── 📁 .mvn/
+│   └── 📁 wrapper/
+│       └── 📄 maven-wrapper.properties
+├── 📁 backend/
+│   └── 📁 src/
+│       ├── 📁 main/
+│       │   ├── 📁 java/io/github/ngtrphuc/smartphone_shop/
+│       │   │   ├── 📁 api/
+│       │   │   │   ├── 📁 dto/
+│       │   │   │   ├── 📄 ApiExceptionHandler.java
+│       │   │   │   └── 📄 ApiMapper.java
+│       │   │   ├── 📁 common/                 (exception, support)
+│       │   │   ├── 📁 config/
+│       │   │   ├── 📁 controller/
+│       │   │   │   ├── 📄 RootController.java
+│       │   │   │   └── 📁 api/v1/             (admin/auth/cart/chat/order/product/profile APIs)
+│       │   │   ├── 📁 event/
+│       │   │   ├── 📁 infrastructure/websocket/
+│       │   │   ├── 📁 model/
+│       │   │   ├── 📁 repository/
+│       │   │   │   └── 📁 spec/
+│       │   │   ├── 📁 security/
+│       │   │   ├── 📁 service/
+│       │   │   ├── 📄 DevFrontendBootstrap.java
+│       │   │   ├── 📄 DevInfrastructureBootstrap.java
+│       │   │   ├── 📄 Port8080Guard.java
+│       │   │   └── 📄 SmartphoneShopApplication.java
+│       │   └── 📁 resources/
+│       │       ├── 📁 db/migration/
+│       │       │   ├── 📄 V1__baseline_schema.sql
+│       │       │   └── 📄 V2__performance_indexes.sql
+│       │       ├── 📄 application.properties
+│       │       ├── 📄 application-dev.properties
+│       │       └── 📄 application-prod.properties
+│       └── 📁 test/
+│           ├── 📁 java/io/github/ngtrphuc/smartphone_shop/
+│           │   ├── 📁 common/
+│           │   ├── 📁 config/
+│           │   ├── 📁 controller/
+│           │   ├── 📁 model/
+│           │   ├── 📁 repository/
+│           │   ├── 📁 security/
+│           │   └── 📁 service/
+│           └── 📁 resources/
+│               └── 📄 application-test.properties
+├── 📁 frontend/
+│   ├── 📁 static/
+│   │   ├── 📁 customer/images/         (shared product + payment image assets)
+│   │   └── 📁 svg/griddy/              (legacy icon set)
+│   └── 📁 templates/                   (legacy placeholder; no active Thymeleaf runtime)
+├── 📁 frontend-next/
+│   ├── 📁 public/
+│   │   ├── 📁 griddy/
+│   │   └── 📁 payments/
+│   ├── 📁 src/
+│   │   ├── 📁 app/
+│   │   │   ├── 📁 (auth)/              (login/register)
+│   │   │   ├── 📁 (storefront)/        (products, cart, checkout, orders, wishlist, compare, chat)
+│   │   │   └── 📁 admin/               (dashboard, products, orders, chat)
+│   │   ├── 📁 components/
+│   │   │   ├── 📁 admin/
+│   │   │   ├── 📁 auth/
+│   │   │   ├── 📁 storefront/
+│   │   │   └── 📁 ui/
+│   │   ├── 📁 lib/
+│   │   │   ├── 📄 api.ts
+│   │   │   └── 📄 format.ts
+│   │   └── 📄 proxy.ts
+│   ├── 📁 tests/
+│   │   └── 📄 checkout.spec.ts
+│   ├── 📄 package.json
+│   ├── 📄 next.config.ts
+│   └── 📄 tsconfig.json
+├── 📁 docs/
+│   ├── 📄 portfolio.md
+│   └── 📄 screenshots/README.md
+├── 📁 monitoring/
+│   ├── 📁 alerts/
+│   │   └── 📄 smartphone-shop-alerts.yml
+│   ├── 📁 alertmanager/
+│   │   └── 📄 alertmanager.yml
+│   ├── 📁 grafana/provisioning/
+│   │   ├── 📁 dashboards/
+│   │   └── 📁 datasources/
+│   └── 📄 prometheus.yml
+├── 📁 scripts/
+│   ├── 📄 start-dev-infra.ps1
+│   ├── 📄 start-frontend-dev.ps1
+│   ├── 📄 start-dev-stack.ps1
+│   └── 📄 start-dev-stack.sh
+├── 📄 .editorconfig
+├── 📄 .gitattributes
+├── 📄 .gitignore
+├── 📄 docker-compose.yml
+├── 📄 mvnw
+├── 📄 mvnw.cmd
+├── 📄 pom.xml
+└── 📄 README.md
 ```
+
+Local/generated artifacts intentionally excluded from source control:
+
+- `.data/`
+- `target/`
+- `frontend-next/.next/`
+- `frontend-next/node_modules/`
+- `*.log`
 
 ## Quality and Validation
 
@@ -527,7 +440,7 @@ smartphone-shop/
 - Latest local validation snapshot:
   - `mvnw -Dtest=ProductCatalogSpecificationIntegrationTest test`: build success (test is skipped automatically when Docker/Testcontainers is unavailable)
   - `mvnw -Dtest=CacheKeysTest,ProductCatalogSpecificationIntegrationTest,ChatServiceTest,WishlistServiceTest,AdminApiControllerTest,ProductApiControllerTest,LoginRateLimitFilterTest test`: passing
-  - `cd frontend-next && npm run lint`: passing (1 existing non-blocking hook warning in `admin/chat/page.tsx`)
+  - `cd frontend-next && npm run lint`: passing (1 existing non-blocking hook warning in `compare/page.tsx`)
   - `cd frontend-next && npm run test:e2e`: passing (2 checkout flow tests)
 
 ## Design Decisions

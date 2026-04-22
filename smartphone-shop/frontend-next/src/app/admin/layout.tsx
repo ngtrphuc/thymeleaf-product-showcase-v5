@@ -19,7 +19,7 @@ export default function AdminLayout({
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/products"
-              className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
+              className="ui-btn ui-btn-secondary ui-header-contrast ui-negative-hover inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
             >
               <GriddyIcon name="home" />
               HOME

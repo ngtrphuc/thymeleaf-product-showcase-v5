@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { MessageSquare, X } from "lucide-react";
+import { ArrowUp, ChevronsDown, MessageSquare, X } from "lucide-react";
 import {
   ApiError,
   fetchAuthMeCached,
@@ -29,8 +29,10 @@ function formatChatClock(value: string): string {
 export function StorefrontChatBubble() {
   const pathname = usePathname();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const unreadCountRef = useRef(0);
   const pulseTimerRef = useRef<number | null>(null);
+  const shouldAutoScrollRef = useRef(true);
   const [authState, setAuthState] = useState<AuthMeResponse>({
     authenticated: false,
     email: null,
@@ -45,6 +47,27 @@ export function StorefrontChatBubble() {
   const [messages, setMessages] = useState<ChatMessageResponse[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasUnreadPulse, setHasUnreadPulse] = useState(false);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  const syncScrollModeFromViewport = useCallback(() => {
+    const viewport = messagesViewportRef.current;
+    if (!viewport) {
+      shouldAutoScrollRef.current = true;
+      setShowJumpToLatest(false);
+      return;
+    }
+    const remaining = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    const nearBottom = remaining <= 24;
+    shouldAutoScrollRef.current = nearBottom;
+    setShowJumpToLatest(!nearBottom);
+  }, []);
+
+  function scrollToLatest(behavior: ScrollBehavior = "smooth") {
+    shouldAutoScrollRef.current = true;
+    setShowJumpToLatest(false);
+    messagesEndRef.current?.scrollIntoView({ block: "end", behavior });
+  }
 
   useEffect(() => {
     let alive = true;
@@ -141,11 +164,24 @@ export function StorefrontChatBubble() {
   }, [open, shouldShow]);
 
   useEffect(() => {
-    if (!open || !messagesEndRef.current) {
+    if (!open || !messagesEndRef.current || !shouldAutoScrollRef.current) {
       return;
     }
-    messagesEndRef.current.scrollIntoView({ block: "end" });
+    messagesEndRef.current.scrollIntoView({ block: "end", behavior: "auto" });
   }, [messages, open]);
+
+  useEffect(() => {
+    if (!open) {
+      shouldAutoScrollRef.current = true;
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      syncScrollModeFromViewport();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [messages.length, open, syncScrollModeFromViewport]);
 
   useEffect(() => {
     return () => {
@@ -155,7 +191,29 @@ export function StorefrontChatBubble() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!shouldShow) {
+      return;
+    }
+
+    const onWindowScroll = () => {
+      if (open) {
+        setShowScrollTop(false);
+        return;
+      }
+      setShowScrollTop(window.scrollY > 420);
+    };
+
+    onWindowScroll();
+    window.addEventListener("scroll", onWindowScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onWindowScroll);
+    };
+  }, [open, shouldShow]);
+
   async function openChat() {
+    shouldAutoScrollRef.current = true;
+    setShowJumpToLatest(false);
     setOpen(true);
     setLoadingChat(true);
     setError(null);
@@ -167,6 +225,7 @@ export function StorefrontChatBubble() {
       unreadCountRef.current = 0;
       setUnreadCount(0);
       setHasUnreadPulse(false);
+      scrollToLatest("auto");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -187,6 +246,8 @@ export function StorefrontChatBubble() {
 
     setSending(true);
     setError(null);
+    shouldAutoScrollRef.current = true;
+    setShowJumpToLatest(false);
     try {
       await sendChatMessage(content);
       setDraft("");
@@ -196,6 +257,7 @@ export function StorefrontChatBubble() {
       unreadCountRef.current = 0;
       setUnreadCount(0);
       setHasUnreadPulse(false);
+      scrollToLatest("auto");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -244,28 +306,46 @@ export function StorefrontChatBubble() {
                 Start a conversation with the shop.
               </div>
             ) : (
-              <div className="max-h-[20rem] min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-white p-3">
-                {messages.map((message) => {
-                  const isUser = message.senderRole === "USER";
-                  const sideClass = isUser ? "justify-end" : "justify-start";
-                  const toneClass = isUser
-                    ? "bg-[var(--color-primary)] text-black"
-                    : "bg-slate-100 text-slate-800";
-                  const metaClass = isUser ? "text-black/60" : "text-slate-500";
-                  return (
-                    <div key={message.id} className={`flex ${sideClass}`}>
-                      <div className={`flex max-w-[88%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
-                        <article className={`inline-block w-fit break-words rounded-xl px-3 py-2 text-sm ${toneClass}`}>
-                          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                        </article>
-                        <p className={`px-1 text-[11px] ${metaClass}`}>
-                          {isUser ? "You" : "Shop"} | {formatChatClock(message.createdAt)}
-                        </p>
+              <div className="relative">
+                <div
+                  ref={messagesViewportRef}
+                  onScroll={syncScrollModeFromViewport}
+                  className="max-h-[20rem] min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-white p-3"
+                >
+                  {messages.map((message) => {
+                    const isUser = message.senderRole === "USER";
+                    const sideClass = isUser ? "justify-end" : "justify-start";
+                    const toneClass = isUser
+                      ? "bg-[var(--color-primary)] text-black"
+                      : "bg-slate-100 text-slate-800";
+                    const metaClass = isUser ? "text-black/60" : "text-slate-500";
+                    return (
+                      <div key={message.id} className={`flex ${sideClass}`}>
+                        <div className={`flex max-w-[88%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
+                          <article className={`inline-block w-fit break-words rounded-xl px-3 py-2 text-sm ${toneClass}`}>
+                            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                          </article>
+                          <p className={`px-1 text-[11px] ${metaClass}`}>
+                            {isUser ? "You" : "Shop"} | {formatChatClock(message.createdAt)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-                <div ref={messagesEndRef} />
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+                {showJumpToLatest ? (
+                  <button
+                    type="button"
+                    onClick={() => scrollToLatest("smooth")}
+                    aria-label="Jump to latest message"
+                    title="Jump to latest"
+                    className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-white/16 bg-[var(--color-surface-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] shadow-[0_14px_30px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white hover:text-black"
+                  >
+                    Newest
+                    <ChevronsDown className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
               </div>
             )}
 
@@ -289,23 +369,39 @@ export function StorefrontChatBubble() {
       ) : null}
 
       {!open ? (
+        showScrollTop ? (
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            aria-label="Scroll to top"
+            title="Scroll to top"
+            className="fixed bottom-3 right-5 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-[var(--color-surface-soft)] text-[var(--color-text)] shadow-[0_14px_30px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white hover:text-black sm:bottom-3 sm:right-6"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </button>
+        ) : null
+      ) : null}
+
+      {!open ? (
         <button
           type="button"
           onClick={() => void openChat()}
           aria-label="Open chat"
           title="Open chat"
-          className={`fixed bottom-5 right-5 z-40 inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-white/12 bg-[var(--color-surface-soft)] px-4 text-[var(--color-text-muted)] shadow-[0_18px_40px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-white/10 hover:bg-white hover:text-black hover:shadow-[0_20px_44px_rgba(0,0,0,0.52)] sm:bottom-6 sm:right-6 ${
+          className={`fixed right-5 z-40 inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-white/16 bg-[var(--color-surface-soft)] px-4 text-[var(--color-text)] shadow-[0_18px_40px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-white/10 hover:bg-white hover:text-black hover:shadow-[0_20px_44px_rgba(0,0,0,0.52)] sm:right-6 ${
+            showScrollTop ? "bottom-16 sm:bottom-16" : "bottom-5 sm:bottom-6"
+          } ${
             hasUnreadPulse ? "animate-pulse" : ""
           }`}
         >
           <MessageSquare className="h-5 w-5" />
           {unreadCount > 0 ? (
-            <span className="text-xs font-semibold leading-none text-slate-900">
+            <span className="text-xs font-semibold leading-none text-current">
               {unreadCount > 99 ? "99+" : unreadCount} unread
             </span>
           ) : null}
           {unreadCount > 0 ? (
-            <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-black shadow-[0_6px_16px_rgba(0,0,0,0.32)]">
+            <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full border border-white/20 bg-black px-1.5 py-0.5 text-[10px] font-bold text-white shadow-[0_6px_16px_rgba(0,0,0,0.32)]">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           ) : null}

@@ -11,12 +11,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +84,11 @@ final class DevFrontendBootstrap {
             LOGGER.warn("Unable to prepare frontend env file in '{}': {}", frontendDir, ex.getMessage());
         }
 
+        if (!ensureFrontendDependencies(frontendDir)) {
+            LOGGER.warn("Frontend dependencies are not ready. Skipping frontend auto-start.");
+            return;
+        }
+
         Path startLock = frontendDir.resolve(START_LOCK_FILE);
         boolean startTriggeredByThisProcess = tryAcquireStartLock(startLock);
         try {
@@ -96,7 +102,7 @@ final class DevFrontendBootstrap {
             }
 
             if (!waitForPort(host, port, Duration.ofSeconds(90))) {
-                LOGGER.warn("Frontend port {} did not become available in time. Check frontend-next/frontend-dev.log.",
+                LOGGER.warn("Frontend port {} did not become available in time. Check .data/logs/frontend-dev.log.",
                         port);
                 return;
             }
@@ -140,23 +146,12 @@ final class DevFrontendBootstrap {
         }
 
         String currentContent = Files.readString(envLocalPath, StandardCharsets.UTF_8);
-        StringBuilder updatedContent = new StringBuilder(currentContent);
-        boolean changed = false;
+        String updatedContent = currentContent;
         for (Map.Entry<String, String> entry : requiredEntries.entrySet()) {
-            if (hasEnvKey(currentContent, entry.getKey())) {
-                continue;
-            }
-            if (!updatedContent.isEmpty() && updatedContent.charAt(updatedContent.length() - 1) != '\n') {
-                updatedContent.append(System.lineSeparator());
-            }
-            updatedContent.append(entry.getKey())
-                    .append("=")
-                    .append(entry.getValue())
-                    .append(System.lineSeparator());
-            changed = true;
+            updatedContent = upsertEnvKey(updatedContent, entry.getKey(), entry.getValue());
         }
-        if (changed) {
-            Files.writeString(envLocalPath, updatedContent.toString(), StandardCharsets.UTF_8);
+        if (!updatedContent.equals(currentContent)) {
+            Files.writeString(envLocalPath, updatedContent, StandardCharsets.UTF_8);
         }
     }
 
@@ -165,10 +160,37 @@ final class DevFrontendBootstrap {
         return "http://localhost:" + backendPort;
     }
 
-    private static boolean hasEnvKey(String content, String key) {
-        return Arrays.stream(content.split("\\R"))
-                .map(String::trim)
-                .anyMatch(line -> line.startsWith(key + "="));
+    private static String upsertEnvKey(String content, String key, String value) {
+        Pattern pattern = Pattern.compile("(?m)^\\s*" + Pattern.quote(key) + "\\s*=.*$");
+        Matcher matcher = pattern.matcher(content);
+        String replacement = Matcher.quoteReplacement(key + "=" + value);
+        if (matcher.find()) {
+            return matcher.replaceAll(replacement);
+        }
+        StringBuilder builder = new StringBuilder(content);
+        if (!content.isEmpty() && !content.endsWith("\n") && !content.endsWith("\r\n")) {
+            builder.append(System.lineSeparator());
+        }
+        builder.append(key)
+                .append("=")
+                .append(value)
+                .append(System.lineSeparator());
+        return builder.toString();
+    }
+
+    private static boolean ensureFrontendDependencies(Path frontendDir) {
+        Path nodeModulesDir = frontendDir.resolve("node_modules");
+        if (Files.isDirectory(nodeModulesDir)) {
+            return true;
+        }
+        LOGGER.info("frontend-next/node_modules is missing. Running npm.cmd install...");
+        CommandResult installResult = runCommand(frontendDir, List.of("npm.cmd", "install"));
+        if (installResult.exitCode() != 0) {
+            LOGGER.warn("npm.cmd install failed in '{}'. Exit code: {}. Output: {}",
+                    frontendDir, installResult.exitCode(), installResult.output());
+            return false;
+        }
+        return Files.isDirectory(nodeModulesDir);
     }
 
     private static boolean isEnabled() {
@@ -203,7 +225,15 @@ final class DevFrontendBootstrap {
     }
 
     private static CommandResult startFrontendDevServer(Path frontendDir) {
-        Path logPath = frontendDir.resolve("frontend-dev.log").toAbsolutePath();
+        Path projectRoot = frontendDir.getParent() != null ? frontendDir.getParent() : frontendDir;
+        Path logPath;
+        try {
+            Path logDir = projectRoot.resolve(".data").resolve("logs");
+            Files.createDirectories(logDir);
+            logPath = logDir.resolve("frontend-dev.log").toAbsolutePath();
+        } catch (IOException ex) {
+            return new CommandResult(-1, "Cannot create .data/logs directory: " + ex.getMessage());
+        }
         Path scriptPath = frontendDir.getParent() != null
                 ? frontendDir.getParent().resolve("scripts").resolve("start-frontend-dev.ps1").toAbsolutePath()
                 : null;

@@ -33,7 +33,7 @@ export function AdminSessionActions() {
         type="button"
         onClick={() => void logout()}
         disabled={loggingOut}
-        className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
+        className="ui-btn ui-btn-secondary ui-header-contrast ui-negative-hover inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
       >
         <GriddyIcon name="logout" />
         {loggingOut ? "Logging out..." : "Logout"}

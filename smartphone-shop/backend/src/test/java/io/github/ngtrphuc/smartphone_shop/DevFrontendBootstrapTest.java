@@ -44,14 +44,30 @@ class DevFrontendBootstrapTest {
     }
 
     @Test
-    void ensureFrontendEnvLocal_shouldAppendMissingKeysWithoutOverwritingExistingValues() throws IOException {
+    void ensureFrontendEnvLocal_shouldSynchronizeExistingKeysToResolvedBackend() throws IOException {
         Path envLocal = tempDir.resolve(".env.local");
         Files.writeString(envLocal, "API_BASE_URL=http://localhost:9999" + System.lineSeparator(), StandardCharsets.UTF_8);
 
         DevFrontendBootstrap.ensureFrontendEnvLocal(tempDir, "http://localhost:8080");
 
         String content = Files.readString(envLocal, StandardCharsets.UTF_8);
-        assertTrue(content.contains("API_BASE_URL=http://localhost:9999"));
+        assertTrue(content.contains("API_BASE_URL=http://localhost:8080"));
+        assertTrue(content.contains("NEXT_PUBLIC_API_BASE_URL=http://localhost:8080"));
+    }
+
+    @Test
+    void ensureFrontendEnvLocal_shouldReplaceBothKeysWhenAlreadyPresent() throws IOException {
+        Path envLocal = tempDir.resolve(".env.local");
+        Files.writeString(
+                envLocal,
+                "API_BASE_URL=http://localhost:9090" + System.lineSeparator()
+                        + "NEXT_PUBLIC_API_BASE_URL=http://localhost:9090" + System.lineSeparator(),
+                StandardCharsets.UTF_8);
+
+        DevFrontendBootstrap.ensureFrontendEnvLocal(tempDir, "http://localhost:8080");
+
+        String content = Files.readString(envLocal, StandardCharsets.UTF_8);
+        assertTrue(content.contains("API_BASE_URL=http://localhost:8080"));
         assertTrue(content.contains("NEXT_PUBLIC_API_BASE_URL=http://localhost:8080"));
     }
 

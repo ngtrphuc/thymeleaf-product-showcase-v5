@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --color-page: #0a0a0b;
-  --color-surface: #111114;
-  --color-surface-soft: #18181c;
-  --color-surface-3: #1f1f24;
+  --color-page: #000000;
+  --color-surface: #000000;
+  --color-surface-soft: #050505;
+  --color-surface-3: #0b0b0b;
 
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-border-2: rgba(255, 255, 255, 0.12);
-  --color-border-3: rgba(255, 255, 255, 0.18);
+  --color-border: rgba(255, 255, 255, 0.09);
+  --color-border-2: rgba(255, 255, 255, 0.15);
+  --color-border-3: rgba(255, 255, 255, 0.24);
 
   --color-text: #f5f5f5;
   --color-text-muted: #9898a8;
@@ -91,6 +91,30 @@ textarea {
   border-color: var(--color-border-2);
   color: var(--color-text);
   box-shadow: var(--shadow-hover);
+}
+
+.ui-negative-hover {
+  will-change: filter;
+  transition: filter 220ms ease;
+}
+
+.ui-negative-hover:hover,
+.ui-negative-hover:focus-visible {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.ui-header-contrast {
+  background: #000 !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+}
+
+.ui-header-contrast:hover,
+.ui-header-contrast:focus-visible,
+.ui-header-contrast.is-active {
+  background: #000 !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.32) !important;
 }
 
 .brand-glow-link {

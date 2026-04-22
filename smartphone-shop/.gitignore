@@ -4,6 +4,9 @@
 # Runtime local data
 /.data/
 
+# Runtime logs (local only)
+*.log
+
 # STS / Eclipse
 .apt_generated/
 .classpath

@@ -86,7 +86,7 @@ export function DockItem({ children, onClick, ariaLabel, className, active = fal
       onClick={onClick}
       aria-label={ariaLabel}
       className={[
-        "group/dockitem relative flex h-11 w-11 origin-bottom items-center justify-center rounded-xl border transition-[transform,background-color,color,border-color,box-shadow] duration-200 ease-out",
+        "group/dockitem ui-header-contrast ui-negative-hover relative flex h-11 w-11 origin-bottom items-center justify-center rounded-xl border transition-[transform,background-color,color,border-color,box-shadow] duration-200 ease-out",
         active
           ? "border-transparent bg-[var(--color-primary)] text-black"
           : "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] hover:border-white/10 hover:bg-white hover:text-black",
