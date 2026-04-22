@@ -109,7 +109,7 @@ function Ensure-FrontendDependencies {
     & npm.cmd install --prefix $frontendDir
 }
 
-Write-Host "[1/4] Ensuring Docker + PostgreSQL + Redis are ready..."
+Write-Host "[1/4] Ensuring Docker + PostgreSQL + Redis + Meilisearch are ready..."
 & (Join-Path $repoRoot "scripts/start-dev-infra.ps1")
 
 Write-Host "[2/4] Ensuring Next.js frontend is healthy on :3000..."

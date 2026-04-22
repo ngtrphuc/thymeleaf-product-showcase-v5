@@ -1,6 +1,7 @@
 package io.github.ngtrphuc.smartphone_shop.repository.spec;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -20,6 +21,7 @@ public final class ProductCatalogSpecifications {
 
     public static Specification<Product> forCatalog(
             @Nullable String keyword,
+            @Nullable Collection<Long> candidateIds,
             @Nullable Double priceMin,
             @Nullable Double priceMax,
             @Nullable String brand,
@@ -30,6 +32,13 @@ public final class ProductCatalogSpecifications {
             @Nullable String screenSize) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            if (candidateIds != null) {
+                if (candidateIds.isEmpty()) {
+                    return cb.disjunction();
+                }
+                predicates.add(root.get("id").in(candidateIds));
+            }
 
             if (keyword != null && !keyword.isBlank()) {
                 predicates.add(cb.like(

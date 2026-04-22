@@ -206,15 +206,19 @@ export type AdminConversationsResponse = {
 };
 
 const DEFAULT_BACKEND_ORIGIN = "http://localhost:8080";
+const BACKEND_ASSET_PREFIX = "/asset-proxy";
 const RETRYABLE_STATUS_CODES = new Set([408, 425, 429, 500, 502, 503, 504]);
 const RETRY_SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const DEFAULT_RETRY_COUNT = Number.parseInt(process.env.NEXT_PUBLIC_API_RETRY_COUNT ?? "1", 10);
 const DEFAULT_RETRY_BASE_DELAY_MS = Number.parseInt(process.env.NEXT_PUBLIC_API_RETRY_BASE_DELAY_MS ?? "250", 10);
 const DEFAULT_AUTH_ME_CACHE_TTL_MS = Number.parseInt(process.env.NEXT_PUBLIC_AUTH_ME_CACHE_TTL_MS ?? "30000", 10);
+const COMPARE_UPDATED_EVENT = "storefront:compare-updated";
 
 let authMeCache: AuthMeResponse | null = null;
 let authMeCacheAt = 0;
 let authMeInFlight: Promise<AuthMeResponse> | null = null;
+
+type CompareUpdatedListener = (compare: CompareResponse) => void;
 
 export class ApiError extends Error {
   status: number;
@@ -238,13 +242,49 @@ export function toAssetUrl(path: string | null | undefined): string {
   if (!path) {
     return "https://placehold.co/640x640/e2e8f0/475569?text=No+Image";
   }
+  const backendOrigin = getBackendOrigin();
+
   if (/^https?:\/\//i.test(path)) {
+    try {
+      const url = new URL(path);
+      if (url.origin === backendOrigin) {
+        return `${BACKEND_ASSET_PREFIX}${url.pathname}${url.search}`;
+      }
+    } catch {
+      return path;
+    }
     return path;
   }
+
   if (path.startsWith("/")) {
-    return `${getBackendOrigin()}${path}`;
+    return `${BACKEND_ASSET_PREFIX}${path}`;
   }
-  return `${getBackendOrigin()}/${path}`;
+
+  return `${BACKEND_ASSET_PREFIX}/${path.replace(/^\/+/, "")}`;
+}
+
+function notifyCompareUpdated(compare: CompareResponse): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(new CustomEvent<CompareResponse>(COMPARE_UPDATED_EVENT, { detail: compare }));
+}
+
+export function subscribeCompareUpdated(listener: CompareUpdatedListener): () => void {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const eventListener: EventListener = (event) => {
+    const customEvent = event as CustomEvent<CompareResponse>;
+    if (!customEvent.detail) {
+      return;
+    }
+    listener(customEvent.detail);
+  };
+
+  window.addEventListener(COMPARE_UPDATED_EVENT, eventListener);
+  return () => window.removeEventListener(COMPARE_UPDATED_EVENT, eventListener);
 }
 
 type RequestOptions = RequestInit & {
@@ -282,20 +322,24 @@ function shouldRetryNetworkError(method: string, attempt: number, maxRetries: nu
 
 function shouldRedirectToLogin(status: number, options?: RequestOptions): boolean {
   return (
-    status === 401 &&
+    (status === 401 || status === 403) &&
     options?.skipAuthRedirect !== true &&
     typeof window !== "undefined" &&
     typeof window.location !== "undefined"
   );
 }
 
-function redirectToLoginPage(): void {
+function redirectToLoginPage(options?: { reauth?: boolean }): void {
   if (typeof window === "undefined") {
     return;
   }
+  const loginUrl = new URL("/login", window.location.origin);
   const nextPath = `${window.location.pathname}${window.location.search}`;
-  const next = encodeURIComponent(nextPath);
-  window.location.assign(`/login?next=${next}`);
+  loginUrl.searchParams.set("next", nextPath);
+  if (options?.reauth) {
+    loginUrl.searchParams.set("reauth", "1");
+  }
+  window.location.assign(loginUrl.toString());
 }
 
 async function parseApiError(response: Response): Promise<ApiError> {
@@ -341,7 +385,8 @@ async function requestJson<T>(path: string, init?: RequestOptions): Promise<T> {
       }
 
       if (shouldRedirectToLogin(response.status, init)) {
-        redirectToLoginPage();
+        invalidateAuthMeCache();
+        redirectToLoginPage({ reauth: response.status === 403 });
       }
 
       if (shouldRetryRequest(response.status, method, attempt, maxRetries)) {
@@ -487,9 +532,12 @@ export type PlaceOrderPayload = {
   installmentMonths?: number | null;
 };
 
-export async function placeOrder(payload: PlaceOrderPayload): Promise<OrderResponse> {
+export async function placeOrder(payload: PlaceOrderPayload, idempotencyKey: string): Promise<OrderResponse> {
   return requestJson<OrderResponse>("/api/v1/orders", {
     method: "POST",
+    headers: {
+      "Idempotency-Key": idempotencyKey,
+    },
     body: JSON.stringify(payload),
   });
 }
@@ -568,20 +616,35 @@ export async function fetchCompare(): Promise<CompareResponse> {
 }
 
 export async function addCompareItem(productId: number): Promise<CompareResponse> {
-  return requestJson<CompareResponse>("/api/v1/compare/items", {
+  const response = await requestJson<CompareResponse>("/api/v1/compare/items", {
     method: "POST",
     body: JSON.stringify({ productId }),
   });
+  notifyCompareUpdated(response);
+  return response;
 }
 
 export async function removeCompareItem(productId: number): Promise<CompareResponse> {
-  return requestJson<CompareResponse>(`/api/v1/compare/items/${productId}`, {
+  const response = await requestJson<CompareResponse>(`/api/v1/compare/items/${productId}`, {
     method: "DELETE",
   });
+  notifyCompareUpdated(response);
+  return response;
 }
 
 export async function clearCompare(): Promise<CompareResponse> {
-  return requestJson<CompareResponse>("/api/v1/compare", { method: "DELETE" });
+  const response = await requestJson<CompareResponse>("/api/v1/compare", { method: "DELETE" });
+  notifyCompareUpdated(response);
+  return response;
+}
+
+export async function replaceCompareItems(productIds: number[]): Promise<CompareResponse> {
+  const response = await requestJson<CompareResponse>("/api/v1/compare", {
+    method: "PUT",
+    body: JSON.stringify({ productIds }),
+  });
+  notifyCompareUpdated(response);
+  return response;
 }
 
 export async function fetchChatHistory(): Promise<ChatMessageResponse[]> {

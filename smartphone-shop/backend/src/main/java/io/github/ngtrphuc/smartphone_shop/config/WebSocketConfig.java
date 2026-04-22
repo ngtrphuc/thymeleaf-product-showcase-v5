@@ -52,6 +52,22 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         if (resolved.length == 0) {
             throw new IllegalStateException("app.cors.allowed-origins must contain at least one origin.");
         }
+        boolean hasWildcard = Arrays.stream(resolved).anyMatch(this::isWildcardOriginPattern);
+        if (hasWildcard) {
+            throw new IllegalStateException(
+                    "app.cors.allowed-origins must not contain wildcard origins when credentials are enabled.");
+        }
         return resolved;
+    }
+
+    private boolean isWildcardOriginPattern(String value) {
+        String normalized = value == null ? "" : value.trim();
+        if (normalized.isBlank()) {
+            return false;
+        }
+        return "*".equals(normalized)
+                || "**".equals(normalized)
+                || normalized.contains("://*")
+                || normalized.contains("://**");
     }
 }

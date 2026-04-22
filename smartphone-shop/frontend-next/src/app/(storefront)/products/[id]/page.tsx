@@ -38,6 +38,10 @@ function decodeJwtRole(token: string): string | null {
   }
 }
 
+function isAdminRole(role: string | null | undefined): boolean {
+  return role === "ROLE_ADMIN" || role === "ADMIN";
+}
+
 function SpecItem({ label, value }: { label: string; value: string | number | null | undefined }) {
   return (
     <div>
@@ -51,7 +55,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   const { id } = await params;
   const jwt = (await cookies()).get("jwt")?.value;
   const role = jwt ? decodeJwtRole(jwt) : null;
-  const isAdmin = role === "ROLE_ADMIN";
+  const isAdmin = isAdminRole(role);
   const isAuthenticated = !!jwt;
 
   let detail;
@@ -83,8 +87,8 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             alt={product.name}
             width={860}
             height={860}
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="h-full w-full object-contain p-2"
-            unoptimized
           />
         </div>
 
@@ -140,26 +144,46 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {detail.recommendedProducts.map((recommended) => (
-              <Link
-                key={recommended.id ?? `${recommended.name}-${recommended.brand}`}
-                href={`/products/${recommended.id ?? ""}`}
-                className="glass-panel rounded-2xl p-3 hover:-translate-y-0.5"
-              >
-                <Image
-                  src={toAssetUrl(recommended.imageUrl)}
-                  alt={recommended.name}
-                  width={480}
-                  height={480}
-                  className="aspect-square w-full rounded-xl bg-[var(--color-surface-soft)] object-contain p-2"
-                  unoptimized
-                />
-                <p className="mt-2 text-sm font-semibold text-slate-900">{recommended.name}</p>
-                <p className="mt-1 text-sm font-bold text-[var(--color-primary-strong)]">
-                  {formatPriceVnd(recommended.price)}
-                </p>
-              </Link>
-            ))}
+            {detail.recommendedProducts.map((recommended) =>
+              recommended.id ? (
+                <Link
+                  key={recommended.id}
+                  href={`/products/${recommended.id}`}
+                  className="glass-panel rounded-2xl p-3 hover:-translate-y-0.5"
+                >
+                  <Image
+                    src={toAssetUrl(recommended.imageUrl)}
+                    alt={recommended.name}
+                    width={480}
+                    height={480}
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="aspect-square w-full rounded-xl bg-[var(--color-surface-soft)] object-contain p-2"
+                  />
+                  <p className="mt-2 text-sm font-semibold text-slate-900">{recommended.name}</p>
+                  <p className="mt-1 text-sm font-bold text-[var(--color-primary-strong)]">
+                    {formatPriceVnd(recommended.price)}
+                  </p>
+                </Link>
+              ) : (
+                <article
+                  key={`${recommended.name}-${recommended.brand}`}
+                  className="glass-panel rounded-2xl p-3 opacity-70"
+                >
+                  <Image
+                    src={toAssetUrl(recommended.imageUrl)}
+                    alt={recommended.name}
+                    width={480}
+                    height={480}
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="aspect-square w-full rounded-xl bg-[var(--color-surface-soft)] object-contain p-2"
+                  />
+                  <p className="mt-2 text-sm font-semibold text-slate-900">{recommended.name}</p>
+                  <p className="mt-1 text-sm font-bold text-[var(--color-primary-strong)]">
+                    {formatPriceVnd(recommended.price)}
+                  </p>
+                </article>
+              ),
+            )}
           </div>
         )}
       </section>

@@ -438,7 +438,6 @@ export default function AdminProductsPage() {
                             fill
                             className="object-contain p-1.5"
                             sizes="64px"
-                            unoptimized
                           />
                         </div>
                         <div className="min-w-0">

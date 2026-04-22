@@ -3,9 +3,12 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
@@ -27,6 +30,7 @@ import io.github.ngtrphuc.smartphone_shop.common.support.CacheKeys;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.spec.ProductCatalogSpecifications;
 import io.github.ngtrphuc.smartphone_shop.common.support.StorefrontSupport;
+import io.github.ngtrphuc.smartphone_shop.service.ProductSearchService;
 import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
 
 @RestController
@@ -42,6 +46,7 @@ public class ProductApiController {
     private final WishlistService wishlistService;
     private final ApiMapper apiMapper;
     private final CacheManager cacheManager;
+    private ProductSearchService productSearchService;
 
     public ProductApiController(ProductRepository productRepository,
             WishlistService wishlistService,
@@ -51,6 +56,11 @@ public class ProductApiController {
         this.wishlistService = wishlistService;
         this.apiMapper = apiMapper;
         this.cacheManager = cacheManager;
+    }
+
+    @Autowired(required = false)
+    void setProductSearchService(ProductSearchService productSearchService) {
+        this.productSearchService = productSearchService;
     }
 
     @GetMapping
@@ -156,7 +166,15 @@ public class ProductApiController {
 
         int effectivePageSize = resolvePageSize(pageSize);
         int safeRequestedPage = Math.max(page, 0);
-        String normalizedSort = normalizeSort(sort);
+        String normalizedKeyword = blankToNull(keyword);
+        String normalizedSort = normalizeSort(sort, normalizedKeyword);
+        ProductSearchService.ProductSearchResult searchResult = productSearchService != null
+                ? productSearchService.searchProductIds(normalizedKeyword, 128)
+                : ProductSearchService.ProductSearchResult.notHandled();
+        List<Long> candidateIds = searchResult.handled() ? searchResult.orderedIds() : null;
+        boolean useSearchRanking = searchResult.handled()
+                && normalizedKeyword != null
+                && "relevance".equals(normalizedSort);
         Sort requestedSort = switch (normalizedSort) {
             case "name_desc" -> Sort.by(Sort.Order.desc("name").ignoreCase());
             case "price_asc" -> Sort.by("price").ascending();
@@ -170,22 +188,33 @@ public class ProductApiController {
         int activeFilterCount = countActiveFilters(
                 keyword, brand, storage, priceRange, priceMin, priceMax, batteryRange, batteryMin, batteryMax, screenSize);
 
-        Page<Product> productPage = productRepository.findAll(
-                ProductCatalogSpecifications.forCatalog(
-                        blankToNull(keyword),
-                        resolvedPriceMin,
-                        resolvedPriceMax,
-                        blankToNull(brand),
-                        blankToNull(storage),
-                        blankToNull(batteryRange),
-                        batteryMin,
-                        batteryMax,
-                        blankToNull(screenSize)),
-                PageRequest.of(safeRequestedPage, effectivePageSize, requestedSort));
-        if (productPage.isEmpty() && safeRequestedPage > 0 && productPage.getTotalPages() > 0) {
-            productPage = productRepository.findAll(
+        if (searchResult.handled() && candidateIds != null && candidateIds.isEmpty()) {
+            products = List.of();
+            totalElements = 0;
+            totalPages = 1;
+            safePage = 0;
+        } else if (useSearchRanking) {
+            List<Product> rankedProducts = resolveRankedSearchResults(
+                    candidateIds,
+                    resolvedPriceMin,
+                    resolvedPriceMax,
+                    blankToNull(brand),
+                    blankToNull(storage),
+                    blankToNull(batteryRange),
+                    batteryMin,
+                    batteryMax,
+                    blankToNull(screenSize));
+            totalElements = rankedProducts.size();
+            totalPages = Math.max((int) Math.ceil(totalElements / (double) effectivePageSize), 1);
+            safePage = Math.max(0, Math.min(safeRequestedPage, totalPages - 1));
+            int fromIndex = Math.min(safePage * effectivePageSize, rankedProducts.size());
+            int toIndex = Math.min(fromIndex + effectivePageSize, rankedProducts.size());
+            products = rankedProducts.subList(fromIndex, toIndex);
+        } else {
+            Page<Product> productPage = productRepository.findAll(
                     ProductCatalogSpecifications.forCatalog(
-                            blankToNull(keyword),
+                            searchResult.handled() ? null : normalizedKeyword,
+                            candidateIds,
                             resolvedPriceMin,
                             resolvedPriceMax,
                             blankToNull(brand),
@@ -194,12 +223,27 @@ public class ProductApiController {
                             batteryMin,
                             batteryMax,
                             blankToNull(screenSize)),
-                    PageRequest.of(productPage.getTotalPages() - 1, effectivePageSize, requestedSort));
+                    PageRequest.of(safeRequestedPage, effectivePageSize, requestedSort));
+            if (productPage.isEmpty() && safeRequestedPage > 0 && productPage.getTotalPages() > 0) {
+                productPage = productRepository.findAll(
+                        ProductCatalogSpecifications.forCatalog(
+                                searchResult.handled() ? null : normalizedKeyword,
+                                candidateIds,
+                                resolvedPriceMin,
+                                resolvedPriceMax,
+                                blankToNull(brand),
+                                blankToNull(storage),
+                                blankToNull(batteryRange),
+                                batteryMin,
+                                batteryMax,
+                                blankToNull(screenSize)),
+                        PageRequest.of(productPage.getTotalPages() - 1, effectivePageSize, requestedSort));
+            }
+            products = productPage.getContent();
+            totalElements = productPage.getTotalElements();
+            totalPages = Math.max(productPage.getTotalPages(), 1);
+            safePage = Math.max(0, Math.min(productPage.getNumber(), totalPages - 1));
         }
-        products = productPage.getContent();
-        totalElements = productPage.getTotalElements();
-        totalPages = Math.max(productPage.getTotalPages(), 1);
-        safePage = Math.max(0, Math.min(productPage.getNumber(), totalPages - 1));
 
         List<String> brands = resolveAvailableBrands();
         return new CatalogPageResponse(
@@ -231,11 +275,69 @@ public class ProductApiController {
         if (currentProduct == null || currentProduct.getId() == null) {
             return List.of();
         }
+        List<Long> coPurchaseIds = productRepository.findRecommendedProductIdsByCoPurchase(
+                currentProduct.getId(),
+                PageRequest.of(0, 4));
+        if (!coPurchaseIds.isEmpty()) {
+            return orderProductsByIds(coPurchaseIds);
+        }
         double targetPrice = currentProduct.getPrice() == null ? 0.0 : currentProduct.getPrice();
         return productRepository.findRecommendedProducts(
                 currentProduct.getId(),
                 targetPrice,
                 PageRequest.of(0, 4));
+    }
+
+    private List<Product> resolveRankedSearchResults(
+            List<Long> candidateIds,
+            Double priceMin,
+            Double priceMax,
+            String brand,
+            String storage,
+            String batteryRange,
+            Integer batteryMin,
+            Integer batteryMax,
+            String screenSize) {
+        if (candidateIds == null || candidateIds.isEmpty()) {
+            return List.of();
+        }
+        List<Product> filtered = productRepository.findAll(ProductCatalogSpecifications.forCatalog(
+                null,
+                candidateIds,
+                priceMin,
+                priceMax,
+                brand,
+                storage,
+                batteryRange,
+                batteryMin,
+                batteryMax,
+                screenSize));
+        Map<Long, Integer> rankById = new LinkedHashMap<>();
+        for (int index = 0; index < candidateIds.size(); index++) {
+            rankById.put(candidateIds.get(index), index);
+        }
+        return filtered.stream()
+                .sorted((left, right) -> Integer.compare(
+                        rankById.getOrDefault(left.getId(), Integer.MAX_VALUE),
+                        rankById.getOrDefault(right.getId(), Integer.MAX_VALUE)))
+                .toList();
+    }
+
+    private List<Product> orderProductsByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        List<Product> products = productRepository.findAllByIdIn(ids);
+        Map<Long, Product> byId = new LinkedHashMap<>();
+        for (Product product : products) {
+            if (product != null && product.getId() != null) {
+                byId.put(product.getId(), product);
+            }
+        }
+        return ids.stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private List<String> resolveAvailableBrands() {
@@ -339,12 +441,12 @@ public class ProductApiController {
         return pageSize != null && pageSize == COMPACT_PAGE_SIZE ? COMPACT_PAGE_SIZE : DESKTOP_PAGE_SIZE;
     }
 
-    private String normalizeSort(String sort) {
+    private String normalizeSort(String sort, String keyword) {
         if (sort == null || sort.isBlank()) {
-            return "name_asc";
+            return keyword == null ? "name_asc" : "relevance";
         }
         return switch (sort) {
-            case "name_desc", "price_asc", "price_desc" -> sort;
+            case "relevance", "name_desc", "price_asc", "price_desc" -> sort;
             default -> "name_asc";
         };
     }

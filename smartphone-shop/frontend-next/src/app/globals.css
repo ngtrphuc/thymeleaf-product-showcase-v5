@@ -63,7 +63,13 @@ button,
 input,
 select,
 textarea {
-  transition: all 0.18s ease;
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease,
+    opacity 0.18s ease;
 }
 
 .glass-panel {
@@ -176,7 +182,13 @@ textarea {
   border: none;
   outline: none;
   text-decoration: none;
-  transition: all 0.18s ease;
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease,
+    opacity 0.18s ease;
 }
 
 .ui-btn:hover {
@@ -228,6 +240,51 @@ textarea {
   border-color: var(--color-danger);
 }
 
+.ui-btn-login {
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.12);
+}
+
+.ui-btn-login:hover,
+.ui-btn-login:focus-visible,
+.ui-btn-login.is-active {
+  background: #22c55e;
+  color: #ffffff;
+  border-color: #22c55e;
+  box-shadow: 0 10px 24px rgba(34, 197, 94, 0.34);
+}
+
+.ui-btn-logout {
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.42);
+}
+
+.ui-btn-logout:hover,
+.ui-btn-logout:focus-visible,
+.ui-btn-logout.is-active {
+  background: #ef4444;
+  color: #190505;
+  border-color: #ef4444;
+  box-shadow: 0 8px 22px rgba(239, 68, 68, 0.32);
+}
+
+.dock-item-login:hover,
+.dock-item-login:focus-visible {
+  background: #22c55e !important;
+  border-color: #22c55e !important;
+  color: #ffffff !important;
+}
+
+.dock-item-logout:hover,
+.dock-item-logout:focus-visible {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #190505 !important;
+}
+
 .ui-input {
   background: var(--color-surface-soft);
   border: 1px solid var(--color-border-2);
@@ -277,6 +334,122 @@ input[type="number"] {
   mask-repeat: no-repeat;
   mask-position: center;
   mask-size: contain;
+}
+
+.ui-icon-admin {
+  --icon-url: url("/griddy/admin.svg");
+}
+
+.ui-icon-alert {
+  --icon-url: url("/griddy/alert.svg");
+}
+
+.ui-icon-arrow-left {
+  --icon-url: url("/griddy/arrow-left.svg");
+}
+
+.ui-icon-arrow-right {
+  --icon-url: url("/griddy/arrow-right.svg");
+}
+
+.ui-icon-ban {
+  --icon-url: url("/griddy/ban.svg");
+}
+
+.ui-icon-box {
+  --icon-url: url("/griddy/box.svg");
+}
+
+.ui-icon-cart {
+  --icon-url: url("/griddy/cart.svg");
+}
+
+.ui-icon-chat {
+  --icon-url: url("/griddy/chat.svg");
+}
+
+.ui-icon-check {
+  --icon-url: url("/griddy/check.svg");
+}
+
+.ui-icon-clipboard {
+  --icon-url: url("/griddy/clipboard.svg");
+}
+
+.ui-icon-close-circle {
+  --icon-url: url("/griddy/close-circle.svg");
+}
+
+.ui-icon-credit-card {
+  --icon-url: url("/griddy/credit-card.svg");
+}
+
+.ui-icon-dashboard {
+  --icon-url: url("/griddy/dashboard.svg");
+}
+
+.ui-icon-eye-off {
+  --icon-url: url("/griddy/eye-off.svg");
+}
+
+.ui-icon-eye {
+  --icon-url: url("/griddy/eye.svg");
+}
+
+.ui-icon-heart-filled {
+  --icon-url: url("/griddy/heart-filled.svg");
+}
+
+.ui-icon-heart-outline {
+  --icon-url: url("/griddy/heart-outline.svg");
+}
+
+.ui-icon-home {
+  --icon-url: url("/griddy/home.svg");
+}
+
+.ui-icon-location-pin {
+  --icon-url: url("/griddy/location-pin.svg");
+}
+
+.ui-icon-login {
+  --icon-url: url("/griddy/login.svg");
+}
+
+.ui-icon-logout {
+  --icon-url: url("/griddy/logout.svg");
+}
+
+.ui-icon-orders {
+  --icon-url: url("/griddy/orders.svg");
+}
+
+.ui-icon-package {
+  --icon-url: url("/griddy/package.svg");
+}
+
+.ui-icon-phone {
+  --icon-url: url("/griddy/phone.svg");
+}
+
+.ui-icon-profile {
+  --icon-url: url("/griddy/profile.svg");
+}
+
+.ui-icon-spark {
+  --icon-url: url("/griddy/spark.svg");
+}
+
+.ui-icon-trash {
+  --icon-url: url("/griddy/trash.svg");
+}
+
+.ui-icon-user {
+  --icon-url: url("/griddy/user.svg");
+}
+
+.ui-icon-wishlist {
+  --icon-url: url("/griddy/wishlist.svg");
 }
 
 .ui-expand-nav {
@@ -457,35 +630,122 @@ input[type="number"] {
   transform-origin: center center;
   transform-style: preserve-3d;
   backface-visibility: hidden;
-  will-change: transform, opacity, filter;
+  content-visibility: auto;
+  contain-intrinsic-size: 420px;
+  will-change: transform, opacity;
 }
 
 .catalog-flip-stage.is-entering .catalog-flip-card {
   animation: catalog-card-flip-in 720ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: var(--card-delay, 0ms);
+  animation-delay: 0ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(3) {
+  animation-delay: 110ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(4) {
+  animation-delay: 165ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(5) {
+  animation-delay: 220ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(6) {
+  animation-delay: 275ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(7) {
+  animation-delay: 330ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(8) {
+  animation-delay: 385ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(9) {
+  animation-delay: 440ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(10) {
+  animation-delay: 495ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(11) {
+  animation-delay: 550ms;
+}
+
+.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(12) {
+  animation-delay: 605ms;
 }
 
 .catalog-flip-stage.is-exiting .catalog-flip-card {
   animation: catalog-card-flip-out 280ms cubic-bezier(0.55, 0.08, 0.68, 0.53) both;
-  animation-delay: calc(var(--card-delay, 0ms) * 0.32);
+  animation-delay: 0ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(2) {
+  animation-delay: 18ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(3) {
+  animation-delay: 36ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(4) {
+  animation-delay: 54ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(5) {
+  animation-delay: 72ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(6) {
+  animation-delay: 90ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(7) {
+  animation-delay: 108ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(8) {
+  animation-delay: 126ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(9) {
+  animation-delay: 144ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(10) {
+  animation-delay: 162ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(11) {
+  animation-delay: 180ms;
+}
+
+.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(12) {
+  animation-delay: 198ms;
 }
 
 @keyframes catalog-card-flip-in {
   0% {
     opacity: 0;
-    filter: blur(10px);
-    transform: perspective(1800px) rotateY(-86deg) scale(0.88) translateY(18px);
+    transform: perspective(1800px) rotateY(-78deg) scale(0.92) translateY(14px);
   }
 
   60% {
     opacity: 1;
-    filter: blur(0);
-    transform: perspective(1800px) rotateY(14deg) scale(1.01) translateY(-3px);
+    transform: perspective(1800px) rotateY(10deg) scale(1.01) translateY(-2px);
   }
 
   100% {
     opacity: 1;
-    filter: blur(0);
     transform: perspective(1800px) rotateY(0deg) scale(1) translateY(0);
   }
 }
@@ -493,14 +753,12 @@ input[type="number"] {
 @keyframes catalog-card-flip-out {
   0% {
     opacity: 1;
-    filter: blur(0);
     transform: perspective(1800px) rotateY(0deg) scale(1) translateY(0);
   }
 
   100% {
     opacity: 0;
-    filter: blur(8px);
-    transform: perspective(1800px) rotateY(84deg) scale(0.9) translateY(16px);
+    transform: perspective(1800px) rotateY(72deg) scale(0.94) translateY(12px);
   }
 }
 
@@ -519,30 +777,47 @@ input[type="number"] {
   transform-origin: center center;
   transform-style: preserve-3d;
   backface-visibility: hidden;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
 }
 
 .compare-picker-flip-stage.is-entering .compare-picker-flip-card {
   animation: compare-picker-card-flip-vertical 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: var(--card-delay, 0ms);
+  animation-delay: 0ms;
+}
+
+.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(2) {
+  animation-delay: 45ms;
+}
+
+.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(4) {
+  animation-delay: 135ms;
+}
+
+.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(5) {
+  animation-delay: 180ms;
+}
+
+.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(6) {
+  animation-delay: 225ms;
 }
 
 @keyframes compare-picker-card-flip-vertical {
   0% {
     opacity: 0;
-    filter: blur(8px);
-    transform: perspective(1600px) rotateX(-82deg) scale(0.92) translateY(18px);
+    transform: perspective(1600px) rotateX(-72deg) scale(0.94) translateY(14px);
   }
 
   62% {
     opacity: 1;
-    filter: blur(0);
-    transform: perspective(1600px) rotateX(12deg) scale(1.01) translateY(-2px);
+    transform: perspective(1600px) rotateX(10deg) scale(1.01) translateY(-2px);
   }
 
   100% {
     opacity: 1;
-    filter: blur(0);
     transform: perspective(1600px) rotateX(0deg) scale(1) translateY(0);
   }
 }

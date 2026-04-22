@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { addCompareItem, addWishlistItem, ApiError, removeWishlistItem } from "@/lib/api";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
@@ -16,6 +17,7 @@ export function QuickProductActions({ productId, initiallyWishlisted, className 
   const [error, setError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<"wishlist" | "compare" | null>(null);
   const [compareAdded, setCompareAdded] = useState(false);
+  const [compareCount, setCompareCount] = useState(0);
 
   useEffect(() => {
     if (!compareAdded) {
@@ -65,9 +67,10 @@ export function QuickProductActions({ productId, initiallyWishlisted, className 
     setStatus(null);
     setError(null);
     try {
-      await addCompareItem(productId);
+      const compare = await addCompareItem(productId);
       setCompareAdded(true);
-      setStatus("Added to compare list.");
+      setCompareCount(compare.ids.length);
+      setStatus(`Added to compare list (${compare.ids.length}/${compare.maxCompare}).`);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -125,6 +128,14 @@ export function QuickProductActions({ productId, initiallyWishlisted, className 
         <p className="max-w-[11rem] rounded-2xl bg-red-500/92 px-3 py-1.5 text-right text-[11px] font-medium text-white shadow-lg">
           {error}
         </p>
+      ) : null}
+      {!error && compareCount > 0 ? (
+        <Link
+          href="/compare"
+          className="max-w-[12.5rem] rounded-2xl bg-white/92 px-3 py-1.5 text-right text-[11px] font-semibold text-slate-800 shadow-lg transition hover:bg-white"
+        >
+          Compare list: {compareCount} item(s)
+        </Link>
       ) : null}
     </div>
   );

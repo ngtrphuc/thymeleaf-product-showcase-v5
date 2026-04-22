@@ -15,7 +15,7 @@ export function AdminSessionActions() {
     setError(null);
     try {
       await authLogout();
-      router.push("/login");
+      router.push("/login?reauth=1");
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -33,10 +33,10 @@ export function AdminSessionActions() {
         type="button"
         onClick={() => void logout()}
         disabled={loggingOut}
-        className="ui-btn ui-btn-secondary ui-header-contrast ui-negative-hover inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
+        className="ui-btn ui-btn-logout inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
       >
         <GriddyIcon name="logout" />
-        {loggingOut ? "Logging out..." : "Logout"}
+        {loggingOut ? "Signing out..." : "Sign Out"}
       </button>
       {error ? <span className="text-xs text-red-700">{error}</span> : null}
     </div>

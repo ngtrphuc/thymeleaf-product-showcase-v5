@@ -36,7 +36,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   const keyword = readFirst(resolved.keyword)?.trim() ?? "";
   const brand = readFirst(resolved.brand)?.trim() ?? "";
-  const sort = readFirst(resolved.sort)?.trim() ?? "name_asc";
+  const sort = readFirst(resolved.sort)?.trim() ?? (keyword ? "relevance" : "name_asc");
   const storage = readFirst(resolved.storage)?.trim() ?? "";
   const priceRange = readFirst(resolved.priceRange)?.trim() ?? "";
   const priceMin = readFirst(resolved.priceMin)?.trim() ?? "";
@@ -114,7 +114,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           Showing <strong>{catalog.products.length}</strong> / <strong>{catalog.totalElements}</strong>
         </p>
         <p>
-          Page <strong>{currentPage + 1}</strong> / <strong>{totalPages}</strong> · <strong>{catalog.pageSize}</strong>{" "}
+          Page <strong>{currentPage + 1}</strong> / <strong>{totalPages}</strong> | <strong>{catalog.pageSize}</strong>{" "}
           items per page
         </p>
       </section>

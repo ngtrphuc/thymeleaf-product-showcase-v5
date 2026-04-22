@@ -35,6 +35,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import io.github.ngtrphuc.smartphone_shop.security.JwtAuthenticationFilter;
 import io.github.ngtrphuc.smartphone_shop.security.JwtProperties;
+import io.github.ngtrphuc.smartphone_shop.security.ApiRateLimitFilter;
 import io.github.ngtrphuc.smartphone_shop.security.LoginRateLimitFilter;
 
 @Configuration(proxyBeanMethods = false)
@@ -44,6 +45,7 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ApiRateLimitFilter apiRateLimitFilter;
     private final LoginRateLimitFilter loginRateLimitFilter;
 
     @Value("${app.cors.allowed-origins:http://localhost:3000}")
@@ -51,9 +53,11 @@ public class SecurityConfig {
 
     public SecurityConfig(UserDetailsService userDetailsService,
             JwtAuthenticationFilter jwtAuthenticationFilter,
+            ApiRateLimitFilter apiRateLimitFilter,
             LoginRateLimitFilter loginRateLimitFilter) {
         this.userDetailsService = userDetailsService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.apiRateLimitFilter = apiRateLimitFilter;
         this.loginRateLimitFilter = loginRateLimitFilter;
     }
 
@@ -99,6 +103,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
+                                "/error",
                                 "/favicon.ico")
                         .permitAll()
                         .requestMatchers("/ws", "/ws/**").permitAll()
@@ -127,6 +132,7 @@ public class SecurityConfig {
                         }))
                 .headers(this::configureSecurityHeaders)
                 .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(apiRateLimitFilter, LoginRateLimitFilter.class)
                 .addFilterAfter(jwtAuthenticationFilter, LoginRateLimitFilter.class);
 
         return http.build();
@@ -145,6 +151,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/",
+                                "/error",
                                 "/favicon.ico",
                                 "/images/**")
                         .permitAll()
@@ -203,6 +210,22 @@ public class SecurityConfig {
         if (origins.isEmpty()) {
             throw new IllegalStateException("app.cors.allowed-origins must contain at least one origin.");
         }
+        boolean hasWildcard = origins.stream().anyMatch(this::isWildcardOriginPattern);
+        if (hasWildcard) {
+            throw new IllegalStateException(
+                    "app.cors.allowed-origins must not contain wildcard origins when credentials are enabled.");
+        }
         return origins;
+    }
+
+    private boolean isWildcardOriginPattern(String value) {
+        String normalized = value == null ? "" : value.trim();
+        if (normalized.isBlank()) {
+            return false;
+        }
+        return "*".equals(normalized)
+                || "**".equals(normalized)
+                || normalized.contains("://*")
+                || normalized.contains("://**");
     }
 }

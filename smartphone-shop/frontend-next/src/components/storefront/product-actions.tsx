@@ -58,8 +58,8 @@ export function ProductActions({
         await addWishlistItem(productId);
         setMessage("Added to wishlist.");
       } else if (action === "compare") {
-        await addCompareItem(productId);
-        setMessage("Added to compare list.");
+        const compare = await addCompareItem(productId);
+        setMessage(`Added to compare list (${compare.ids.length}/${compare.maxCompare}).`);
       } else {
         await addCartItem(productId, quantity);
         router.push("/checkout");

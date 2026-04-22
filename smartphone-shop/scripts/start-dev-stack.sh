@@ -30,7 +30,7 @@ wait_until() {
 }
 
 echo "[1/4] Starting Docker infra..."
-docker compose -f "${REPO_ROOT}/docker-compose.yml" up -d postgres redis
+docker compose -f "${REPO_ROOT}/docker-compose.yml" up -d postgres redis meilisearch
 
 echo "[2/4] Ensuring frontend is healthy on :3000..."
 if ! is_http_ready "http://localhost:3000/products"; then

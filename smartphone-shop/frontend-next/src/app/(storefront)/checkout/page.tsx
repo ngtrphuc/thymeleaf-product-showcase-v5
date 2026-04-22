@@ -19,6 +19,13 @@ import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge
 type PaymentMethodType = "CASH_ON_DELIVERY" | "BANK_TRANSFER" | "PAYPAY" | "MASTERCARD";
 type PaymentPlanType = "FULL_PAYMENT" | "INSTALLMENT";
 
+function createIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `checkout-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 export default function CheckoutPage() {
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodResponse[]>([]);
@@ -34,6 +41,7 @@ export default function CheckoutPage() {
   const [paymentDetail, setPaymentDetail] = useState("");
   const [paymentPlan, setPaymentPlan] = useState<PaymentPlanType>("FULL_PAYMENT");
   const [installmentMonths, setInstallmentMonths] = useState<number>(24);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => createIdempotencyKey());
 
   async function loadCheckoutData() {
     setLoading(true);
@@ -103,8 +111,9 @@ export default function CheckoutPage() {
         paymentDetail: paymentMethod === "BANK_TRANSFER" ? paymentDetail : null,
         paymentPlan,
         installmentMonths: paymentPlan === "INSTALLMENT" ? installmentMonths : null,
-      });
+      }, idempotencyKey);
       setSuccess(`Order ${created.orderCode} placed successfully.`);
+      setIdempotencyKey(createIdempotencyKey());
       await loadCheckoutData();
     } catch (err) {
       if (err instanceof ApiError) {

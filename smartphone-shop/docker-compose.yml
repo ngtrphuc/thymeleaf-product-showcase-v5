@@ -25,6 +25,17 @@ services:
     volumes:
       - redis_data:/data
 
+  meilisearch:
+    image: getmeili/meilisearch:v1.13
+    container_name: smartphone-shop-meilisearch
+    environment:
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: "true"
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch_data:/meili_data
+
   prometheus:
     image: prom/prometheus:v2.54.1
     container_name: smartphone-shop-prometheus
@@ -68,5 +79,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  meilisearch_data:
   prometheus_data:
   grafana_data:

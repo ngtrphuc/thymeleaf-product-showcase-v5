@@ -22,6 +22,7 @@ import org.springframework.security.core.authority.AuthorityUtils;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
+import io.github.ngtrphuc.smartphone_shop.common.support.AssetUrlResolver;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
@@ -29,6 +30,8 @@ import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("null")
 class ProductApiControllerTest {
+
+    private static final ApiMapper API_MAPPER = new ApiMapper(new AssetUrlResolver(""));
 
     @Mock
     private ProductRepository productRepository;
@@ -41,7 +44,7 @@ class ProductApiControllerTest {
         ProductApiController controller = new ProductApiController(
                 productRepository,
                 wishlistService,
-                new ApiMapper(),
+                API_MAPPER,
                 new ConcurrentMapCacheManager("catalogPublic", "productDetailPublic"));
 
         Product iphone = new Product();
@@ -71,7 +74,7 @@ class ProductApiControllerTest {
         ProductApiController controller = new ProductApiController(
                 productRepository,
                 wishlistService,
-                new ApiMapper(),
+                API_MAPPER,
                 new ConcurrentMapCacheManager("catalogPublic", "productDetailPublic"));
 
         Product iphone = new Product();

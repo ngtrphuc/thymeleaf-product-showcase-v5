@@ -186,7 +186,7 @@ public class CompareService {
         }
         LinkedHashSet<Long> unique = new LinkedHashSet<>();
         for (Long id : ids) {
-            if (id == null) {
+            if (id == null || !productRepository.existsById(id)) {
                 continue;
             }
             unique.add(id);

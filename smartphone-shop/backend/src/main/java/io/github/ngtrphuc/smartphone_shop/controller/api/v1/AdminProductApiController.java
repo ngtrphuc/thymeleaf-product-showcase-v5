@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,6 +26,7 @@ import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.CartItemRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import io.github.ngtrphuc.smartphone_shop.api.dto.OperationStatusResponse;
+import io.github.ngtrphuc.smartphone_shop.service.ProductSearchService;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -32,11 +34,17 @@ public class AdminProductApiController {
 
     private final ProductRepository productRepository;
     private final CartItemRepository cartItemRepository;
+    private ProductSearchService productSearchService;
 
     public AdminProductApiController(ProductRepository productRepository,
             CartItemRepository cartItemRepository) {
         this.productRepository = productRepository;
         this.cartItemRepository = cartItemRepository;
+    }
+
+    @Autowired(required = false)
+    void setProductSearchService(ProductSearchService productSearchService) {
+        this.productSearchService = productSearchService;
     }
 
     @GetMapping("/products")
@@ -93,7 +101,11 @@ public class AdminProductApiController {
     public Product createProduct(@RequestBody Product request) {
         Product product = new Product();
         applyProductInput(product, request);
-        return productRepository.save(product);
+        Product saved = productRepository.save(product);
+        if (productSearchService != null) {
+            productSearchService.syncProduct(saved);
+        }
+        return saved;
     }
 
     @PutMapping("/products/{id}")
@@ -102,7 +114,11 @@ public class AdminProductApiController {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
         applyProductInput(existing, request);
-        return productRepository.save(Objects.requireNonNull(existing));
+        Product saved = productRepository.save(Objects.requireNonNull(existing));
+        if (productSearchService != null) {
+            productSearchService.syncProduct(saved);
+        }
+        return saved;
     }
 
     @DeleteMapping("/products/{id}")
@@ -114,6 +130,9 @@ public class AdminProductApiController {
         }
         cartItemRepository.deleteByProductId(id);
         productRepository.deleteById(id);
+        if (productSearchService != null) {
+            productSearchService.deleteProduct(id);
+        }
         return new OperationStatusResponse(true, "Product deleted successfully.");
     }
 

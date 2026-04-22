@@ -1,6 +1,7 @@
 package io.github.ngtrphuc.smartphone_shop.api;
 
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.stereotype.Component;
 
@@ -13,10 +14,17 @@ import io.github.ngtrphuc.smartphone_shop.model.PaymentMethod;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.model.WishlistItem;
+import io.github.ngtrphuc.smartphone_shop.common.support.AssetUrlResolver;
 import io.github.ngtrphuc.smartphone_shop.common.support.StorefrontSupport;
 
 @Component
 public class ApiMapper {
+
+    private final AssetUrlResolver assetUrlResolver;
+
+    public ApiMapper(AssetUrlResolver assetUrlResolver) {
+        this.assetUrlResolver = assetUrlResolver;
+    }
 
     public ProductSummary toProductSummary(Product product, boolean wishlisted) {
         if (product == null) {
@@ -27,7 +35,7 @@ public class ApiMapper {
                 product.getName(),
                 StorefrontSupport.extractBrand(product.getName()),
                 product.getPrice(),
-                product.getImageUrl(),
+                assetUrlResolver.resolve(product.getImageUrl()),
                 product.getStock(),
                 product.isAvailable(),
                 product.isLowStock(),
@@ -55,7 +63,7 @@ public class ApiMapper {
                 item.getName(),
                 item.getPrice(),
                 item.getQuantity(),
-                item.getImageUrl(),
+                assetUrlResolver.resolve(item.getImageUrl()),
                 item.getAvailableStock(),
                 item.getLineTotal(),
                 item.isLowStock(),
@@ -83,7 +91,7 @@ public class ApiMapper {
                 item.getProductId(),
                 item.getName(),
                 item.getPrice(),
-                item.getImageUrl(),
+                assetUrlResolver.resolve(item.getImageUrl()),
                 item.getStock(),
                 item.getAddedAt());
     }
@@ -176,7 +184,7 @@ public class ApiMapper {
         if (user == null) {
             return new AuthMeResponse(false, null, null, null);
         }
-        return new AuthMeResponse(true, user.getEmail(), user.getRole(), user.getFullName());
+        return new AuthMeResponse(true, user.getEmail(), normalizeRole(user.getRole()), user.getFullName());
     }
 
     public ChatMessageResponse toChatMessageResponse(ChatMessage message) {
@@ -189,6 +197,17 @@ public class ApiMapper {
                 message.getContent(),
                 message.getSenderRole(),
                 message.getCreatedAt());
+    }
+
+    private String normalizeRole(String role) {
+        String normalized = role == null ? "" : role.trim().toUpperCase(Locale.ROOT);
+        if (normalized.isBlank()) {
+            return "ROLE_USER";
+        }
+        if (normalized.startsWith("ROLE_")) {
+            return normalized;
+        }
+        return "ROLE_" + normalized;
     }
 }
 

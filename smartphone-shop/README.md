@@ -10,6 +10,7 @@ This repository demonstrates a full-stack commerce architecture with:
 - A Java/Spring backend exposing REST APIs
 - A fully migrated Next.js App Router frontend for storefront and admin user journeys
 - Redis-backed caching for public product APIs
+- Optional Meilisearch-powered relevance/fuzzy product search with DB fallback
 
 ## Current Status
 
@@ -33,10 +34,15 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 - [x] Monitoring dashboard + alerting provisioning
 - [x] Portfolio polish baseline (screenshots checklist + project narrative)
 
-## Progress Snapshot (Updated: 2026-04-22)
+## Progress Snapshot (Updated: 2026-04-23)
 
 ### Completed recently
 
+- Ecommerce "wow-level" readiness upgrades:
+  - Added global API rate limiting for `/api/v1/**` (not only login) with configurable exclude paths and `Retry-After` support
+  - Added asynchronous post-checkout workflow via `OrderCreatedEvent` + `@TransactionalEventListener(AFTER_COMMIT)` + dedicated thread pool executor
+  - Added CDN-ready asset URL resolver (`app.assets.base-url`) so product/cart/wishlist image URLs can switch to CDN without frontend code changes
+  - Aligned local infra bootstrap to start Meilisearch together with PostgreSQL and Redis in dev scripts/bootstrapping
 - Auth foundation for Next.js:
   - JWT cookie (`httpOnly`) login/logout flow
   - Route guarding via Next.js proxy (`frontend-next/src/proxy.ts`)
@@ -163,8 +169,11 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 
 - Spring Boot application with layered architecture (controller/service/repository)
 - Spring Security with JWT support for API authentication
+- API rate limiting on login and global API traffic (Caffeine window counters)
 - Spring Data JPA + Hibernate for persistence
 - Flyway for schema migration
+- Asynchronous order post-processing via domain events (`OrderCreatedEvent`)
+- Meilisearch integration for typo-tolerant/relevance product lookup with DB fallback
 - WebSocket/STOMP for real-time messaging
 - OpenAPI/Swagger for API documentation
 - Custom backend source layout wired through Maven build-helper for IDE consistency
@@ -187,7 +196,9 @@ flowchart LR
     N -->|REST + Cookie Auth| B[Spring Boot API]
     B --> P[(PostgreSQL)]
     B --> R[(Redis Cache)]
+    B --> S[(Meilisearch)]
     B --> W[WebSocket/STOMP]
+    B -. OrderCreatedEvent .-> O[Async Order Workflow]
     A[Admin Browser] --> N
     B --> M[Actuator Metrics]
     M --> PR[Prometheus]
@@ -196,8 +207,8 @@ flowchart LR
 
 ## Technology Stack
 
-- Backend: Java 21, Spring Boot 3, Spring Security, JPA/Hibernate
-- Database: PostgreSQL
+- Backend: Java 21, Spring Boot 3, Spring Security, JPA/Hibernate, Caffeine
+- Database/Search: PostgreSQL, Meilisearch
 - Frontend: Next.js, React, TypeScript, Tailwind CSS
 - Tooling: Maven Wrapper, Docker Compose
 
@@ -219,7 +230,7 @@ macOS/Linux:
 
 This boots:
 
-- PostgreSQL + Redis via Docker Compose
+- PostgreSQL + Redis + Meilisearch via Docker Compose
 - Backend at `http://localhost:8080`
 - Next.js frontend at `http://localhost:3000`
 - Health checks for both ports before marking startup as ready
@@ -240,7 +251,7 @@ On Windows local dev, starting Spring Boot also auto-starts the Next.js frontend
 1. Start infrastructure:
 
 ```bash
-docker compose up -d postgres redis
+docker compose up -d postgres redis meilisearch
 ```
 
 1. Start backend:
@@ -275,6 +286,20 @@ PowerShell note:
   - `APP_LOGIN_RATE_LIMIT_MAX_ATTEMPTS=8`
   - `APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS=60`
   - `APP_LOGIN_RATE_LIMIT_MAX_CLIENTS=50000`
+- Global API rate-limit defaults:
+  - `APP_API_RATE_LIMIT_ENABLED=true`
+  - `APP_API_RATE_LIMIT_MAX_REQUESTS=180`
+  - `APP_API_RATE_LIMIT_WINDOW_SECONDS=60`
+  - `APP_API_RATE_LIMIT_MAX_CLIENTS=200000`
+  - `APP_API_RATE_LIMIT_EXCLUDED_PATHS=/api/v1/auth/login,/api/v1/auth/register,/api/v1/auth/logout,/api/v1/auth/me`
+- Meilisearch defaults:
+  - `APP_SEARCH_MEILI_ENABLED=true` (dev profile)
+  - `APP_SEARCH_MEILI_HOST=http://localhost:7700`
+  - `APP_SEARCH_MEILI_INDEX_NAME=products`
+- Order workflow default:
+  - `APP_ORDER_WORKFLOW_ENABLED=true`
+- CDN-ready asset URL default:
+  - `APP_ASSETS_BASE_URL=` (empty = keep backend/local image paths)
 - Wishlist orphan cleanup scheduler default:
   - `APP_WISHLIST_CLEANUP_DELAY_MS=300000` (5 minutes)
 - Cart cleanup scheduler default:
@@ -355,7 +380,8 @@ smartphone-shop/
 │       │   └── 📁 resources/
 │       │       ├── 📁 db/migration/
 │       │       │   ├── 📄 V1__baseline_schema.sql
-│       │       │   └── 📄 V2__performance_indexes.sql
+│       │       │   ├── 📄 V2__performance_indexes.sql
+│       │       │   └── 📄 V3__idempotency_and_recommendation_indexes.sql
 │       │       ├── 📄 application.properties
 │       │       ├── 📄 application-dev.properties
 │       │       └── 📄 application-prod.properties
@@ -439,7 +465,7 @@ Local/generated artifacts intentionally excluded from source control:
 - Frontend quality checks (lint/build) are managed inside `frontend-next/`
 - Latest local validation snapshot:
   - `mvnw -Dtest=ProductCatalogSpecificationIntegrationTest test`: build success (test is skipped automatically when Docker/Testcontainers is unavailable)
-  - `mvnw -Dtest=CacheKeysTest,ProductCatalogSpecificationIntegrationTest,ChatServiceTest,WishlistServiceTest,AdminApiControllerTest,ProductApiControllerTest,LoginRateLimitFilterTest test`: passing
+  - `mvnw -Dtest=ApiRateLimitFilterTest,LoginRateLimitFilterTest,OrderServiceTest,AssetUrlResolverTest,ProductApiControllerTest,AuthApiControllerTest test`: passing
   - `cd frontend-next && npm run lint`: passing (1 existing non-blocking hook warning in `compare/page.tsx`)
   - `cd frontend-next && npm run test:e2e`: passing (2 checkout flow tests)
 
@@ -470,6 +496,9 @@ Local/generated artifacts intentionally excluded from source control:
 - [x] Replace unsafe delimiter-based cache keys with hashed keys.
 - [x] Replace login rate-limit map cleanup heuristic with Caffeine TTL cache.
 - [x] Add explicit JWT cookie secure override (`APP_JWT_COOKIE_SECURE`).
+- [x] Add global API rate limiting baseline for `/api/v1/**` traffic.
+- [x] Add async order post-processing pipeline (event-driven after checkout commit).
+- [x] Add CDN-ready image URL rewrite strategy (`app.assets.base-url`).
 - [ ] Add Flyway migration for persistent `order_code` column/index if DB-side search on order code is required.
 
 ### P1 (medium priority)

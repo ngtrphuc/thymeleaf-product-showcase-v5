@@ -1,12 +1,6 @@
 "use client";
 
-import { type MouseEvent, type ReactNode, createContext, useContext, useEffect, useRef, useState } from "react";
-
-type DockContextValue = {
-  mouseX: number | null;
-};
-
-const DockContext = createContext<DockContextValue>({ mouseX: null });
+import { type ReactNode } from "react";
 
 type DockProps = {
   children: ReactNode;
@@ -19,6 +13,7 @@ type DockItemProps = {
   ariaLabel?: string;
   className?: string;
   active?: boolean;
+  activeLabel?: ReactNode;
 };
 
 type DockPartProps = {
@@ -27,78 +22,35 @@ type DockPartProps = {
 };
 
 export function Dock({ children, className }: DockProps) {
-  const [mouseX, setMouseX] = useState<number | null>(null);
-
-  function onMouseMove(event: MouseEvent<HTMLDivElement>) {
-    setMouseX(event.clientX);
-  }
-
-  function onMouseLeave() {
-    setMouseX(null);
-  }
-
   return (
-    <DockContext.Provider value={{ mouseX }}>
-      <div className={`flex h-24 items-end justify-center ${className ?? ""}`}>
-        <div
-          onMouseMove={onMouseMove}
-          onMouseLeave={onMouseLeave}
-          className="flex items-end gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 shadow-[0_10px_34px_rgba(0,0,0,0.45)]"
-        >
-          {children}
-        </div>
+    <div className={`flex h-24 items-end justify-center ${className ?? ""}`}>
+      <div className="flex items-end gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 shadow-[0_10px_34px_rgba(0,0,0,0.45)]">
+        {children}
       </div>
-    </DockContext.Provider>
+    </div>
   );
 }
 
-export function DockItem({ children, onClick, ariaLabel, className, active = false }: DockItemProps) {
-  const { mouseX } = useContext(DockContext);
-  const itemRef = useRef<HTMLButtonElement | null>(null);
-  const [lift, setLift] = useState(active ? 3 : 0);
-  const [depth, setDepth] = useState(active ? 3 : 0);
-  const [scale, setScale] = useState(active ? 1.03 : 1);
-
-  useEffect(() => {
-    const baseLift = active ? 3 : 0;
-    const baseDepth = active ? 3 : 0;
-    const baseScale = active ? 1.03 : 1;
-    if (!itemRef.current || mouseX === null) {
-      setLift(baseLift);
-      setDepth(baseDepth);
-      setScale(baseScale);
-      return;
-    }
-
-    const rect = itemRef.current.getBoundingClientRect();
-    const itemCenter = rect.left + rect.width / 2;
-    const distance = Math.abs(mouseX - itemCenter);
-    const influence = Math.max(0, 1 - distance / 120);
-    setLift(baseLift + influence * 10);
-    setDepth(baseDepth + influence * 10);
-    setScale(baseScale + influence * 0.08);
-  }, [active, mouseX]);
-
+export function DockItem({ children, onClick, ariaLabel, className, active = false, activeLabel }: DockItemProps) {
   return (
     <button
-      ref={itemRef}
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
       className={[
-        "group/dockitem ui-header-contrast ui-negative-hover relative flex h-11 w-11 origin-bottom items-center justify-center rounded-xl border transition-[transform,background-color,color,border-color,box-shadow] duration-200 ease-out",
+        "group/dockitem relative flex h-11 origin-bottom items-center rounded-xl border transition-[transform,background-color,color,border-color,box-shadow,width,padding,gap] duration-200 ease-out",
         active
-          ? "border-transparent bg-[var(--color-primary)] text-black"
-          : "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] hover:border-white/10 hover:bg-white hover:text-black",
+          ? "w-auto min-w-[8rem] justify-start gap-2 border-transparent bg-[var(--color-primary)] px-3.5 text-black shadow-[0_10px_22px_rgba(0,0,0,0.38)]"
+          : "w-11 justify-center border-[var(--color-border)] bg-[var(--color-surface-soft)] px-0 text-[var(--color-text-muted)] hover:-translate-y-1 hover:border-white/10 hover:bg-white hover:text-black hover:shadow-[0_10px_22px_rgba(0,0,0,0.38)]",
         className ?? "",
       ].join(" ")}
-      style={{
-        transform: `translateY(${-lift}px) scale(${scale})`,
-        zIndex: Math.round(depth),
-        boxShadow: depth > 0 ? "0 10px 22px rgba(0,0,0,0.38)" : "none",
-      }}
     >
       {children}
+      {active && activeLabel ? (
+        <span className="pointer-events-none max-w-[5.75rem] truncate text-xs font-semibold tracking-[0.02em]">
+          {activeLabel}
+        </span>
+      ) : null}
     </button>
   );
 }

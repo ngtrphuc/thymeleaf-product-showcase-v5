@@ -28,8 +28,8 @@ export function ProductCard({ product }: ProductCardProps) {
               alt={product.name}
               width={640}
               height={640}
+              sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
               className="h-full w-full object-contain p-2 transition duration-300 group-hover:scale-[1.03]"
-              unoptimized
             />
           </Link>
         ) : (
@@ -38,8 +38,8 @@ export function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             width={640}
             height={640}
+            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
             className="h-full w-full object-contain p-2 transition duration-300 group-hover:scale-[1.03]"
-            unoptimized
           />
         )}
         <div className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700">

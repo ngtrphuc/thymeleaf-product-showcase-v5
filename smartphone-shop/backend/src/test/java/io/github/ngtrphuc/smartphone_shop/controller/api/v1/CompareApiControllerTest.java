@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -84,5 +85,39 @@ class CompareApiControllerTest {
                 .andExpect(jsonPath("$.maxCompare").value(3));
 
         verify(compareService).clear(eq(null), any());
+    }
+
+    @Test
+    void anonymousReplace_shouldPersistRequestedOrder() throws Exception {
+        Product first = new Product();
+        first.setId(3L);
+        first.setName("Phone C");
+        first.setPrice(300.0);
+        first.setStock(5);
+
+        Product second = new Product();
+        second.setId(1L);
+        second.setName("Phone A");
+        second.setPrice(100.0);
+        second.setStock(7);
+
+        when(compareService.getCompareIds(eq(null), any())).thenReturn(List.of(3L, 1L));
+        when(compareService.getMaxCompare()).thenReturn(3);
+        when(productRepository.findAllByIdIn(List.of(3L, 1L))).thenReturn(List.of(first, second));
+
+        mockMvc.perform(put("/api/v1/compare")
+                .contentType("application/json")
+                .content("""
+                        {
+                          "productIds": [3, 1]
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ids[0]").value(3))
+                .andExpect(jsonPath("$.ids[1]").value(1))
+                .andExpect(jsonPath("$.products[0].id").value(3))
+                .andExpect(jsonPath("$.products[1].id").value(1));
+
+        verify(compareService).saveCompareIds(eq(null), any(), eq(List.of(3L, 1L)));
     }
 }

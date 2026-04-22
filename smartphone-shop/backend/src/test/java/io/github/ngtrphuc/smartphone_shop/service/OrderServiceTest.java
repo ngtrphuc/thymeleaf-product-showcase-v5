@@ -15,8 +15,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import io.github.ngtrphuc.smartphone_shop.common.exception.OrderValidationException;
+import io.github.ngtrphuc.smartphone_shop.event.OrderCreatedEvent;
 import io.github.ngtrphuc.smartphone_shop.model.Order;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;
@@ -32,11 +34,14 @@ class OrderServiceTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private OrderService orderService;
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(orderRepository, productRepository, null);
+        orderService = new OrderService(orderRepository, productRepository, eventPublisher, null);
     }
 
     @Test
@@ -86,7 +91,11 @@ class OrderServiceTest {
         CartItem staleCartItem = new CartItem(1L, "Phone A", 100.0, 2);
         when(productRepository.findAllByIdInForUpdate(anyCollection())).thenReturn(List.of(product));
         when(orderRepository.save(MockitoNullSafety.anyNonNull(Order.class)))
-                .thenAnswer(MockitoNullSafety.returnsFirstArgument(Order.class));
+                .thenAnswer(invocation -> {
+                    Order saved = invocation.getArgument(0);
+                    saved.setId(101L);
+                    return saved;
+                });
 
         Order created = orderService.createOrder(
                 "user@example.com", "John Doe", "0901234567", "Tokyo", List.of(staleCartItem));
@@ -95,6 +104,7 @@ class OrderServiceTest {
         assertEquals("Phone A Updated", created.getItems().getFirst().getProductName());
         assertEquals(250.0, created.getItems().getFirst().getPrice());
         assertEquals(3, product.getStock());
+        verify(eventPublisher).publishEvent(MockitoNullSafety.anyNonNull(OrderCreatedEvent.class));
     }
 
     @Test

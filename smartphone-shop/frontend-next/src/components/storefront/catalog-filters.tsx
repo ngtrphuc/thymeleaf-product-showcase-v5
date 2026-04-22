@@ -23,6 +23,7 @@ type CatalogFiltersProps = {
 };
 
 const SORT_OPTIONS: Option[] = [
+  { label: "Best Match", value: "relevance" },
   { label: "Name A-Z", value: "name_asc" },
   { label: "Name Z-A", value: "name_desc" },
   { label: "Price Low to High", value: "price_asc" },
@@ -69,10 +70,11 @@ function filterValue(params: URLSearchParams, key: string, value: string) {
 export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const defaultSort = initialValues.keyword ? "relevance" : "name_asc";
 
   const [keyword, setKeyword] = useState(initialValues.keyword);
   const [brand, setBrand] = useState(initialValues.brand);
-  const [sort, setSort] = useState(initialValues.sort || "name_asc");
+  const [sort, setSort] = useState(initialValues.sort || defaultSort);
   const [storage, setStorage] = useState(initialValues.storage);
   const [priceRange, setPriceRange] = useState(initialValues.priceRange);
   const [priceMin, setPriceMin] = useState(initialValues.priceMin);

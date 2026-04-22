@@ -23,6 +23,7 @@ final class DevInfrastructureBootstrap {
     private static final String AUTO_START_INFRA_PROPERTY = "smartphone.shop.dev.auto-start-infra";
     private static final String AUTO_START_INFRA_ENV = "SMARTPHONE_SHOP_DEV_AUTO_START_INFRA";
     private static final int POSTGRES_PORT = 5432;
+    private static final int MEILISEARCH_PORT = 7700;
 
     private DevInfrastructureBootstrap() {
     }
@@ -56,7 +57,7 @@ final class DevInfrastructureBootstrap {
         }
 
         CommandResult composeUpResult = runCommand(projectRoot.get(),
-                List.of("docker", "compose", "up", "-d", "postgres", "redis"));
+                List.of("docker", "compose", "up", "-d", "postgres", "redis", "meilisearch"));
         if (composeUpResult.exitCode() != 0) {
             LOGGER.warn("Failed to run docker compose up. Exit code: {}. Output: {}",
                     composeUpResult.exitCode(), composeUpResult.output());
@@ -67,7 +68,10 @@ final class DevInfrastructureBootstrap {
             LOGGER.warn("PostgreSQL port {} is still unavailable. App startup may fail.", POSTGRES_PORT);
             return;
         }
-        LOGGER.info("Dev infrastructure is ready (Docker + PostgreSQL + Redis).");
+        if (!waitForPort("127.0.0.1", MEILISEARCH_PORT, Duration.ofSeconds(60))) {
+            LOGGER.warn("Meilisearch port {} is still unavailable. API will fall back to DB keyword search.", MEILISEARCH_PORT);
+        }
+        LOGGER.info("Dev infrastructure is ready (Docker + PostgreSQL + Redis + Meilisearch).");
     }
 
     private static boolean isEnabled() {

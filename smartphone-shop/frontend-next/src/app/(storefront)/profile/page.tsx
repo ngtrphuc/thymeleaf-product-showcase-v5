@@ -144,7 +144,7 @@ export default function ProfilePage() {
     setError(null);
     try {
       await authLogout();
-      window.location.href = "/login";
+      window.location.href = "/login?reauth=1";
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -175,10 +175,10 @@ export default function ProfilePage() {
             type="button"
             onClick={() => void logout()}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-text-muted)] transition-[background-color,color,border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white hover:text-black"
+            className="ui-btn ui-btn-logout inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
           >
             <GriddyIcon name="logout" />
-            Logout
+            Sign Out
           </button>
         </div>
       </header>

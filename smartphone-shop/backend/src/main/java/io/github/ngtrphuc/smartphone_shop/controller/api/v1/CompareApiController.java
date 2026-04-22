@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -76,6 +77,14 @@ public class CompareApiController {
         return currentCompare(authentication, session);
     }
 
+    @PutMapping
+    public CompareResponse replace(@RequestBody CompareReplaceRequest request,
+            Authentication authentication,
+            HttpSession session) {
+        compareService.saveCompareIds(resolveEmail(authentication), session, request.productIds());
+        return currentCompare(authentication, session);
+    }
+
     private CompareResponse currentCompare(Authentication authentication, HttpSession session) {
         List<Long> ids = compareService.getCompareIds(resolveEmail(authentication), session);
         List<Product> products = resolveOrderedProducts(ids);
@@ -114,6 +123,9 @@ public class CompareApiController {
     }
 
     private record CompareAddRequest(Long productId) {
+    }
+
+    private record CompareReplaceRequest(List<Long> productIds) {
     }
 }
 

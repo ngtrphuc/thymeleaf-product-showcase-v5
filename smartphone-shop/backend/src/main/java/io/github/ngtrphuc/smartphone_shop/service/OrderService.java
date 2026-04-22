@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import io.github.ngtrphuc.smartphone_shop.common.support.CacheKeys;
 import io.github.ngtrphuc.smartphone_shop.common.exception.OrderValidationException;
 import io.github.ngtrphuc.smartphone_shop.common.exception.UnauthorizedActionException;
+import io.github.ngtrphuc.smartphone_shop.event.OrderCreatedEvent;
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;
 import io.github.ngtrphuc.smartphone_shop.model.Order;
 import io.github.ngtrphuc.smartphone_shop.model.OrderItem;
@@ -47,12 +49,15 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final CacheManager cacheManager;
+    private final ApplicationEventPublisher eventPublisher;
 
     public OrderService(OrderRepository orderRepository,
             ProductRepository productRepository,
+            ApplicationEventPublisher eventPublisher,
             @Nullable CacheManager cacheManager) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
+        this.eventPublisher = eventPublisher;
         this.cacheManager = cacheManager;
     }
 
@@ -130,6 +135,7 @@ public class OrderService {
         applyStockDelta(lockedProducts, requestedQuantities, -1, false);
         Order saved = orderRepository.save(order);
         evictStorefrontCaches(requestedQuantities.keySet());
+        publishOrderCreated(saved);
         return saved;
     }
 
@@ -465,5 +471,20 @@ public class OrderService {
                     "Product detail cache key must not be null.");
             detailCache.evict(detailKey);
         }
+    }
+
+    private void publishOrderCreated(Order order) {
+        if (order == null || order.getId() == null) {
+            return;
+        }
+        eventPublisher.publishEvent(new OrderCreatedEvent(
+                order.getId(),
+                order.getUserEmail(),
+                order.getOrderCode(),
+                order.getTotalAmount(),
+                order.getItemCount(),
+                order.getPaymentMethod(),
+                order.getPaymentPlan(),
+                order.getCreatedAt()));
     }
 }

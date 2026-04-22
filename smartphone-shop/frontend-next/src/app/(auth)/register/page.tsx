@@ -7,6 +7,18 @@ import { ApiError, authRegister } from "@/lib/api";
 import { PasswordField } from "@/components/auth/password-field";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
+function getAuthRedirectParams(): { nextPath: string; reauthFlow: boolean } {
+  if (typeof window === "undefined") {
+    return { nextPath: "/products", reauthFlow: false };
+  }
+  const search = new URLSearchParams(window.location.search);
+  const next = search.get("next");
+  return {
+    nextPath: next && next.startsWith("/") ? next : "/products",
+    reauthFlow: search.get("reauth") === "1",
+  };
+}
+
 export default function RegisterPage() {
   const router = useRouter();
 
@@ -17,6 +29,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [{ nextPath, reauthFlow }] = useState(getAuthRedirectParams);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,7 +46,8 @@ export default function RegisterPage() {
       const result = await authRegister(email, fullName, password);
       setMessage(result.message || "Registration successful. Redirecting to login...");
       setTimeout(() => {
-        router.push("/login");
+        const loginHref = `/login?next=${encodeURIComponent(nextPath)}${reauthFlow ? "&reauth=1" : ""}`;
+        router.push(loginHref);
       }, 900);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -107,8 +121,11 @@ export default function RegisterPage() {
 
       <p className="mt-4 text-sm text-slate-600">
         Already registered?{" "}
-        <Link href="/login" className="font-semibold text-[var(--color-primary-strong)]">
-          Sign in
+        <Link
+          href={`/login?next=${encodeURIComponent(nextPath)}${reauthFlow ? "&reauth=1" : ""}`}
+          className="font-semibold text-[var(--color-primary-strong)]"
+        >
+          Sign In
         </Link>
       </p>
     </div>

@@ -76,8 +76,8 @@ export default function WishlistPage() {
                 alt={item.name}
                 width={520}
                 height={520}
+                sizes="(max-width: 1024px) 100vw, 33vw"
                 className="aspect-square w-full rounded-2xl bg-[var(--color-surface-soft)] object-contain p-2"
-                unoptimized
               />
               <h2 className="mt-3 text-lg font-semibold text-slate-900">{item.name}</h2>
               <p className="mt-1 text-sm text-slate-600">Stock: {item.stock}</p>

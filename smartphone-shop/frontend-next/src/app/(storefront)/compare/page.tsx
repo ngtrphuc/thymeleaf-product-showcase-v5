@@ -1,17 +1,16 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { type CSSProperties, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   addCartItem,
-  addCompareItem,
   ApiError,
   clearCompare,
   fetchCatalogPage,
   fetchCompare,
   removeCompareItem,
+  replaceCompareItems,
   toAssetUrl,
   type CatalogPageResponse,
   type CompareResponse,
@@ -23,6 +22,12 @@ import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 const COMPARE_SLOT_STORAGE_KEY = "storefront-compare-slot-order";
 const PICKER_PAGE_SIZE = 6;
+
+type CompareRow = {
+  label: string;
+  values: string[];
+  different: boolean;
+};
 
 function createEmptySlotIds(maxCompare: number): Array<number | null> {
   return Array.from({ length: maxCompare }, () => null);
@@ -108,6 +113,34 @@ function buildSlots(
   });
 }
 
+function normalizeCompareCell(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function createCompareRow(label: string, values: string[]): CompareRow {
+  const comparableValues = values
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0 && value !== "N/A");
+  const different = new Set(comparableValues.map(normalizeCompareCell)).size > 1;
+  return { label, values, different };
+}
+
+function buildComparisonRows(slots: Array<ProductSummary | null>): CompareRow[] {
+  return [
+    createCompareRow("Price", slots.map((product) => formatPriceVnd(product?.price ?? null))),
+    createCompareRow("Availability", slots.map((product) => product?.availabilityLabel ?? "N/A")),
+    createCompareRow("Storage", slots.map((product) => product?.storage || "N/A")),
+    createCompareRow("RAM", slots.map((product) => product?.ram || "N/A")),
+    createCompareRow("Screen", slots.map((product) => product?.size || "N/A")),
+    createCompareRow("Resolution", slots.map((product) => product?.resolution || "N/A")),
+    createCompareRow("Operating System", slots.map((product) => product?.os || "N/A")),
+    createCompareRow("Chipset", slots.map((product) => product?.chipset || "N/A")),
+    createCompareRow("CPU Speed", slots.map((product) => product?.speed || "N/A")),
+    createCompareRow("Battery", slots.map((product) => product?.battery || "N/A")),
+    createCompareRow("Charging", slots.map((product) => product?.charging || "N/A")),
+  ];
+}
+
 export default function ComparePage() {
   const [compare, setCompare] = useState<CompareResponse | null>(null);
   const [slotProductIds, setSlotProductIds] = useState<Array<number | null>>(() => readStoredSlotIds(3));
@@ -129,15 +162,17 @@ export default function ComparePage() {
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
 
-  function applyCompareState(
-    data: CompareResponse,
-    preferredSlotIds: Array<number | null> = normalizeSlotIds(slotProductIds, data.maxCompare),
-  ) {
-    const nextSlotIds = reconcileSlotIds(preferredSlotIds, data);
+  const applyCompareState = useCallback((data: CompareResponse, preferredSlotIds?: Array<number | null>) => {
     setCompare(data);
-    setSlotProductIds(nextSlotIds);
-    writeStoredSlotIds(nextSlotIds);
-  }
+    setSlotProductIds((currentSlotIds) => {
+      const nextSlotIds = reconcileSlotIds(
+        preferredSlotIds ?? normalizeSlotIds(currentSlotIds, data.maxCompare),
+        data,
+      );
+      writeStoredSlotIds(nextSlotIds);
+      return nextSlotIds;
+    });
+  }, []);
 
   const loadCompare = useCallback(async () => {
     setLoading(true);
@@ -154,7 +189,7 @@ export default function ComparePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyCompareState]);
 
   useEffect(() => {
     void loadCompare();
@@ -297,10 +332,7 @@ export default function ComparePage() {
       nextSlotIds[pickerTargetIndex] = productId;
 
       const orderedIds = nextSlotIds.filter((id): id is number => id !== null);
-      let data = await clearCompare();
-      for (const id of orderedIds) {
-        data = await addCompareItem(id);
-      }
+      const data = await replaceCompareItems(orderedIds);
 
       applyCompareState(data, nextSlotIds);
       setMessage(`Product added to Product ${pickerTargetIndex + 1}.`);
@@ -320,6 +352,7 @@ export default function ComparePage() {
   const maxCompare = compare?.maxCompare ?? 3;
   const normalizedSlotIds = normalizeSlotIds(slotProductIds, maxCompare);
   const slots = buildSlots(maxCompare, normalizedSlotIds, items);
+  const comparisonRows = buildComparisonRows(slots);
   const targetItem = pickerTargetIndex !== null ? slots[pickerTargetIndex] : null;
   const isPickerVisible = pickerOpen && pickerTargetIndex !== null;
   const pickerAnimationKey = useMemo(
@@ -431,7 +464,7 @@ export default function ComparePage() {
               }
             >
               <div className="space-y-2">
-              {pickerData.products.map((product, index) => {
+              {pickerData.products.map((product) => {
                 const inCompare = !!product.id && (compare?.ids ?? []).includes(product.id);
                 const sameAsTarget = !!product.id && !!targetItem?.id && targetItem.id === product.id;
                 const selectable = !!product.id && (!inCompare || sameAsTarget);
@@ -440,17 +473,15 @@ export default function ComparePage() {
                   <article
                     key={product.id ?? `${product.name}-${product.brand}`}
                     className="compare-picker-flip-card rounded-xl border border-[var(--color-border)] bg-white p-2.5"
-                    style={{ "--card-delay": `${index * 45}ms` } as CSSProperties}
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <Image
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
                           src={toAssetUrl(product.imageUrl)}
                           alt={product.name}
-                          width={72}
-                          height={72}
+                          loading="lazy"
                           className="h-14 w-14 rounded-lg bg-[var(--color-surface-soft)] object-contain p-1"
-                          unoptimized
                         />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
@@ -577,13 +608,12 @@ export default function ComparePage() {
                   Add
                 </button>
               </div>
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={toAssetUrl(item.imageUrl)}
                 alt={item.name}
-                width={520}
-                height={520}
+                loading="lazy"
                 className="aspect-square w-full rounded-2xl bg-[var(--color-surface-soft)] object-contain p-2"
-                unoptimized
               />
               <h2 className="mt-3 text-lg font-semibold text-slate-900">{item.name}</h2>
               <p className="text-sm text-slate-600">
@@ -602,13 +632,24 @@ export default function ComparePage() {
                     Add to Cart
                   </button>
                 ) : null}
-                <Link
-                  href={`/products/${item.id ?? ""}`}
-                  className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
-                >
-                  <GriddyIcon name="box" />
-                  View
-                </Link>
+                {item.id ? (
+                  <Link
+                    href={`/products/${item.id}`}
+                    className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
+                  >
+                    <GriddyIcon name="box" />
+                    View
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
+                  >
+                    <GriddyIcon name="box" />
+                    View
+                  </button>
+                )}
                 {item.id ? (
                   <button
                     type="button"
@@ -654,6 +695,62 @@ export default function ComparePage() {
           ),
         )}
       </div>
+
+      {items.length > 0 ? (
+        <section className="glass-panel overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#111111] to-[#070707] shadow-[0_14px_34px_rgba(0,0,0,0.45)]">
+          <div className="border-b border-white/10 bg-[#161616] px-5 py-4">
+            <h2 className="text-lg font-semibold text-slate-100">Comparison Matrix</h2>
+            <p className="mt-1 text-sm text-slate-300">
+              Red spec labels mean different values. Green labels mean matching values.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse">
+              <thead className="bg-[#0f0f0f]">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-300">
+                    Spec
+                  </th>
+                  {slots.map((product, index) => (
+                    <th
+                      key={`compare-head-${index}`}
+                      className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-300"
+                    >
+                      {product ? product.name : `Product ${index + 1}`}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row) => (
+                  <tr key={row.label} className="bg-[#0b0b0b]">
+                    <th
+                      className={`whitespace-nowrap border-t border-white/10 px-4 py-3 text-left text-sm font-semibold ${
+                        row.different
+                          ? "text-red-400"
+                          : "text-green-400"
+                      }`}
+                    >
+                      <span>{row.label}</span>
+                    </th>
+                    {row.values.map((value, index) => (
+                      <td
+                        key={`${row.label}-${index}`}
+                        className={`border-t border-white/10 px-4 py-3 text-sm ${row.different ? "font-semibold text-zinc-100" : "text-zinc-300"}`}
+                      >
+                        {value}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
+
+

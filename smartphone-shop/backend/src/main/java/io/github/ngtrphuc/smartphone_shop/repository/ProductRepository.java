@@ -137,6 +137,22 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     List<Product> findAllByIdInForUpdate(@Param("ids") Collection<Long> ids);
 
     @Query("""
+        SELECT oi2.productId
+        FROM OrderItem oi1
+        JOIN OrderItem oi2 ON oi1.order.id = oi2.order.id
+        JOIN oi1.order o
+        WHERE oi1.productId = :productId
+          AND oi2.productId IS NOT NULL
+          AND oi2.productId <> :productId
+          AND LOWER(COALESCE(o.status, '')) <> 'cancelled'
+        GROUP BY oi2.productId
+        ORDER BY COUNT(oi2.id) DESC, MIN(oi2.productId) ASC
+        """)
+    List<Long> findRecommendedProductIdsByCoPurchase(
+            @Param("productId") Long productId,
+            Pageable pageable);
+
+    @Query("""
         SELECT p FROM Product p
         WHERE p.id <> :excludeId
         ORDER BY ABS(COALESCE(p.price, 0) - :targetPrice), LOWER(COALESCE(p.name, '')), p.id

@@ -34,14 +34,27 @@ public final class StorefrontSupport {
         if (type == null) {
             return "Cash on Delivery";
         }
-        return switch (type) {
-            case CASH_ON_DELIVERY -> "Cash on Delivery";
-            case BANK_TRANSFER -> "Bank Transfer";
-            case PAYPAY -> "PayPay";
-            case KOMBINI -> "Kombini";
-            case VISA -> "Visa";
-            case MASTERCARD -> "Credit Card";
-        };
+        // Keep this as simple branching so dev hot-reload never depends on a
+        // compiler-generated enum switch helper class (StorefrontSupport$1).
+        if (type == PaymentMethod.Type.CASH_ON_DELIVERY) {
+            return "Cash on Delivery";
+        }
+        if (type == PaymentMethod.Type.BANK_TRANSFER) {
+            return "Bank Transfer";
+        }
+        if (type == PaymentMethod.Type.PAYPAY) {
+            return "PayPay";
+        }
+        if (type == PaymentMethod.Type.KOMBINI) {
+            return "Kombini";
+        }
+        if (type == PaymentMethod.Type.VISA) {
+            return "Visa";
+        }
+        if (type == PaymentMethod.Type.MASTERCARD) {
+            return "Credit Card";
+        }
+        throw new IllegalArgumentException("Unsupported payment method type: " + type);
     }
 
     public static String paymentDisplayName(String paymentMethod, String detail) {

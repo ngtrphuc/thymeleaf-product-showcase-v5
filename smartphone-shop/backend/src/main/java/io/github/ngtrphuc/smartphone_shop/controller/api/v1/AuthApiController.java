@@ -1,5 +1,7 @@
 package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
+import java.util.Locale;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseCookie;
@@ -70,7 +72,8 @@ public class AuthApiController {
                 new UsernamePasswordAuthenticationToken(request.email(), request.password()));
         User user = userRepository.findByEmailIgnoreCase(authentication.getName())
                 .orElseThrow(() -> new IllegalArgumentException("User not found."));
-        String token = jwtTokenProvider.generateAccessToken(user.getEmail(), user.getRole());
+        String normalizedRole = normalizeRole(user.getRole());
+        String token = jwtTokenProvider.generateAccessToken(user.getEmail(), normalizedRole);
         long expiresInSeconds = jwtTokenProvider.getExpiresInSeconds(token);
         httpResponse.addHeader("Set-Cookie", buildJwtCookie(token, expiresInSeconds, httpRequest.isSecure()).toString());
         return new AuthTokenResponse(
@@ -78,7 +81,7 @@ public class AuthApiController {
                 "Bearer",
                 expiresInSeconds,
                 user.getEmail(),
-                user.getRole(),
+                normalizedRole,
                 user.getFullName());
     }
 
@@ -120,6 +123,17 @@ public class AuthApiController {
                 .path("/")
                 .maxAge(Math.max(maxAgeSeconds, 0))
                 .build();
+    }
+
+    private String normalizeRole(String role) {
+        String normalized = role == null ? "" : role.trim().toUpperCase(Locale.ROOT);
+        if (normalized.isBlank()) {
+            return "ROLE_USER";
+        }
+        if (normalized.startsWith("ROLE_")) {
+            return normalized;
+        }
+        return "ROLE_" + normalized;
     }
 }
 

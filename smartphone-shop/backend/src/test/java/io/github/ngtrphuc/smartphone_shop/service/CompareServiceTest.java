@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyLong;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpSession;
 
@@ -76,6 +77,9 @@ class CompareServiceTest {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("compareIds", new java.util.ArrayList<>(List.of(1L, 2L, 3L)));
         when(productRepository.existsById(4L)).thenReturn(true);
+        when(productRepository.existsById(1L)).thenReturn(true);
+        when(productRepository.existsById(2L)).thenReturn(true);
+        when(productRepository.existsById(3L)).thenReturn(true);
 
         CompareService.AddResult result = compareService.addItem(null, session, 4L);
 
@@ -87,6 +91,7 @@ class CompareServiceTest {
     @Test
     void saveCompareIds_shouldSanitizeAndClamp_forAnonymousSession() {
         MockHttpSession session = new MockHttpSession();
+        when(productRepository.existsById(anyLong())).thenReturn(true);
 
         compareService.saveCompareIds(
                 null,
@@ -108,7 +113,10 @@ class CompareServiceTest {
         when(compareItemRepository.findByUserEmailOrderByCreatedAtDesc("user@example.com"))
                 .thenReturn(List.of(dbLatest, dbOlder))
                 .thenReturn(List.of(merged, dbLatest, dbOlder));
-        when(productRepository.existsById(3L)).thenReturn(true);
+        when(productRepository.existsById(anyLong())).thenAnswer(invocation -> {
+            Long id = invocation.getArgument(0, Long.class);
+            return id != null && id != 4L && id != 5L;
+        });
 
         compareService.mergeSessionCompareToDb(session, "user@example.com");
 
@@ -118,6 +126,18 @@ class CompareServiceTest {
         assertEquals("user@example.com", saved.getUserEmail());
         assertEquals(3L, saved.getProductId());
         assertIterableEquals(List.of(3L, 2L, 1L), compareService.getCompareIds("user@example.com", session));
+    }
+
+    @Test
+    void saveCompareIds_shouldDropUnavailableProducts() {
+        MockHttpSession session = new MockHttpSession();
+        when(productRepository.existsById(3L)).thenReturn(true);
+        when(productRepository.existsById(2L)).thenReturn(false);
+        when(productRepository.existsById(1L)).thenReturn(true);
+
+        compareService.saveCompareIds(null, session, List.of(3L, 2L, 1L));
+
+        assertIterableEquals(List.of(3L, 1L), compareService.getCompareIds(null, session));
     }
 
     @Test

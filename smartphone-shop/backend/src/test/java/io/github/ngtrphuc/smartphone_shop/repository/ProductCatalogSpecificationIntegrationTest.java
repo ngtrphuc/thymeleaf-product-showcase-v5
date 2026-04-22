@@ -59,6 +59,7 @@ class ProductCatalogSpecificationIntegrationTest {
                         null,
                         null,
                         null,
+                        null,
                         "apple",
                         null,
                         "over5000",

@@ -8,11 +8,16 @@ import { ApiError, authLogin } from "@/lib/api";
 import { PasswordField } from "@/components/auth/password-field";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
+function isAdminRole(role: string | null | undefined): boolean {
+  return role === "ROLE_ADMIN" || role === "ADMIN";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nextPath, setNextPath] = useState("/products");
+  const [reauthFlow, setReauthFlow] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +27,10 @@ export default function LoginPage() {
     if (next && next.startsWith("/")) {
       setNextPath(next);
     }
+    setReauthFlow(search.get("reauth") === "1");
   }, []);
+
+  const registerHref = `/register?next=${encodeURIComponent(nextPath)}${reauthFlow ? "&reauth=1" : ""}`;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,7 +39,7 @@ export default function LoginPage() {
 
     try {
       const auth = await authLogin(email, password);
-      const destination = auth.role === "ROLE_ADMIN" ? "/products" : nextPath;
+      const destination = isAdminRole(auth.role) ? "/admin" : nextPath;
       router.push(destination);
       router.refresh();
     } catch (err) {
@@ -76,7 +84,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm"
+          className="ui-btn ui-btn-login inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm"
         >
           <GriddyIcon name="login" />
           {loading ? "Signing in..." : "Sign In"}
@@ -85,7 +93,7 @@ export default function LoginPage() {
 
       <p className="mt-4 text-sm text-slate-600">
         New user?{" "}
-        <Link href="/register" className="font-semibold text-[var(--color-primary-strong)]">
+        <Link href={registerHref} className="font-semibold text-[var(--color-primary-strong)]">
           Create account
         </Link>
       </p>

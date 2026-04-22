@@ -23,8 +23,19 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .map(user -> new org.springframework.security.core.userdetails.User(
                         user.getEmail(),
                         user.getPassword(),
-                        List.of(new SimpleGrantedAuthority(user.getRole()))
+                        List.of(new SimpleGrantedAuthority(normalizeRole(user.getRole())))
                 ))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + normalizedEmail));
+    }
+
+    private String normalizeRole(String role) {
+        String normalized = role == null ? "" : role.trim().toUpperCase(Locale.ROOT);
+        if (normalized.isBlank()) {
+            return "ROLE_USER";
+        }
+        if (normalized.startsWith("ROLE_")) {
+            return normalized;
+        }
+        return "ROLE_" + normalized;
     }
 }

@@ -17,6 +17,7 @@ import org.springframework.security.core.authority.AuthorityUtils;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
+import io.github.ngtrphuc.smartphone_shop.common.support.AssetUrlResolver;
 import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 import io.github.ngtrphuc.smartphone_shop.security.JwtTokenProvider;
@@ -24,6 +25,8 @@ import io.github.ngtrphuc.smartphone_shop.service.AuthService;
 
 @ExtendWith(MockitoExtension.class)
 class AuthApiControllerTest {
+
+    private static final ApiMapper API_MAPPER = new ApiMapper(new AssetUrlResolver(""));
 
     @Mock
     private AuthService authService;
@@ -40,7 +43,7 @@ class AuthApiControllerTest {
     @Test
     void me_shouldReturnAnonymousPayloadWhenNotLoggedIn() {
         AuthApiController controller = new AuthApiController(
-                authService, userRepository, new ApiMapper(), authenticationManager, jwtTokenProvider, false);
+                authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider, false);
 
         AuthMeResponse response = controller.me(
                 new AnonymousAuthenticationToken("key", "anonymousUser", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
@@ -52,7 +55,7 @@ class AuthApiControllerTest {
     @Test
     void register_shouldReturnConflictWhenEmailExists() {
         AuthApiController controller = new AuthApiController(
-                authService, userRepository, new ApiMapper(), authenticationManager, jwtTokenProvider, false);
+                authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider, false);
         when(authService.register("user@example.com", "Tester", "secret123")).thenReturn(false);
 
         ResponseEntity<OperationStatusResponse> response = controller.register(
@@ -67,7 +70,7 @@ class AuthApiControllerTest {
     @Test
     void me_shouldReturnUserPayloadWhenAuthenticated() {
         AuthApiController controller = new AuthApiController(
-                authService, userRepository, new ApiMapper(), authenticationManager, jwtTokenProvider, false);
+                authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider, false);
         User user = new User();
         user.setEmail("user@example.com");
         user.setFullName("Tester");

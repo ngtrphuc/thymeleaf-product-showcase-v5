@@ -32,13 +32,17 @@ const authenticatedDockItems: NavItem[] = [
 
 const guestDockItems: NavItem[] = [
   { key: "compare", label: "Compare", href: "/compare", icon: SlidersHorizontal },
-  { key: "login", label: "Login", icon: LogIn },
+  { key: "login", label: "Sign In", icon: LogIn },
 ];
 
 const adminDockItems: NavItem[] = [
   { key: "admin-panel", label: "Admin Panel", href: "/admin", icon: LayoutDashboard },
-  { key: "logout", label: "Logout", icon: LogOut },
+  { key: "logout", label: "Sign Out", icon: LogOut },
 ];
+
+function isAdminRole(role: string | null | undefined): boolean {
+  return role === "ROLE_ADMIN" || role === "ADMIN";
+}
 
 export function StorefrontHeaderDockNav() {
   const router = useRouter();
@@ -84,7 +88,7 @@ export function StorefrontHeaderDockNav() {
   }, []);
 
   const dockItems = useMemo(() => {
-    if (authState.role === "ROLE_ADMIN") {
+    if (isAdminRole(authState.role)) {
       return adminDockItems;
     }
     return authState.authenticated ? authenticatedDockItems : guestDockItems;
@@ -112,7 +116,7 @@ export function StorefrontHeaderDockNav() {
       setLoggingOut(true);
       try {
         await authLogout();
-        router.push("/login");
+        router.push("/login?reauth=1");
         router.refresh();
       } catch (error) {
         if (error instanceof ApiError) {
@@ -126,6 +130,22 @@ export function StorefrontHeaderDockNav() {
     }
 
     if (item.href) {
+      const requiresFreshAuthCheck =
+        item.key === "cart" || item.key === "orders" || item.key === "wishlist" || item.key === "profile";
+      if (requiresFreshAuthCheck) {
+        try {
+          const latestAuth = await fetchAuthMeCached({ force: true });
+          if (!latestAuth.authenticated) {
+            const next = encodeURIComponent(item.href);
+            router.push(`/login?next=${next}&reauth=1`);
+            return;
+          }
+        } catch {
+          const next = encodeURIComponent(item.href);
+          router.push(`/login?next=${next}&reauth=1`);
+          return;
+        }
+      }
       router.push(item.href);
     }
   }
@@ -134,17 +154,20 @@ export function StorefrontHeaderDockNav() {
     <Dock className="h-auto">
       {dockItems.map((item) => {
         const Icon = item.icon;
+        const itemActive = isActive(item);
         return (
           <DockItem
             key={item.key}
             ariaLabel={item.label}
-            active={isActive(item)}
+            active={itemActive}
+            activeLabel={item.label}
             onClick={() => void onNavigate(item)}
+            className={item.key === "login" ? "dock-item-login" : item.key === "logout" ? "dock-item-logout" : ""}
           >
             <DockIcon>
               <Icon className="h-4 w-4" />
             </DockIcon>
-            <DockLabel>{item.label}</DockLabel>
+            {!itemActive ? <DockLabel>{item.label}</DockLabel> : null}
           </DockItem>
         );
       })}

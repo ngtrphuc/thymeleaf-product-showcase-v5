@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, MouseEvent } from "react";
+import type { MouseEvent } from "react";
 import { startTransition, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -97,11 +97,10 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
       }
     >
       <section className="catalog-flip-grid grid grid-cols-2 gap-5 lg:grid-cols-3">
-        {products.map((product, index) => (
+        {products.map((product) => (
           <div
             key={product.id ?? `${product.name}-${product.brand}`}
             className="catalog-flip-card"
-            style={{ "--card-delay": `${index * 55}ms` } as CSSProperties}
           >
             <ProductCard product={product} />
           </div>

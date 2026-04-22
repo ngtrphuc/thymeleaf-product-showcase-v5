@@ -26,6 +26,10 @@ function formatChatClock(value: string): string {
   });
 }
 
+function isAdminRole(role: string | null | undefined): boolean {
+  return role === "ROLE_ADMIN" || role === "ADMIN";
+}
+
 export function StorefrontChatBubble() {
   const pathname = usePathname();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -98,7 +102,7 @@ export function StorefrontChatBubble() {
 
   const shouldShow =
     authState.authenticated &&
-    authState.role !== "ROLE_ADMIN" &&
+    !isAdminRole(authState.role) &&
     pathname !== "/chat" &&
     !pathname.startsWith("/chat/");
 
