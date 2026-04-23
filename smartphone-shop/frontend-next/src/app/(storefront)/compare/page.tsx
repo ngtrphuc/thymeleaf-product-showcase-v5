@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   addCartItem,
   ApiError,
@@ -460,7 +460,7 @@ export default function ComparePage() {
               }
             >
               <div className="space-y-2">
-              {pickerData.products.map((product) => {
+              {pickerData.products.map((product, index) => {
                 const inCompare = !!product.id && (compare?.ids ?? []).includes(product.id);
                 const sameAsTarget = !!product.id && !!targetItem?.id && targetItem.id === product.id;
                 const selectable = !!product.id && (!inCompare || sameAsTarget);
@@ -469,6 +469,7 @@ export default function ComparePage() {
                   <article
                     key={product.id ?? `${product.name}-${product.brand}`}
                     className="compare-picker-flip-card rounded-xl border border-[var(--color-border)] bg-white p-2.5"
+                    style={{ "--i": index } as CSSProperties}
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex min-w-0 flex-1 items-center gap-3">

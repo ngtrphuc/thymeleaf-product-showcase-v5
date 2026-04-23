@@ -32,6 +32,15 @@
 
   --font-sans: var(--font-dm-sans), "Segoe UI", sans-serif;
   --font-mono: var(--font-dm-mono), "Fira Code", monospace;
+
+  --ease-spring: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out-fast: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-fast: cubic-bezier(0.55, 0.08, 0.68, 0.53);
+  --ease-micro: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  --catalog-stagger-step: 55ms;
+  --catalog-exit-step: 18ms;
+  --compare-stagger-step: 45ms;
 }
 
 @theme inline {
@@ -65,19 +74,24 @@ input,
 select,
 textarea {
   transition:
-    color 0.18s ease,
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease,
-    opacity 0.18s ease;
+    opacity 0.15s var(--ease-micro),
+    transform 0.18s var(--ease-micro),
+    color 0.18s var(--ease-micro),
+    background-color 0.18s var(--ease-micro),
+    border-color 0.18s var(--ease-micro),
+    box-shadow 0.18s var(--ease-micro);
 }
 
 .glass-panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-card);
+  isolation: isolate;
+}
+
+.glass-panel-blur {
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .glass-panel:hover {
@@ -102,7 +116,8 @@ textarea {
 
 .ui-negative-hover {
   will-change: filter;
-  transition: filter 220ms ease;
+  transform: translateZ(0);
+  transition: filter 200ms var(--ease-micro);
 }
 
 .ui-negative-hover:hover,
@@ -134,12 +149,12 @@ textarea {
   padding: 0;
   color: var(--color-text);
   box-shadow: none;
-  transform: translateY(0);
+  transform: translateZ(0);
   isolation: isolate;
   transition:
-    transform 220ms ease,
-    color 220ms ease,
-    text-shadow 220ms ease;
+    transform 200ms var(--ease-micro),
+    color 200ms var(--ease-micro),
+    text-shadow 200ms var(--ease-micro);
 }
 
 .brand-glow-link::after {
@@ -156,13 +171,13 @@ textarea {
     rgba(130, 214, 255, 0) 100%
   );
   filter: blur(8px);
-  transition: opacity 220ms ease;
+  transition: opacity 200ms var(--ease-micro);
   z-index: -1;
 }
 
 .brand-glow-link:hover,
 .brand-glow-link:focus-visible {
-  transform: translateY(-1.5px);
+  transform: translateY(-1.5px) translateZ(0);
   color: #ffffff;
   text-shadow: 0 0 14px rgba(255, 255, 255, 0.28);
 }
@@ -183,27 +198,30 @@ textarea {
   border: none;
   outline: none;
   text-decoration: none;
+  will-change: transform;
+  transform: translateZ(0);
   transition:
-    color 0.18s ease,
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease,
-    opacity 0.18s ease;
+    transform 0.16s var(--ease-spring),
+    box-shadow 0.16s var(--ease-micro),
+    opacity 0.16s var(--ease-micro),
+    color 0.16s var(--ease-micro),
+    background-color 0.16s var(--ease-micro),
+    border-color 0.16s var(--ease-micro);
 }
 
 .ui-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px) translateZ(0);
 }
 
 .ui-btn:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0) scale(0.97) translateZ(0);
 }
 
 .ui-btn:disabled {
   cursor: not-allowed;
   opacity: 0.45;
   transform: none !important;
+  will-change: auto;
 }
 
 .ui-btn-primary {
@@ -318,16 +336,21 @@ textarea {
   background-size: 0.95rem;
   padding-right: 2.4rem !important;
   cursor: pointer;
-  will-change: transform, box-shadow, border-color;
+  will-change: transform;
+  transform: translateZ(0);
+  transition:
+    transform 0.15s var(--ease-spring),
+    border-color 0.15s var(--ease-micro),
+    box-shadow 0.15s var(--ease-micro);
 }
 
 .ui-dropdown-native:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
   border-color: var(--color-border-3);
 }
 
 .ui-dropdown-native:focus-visible {
-  transform: translateY(-1px);
+  transform: translateY(-1px) translateZ(0);
   border-color: var(--color-border-3);
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.08),
@@ -343,6 +366,7 @@ textarea {
   position: relative;
   isolation: isolate;
   overflow: hidden;
+  transform: translateZ(0);
 }
 
 .ui-dropdown-trigger::after {
@@ -352,7 +376,7 @@ textarea {
   pointer-events: none;
   background: linear-gradient(120deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
   opacity: 0;
-  transition: opacity 180ms ease;
+  transition: opacity 160ms var(--ease-micro);
   z-index: 0;
 }
 
@@ -367,9 +391,7 @@ textarea {
 }
 
 .ui-dropdown-trigger-icon {
-  transition:
-    transform 180ms ease,
-    opacity 180ms ease;
+  transition: transform 180ms var(--ease-out-fast);
 }
 
 .ui-dropdown-trigger[data-open="true"] .ui-dropdown-trigger-icon {
@@ -378,7 +400,7 @@ textarea {
 
 .ui-dropdown-panel {
   transform-origin: top center;
-  animation: dropdown-panel-in 170ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: dropdown-panel-in 160ms var(--ease-out-fast) both;
 }
 
 @keyframes dropdown-panel-in {
@@ -570,10 +592,14 @@ input[type="number"] {
   overflow: hidden;
   padding: 0 0.85rem;
   box-shadow: none;
-  transition: width 340ms cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    background-color 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease;
+  transition:
+    width 300ms var(--ease-spring),
+    min-width 300ms var(--ease-spring),
+    background-color 180ms var(--ease-micro),
+    border-color 180ms var(--ease-micro),
+    color 180ms var(--ease-micro),
+    box-shadow 180ms var(--ease-micro);
+  will-change: width;
 }
 
 .ui-expand-link .ui-expand-icon {
@@ -586,9 +612,13 @@ input[type="number"] {
   white-space: nowrap;
   max-width: 0;
   opacity: 0;
-  transform: translateX(-6px);
-  transition: max-width 260ms ease, opacity 200ms ease, transform 260ms ease;
+  transform: translateX(-8px);
+  transition:
+    max-width 260ms var(--ease-spring),
+    opacity 200ms var(--ease-micro),
+    transform 240ms var(--ease-spring);
   font-size: 12.5px;
+  will-change: opacity, transform;
 }
 
 .ui-expand-link:hover,
@@ -637,7 +667,7 @@ input[type="number"] {
 }
 
 .ui-expand-link:active {
-  transform: translateY(0);
+  transform: translateZ(0);
 }
 
 .ui-expand-badge-corner {
@@ -731,146 +761,60 @@ input[type="number"] {
 
 .catalog-flip-stage {
   perspective: 1800px;
+  perspective-origin: 50% 40%;
 }
 
 .catalog-flip-grid {
-  perspective: 1800px;
-  transform-style: preserve-3d;
+  transform-style: flat;
 }
 
 .catalog-flip-card {
   transform-origin: center center;
-  transform-style: preserve-3d;
+  transform: translateZ(0);
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  contain: layout style;
   content-visibility: auto;
   contain-intrinsic-size: 420px;
   will-change: transform, opacity;
 }
 
 .catalog-flip-stage.is-entering .catalog-flip-card {
-  animation: catalog-card-flip-in 720ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: 0ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(2) {
-  animation-delay: 55ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(3) {
-  animation-delay: 110ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(4) {
-  animation-delay: 165ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(5) {
-  animation-delay: 220ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(6) {
-  animation-delay: 275ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(7) {
-  animation-delay: 330ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(8) {
-  animation-delay: 385ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(9) {
-  animation-delay: 440ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(10) {
-  animation-delay: 495ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(11) {
-  animation-delay: 550ms;
-}
-
-.catalog-flip-stage.is-entering .catalog-flip-card:nth-child(12) {
-  animation-delay: 605ms;
+  animation: catalog-card-flip-in 680ms var(--ease-spring) both;
+  animation-delay: calc(var(--i, 0) * var(--catalog-stagger-step));
 }
 
 .catalog-flip-stage.is-exiting .catalog-flip-card {
-  animation: catalog-card-flip-out 280ms cubic-bezier(0.55, 0.08, 0.68, 0.53) both;
-  animation-delay: 0ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(2) {
-  animation-delay: 18ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(3) {
-  animation-delay: 36ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(4) {
-  animation-delay: 54ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(5) {
-  animation-delay: 72ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(6) {
-  animation-delay: 90ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(7) {
-  animation-delay: 108ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(8) {
-  animation-delay: 126ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(9) {
-  animation-delay: 144ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(10) {
-  animation-delay: 162ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(11) {
-  animation-delay: 180ms;
-}
-
-.catalog-flip-stage.is-exiting .catalog-flip-card:nth-child(12) {
-  animation-delay: 198ms;
+  animation: catalog-card-flip-out 240ms var(--ease-in-fast) both;
+  animation-delay: calc(var(--i, 0) * var(--catalog-exit-step));
 }
 
 @keyframes catalog-card-flip-in {
   0% {
     opacity: 0;
-    transform: perspective(1800px) rotateY(-78deg) scale(0.92) translateY(14px);
+    transform: rotateY(-72deg) scale(0.93) translateY(12px);
   }
 
-  60% {
+  58% {
     opacity: 1;
-    transform: perspective(1800px) rotateY(10deg) scale(1.01) translateY(-2px);
+    transform: rotateY(8deg) scale(1.01) translateY(-2px);
   }
 
   100% {
     opacity: 1;
-    transform: perspective(1800px) rotateY(0deg) scale(1) translateY(0);
+    transform: rotateY(0deg) scale(1) translateY(0);
   }
 }
 
 @keyframes catalog-card-flip-out {
   0% {
     opacity: 1;
-    transform: perspective(1800px) rotateY(0deg) scale(1) translateY(0);
+    transform: rotateY(0deg) scale(1) translateY(0);
   }
 
   100% {
     opacity: 0;
-    transform: perspective(1800px) rotateY(72deg) scale(0.94) translateY(12px);
+    transform: rotateY(68deg) scale(0.94) translateY(10px);
   }
 }
 
@@ -882,59 +826,47 @@ input[type="number"] {
 }
 
 .compare-picker-flip-stage {
-  perspective: 1600px;
+  perspective: 1400px;
+  perspective-origin: 50% 30%;
 }
 
 .compare-picker-flip-card {
   transform-origin: center center;
-  transform-style: preserve-3d;
+  transform: translateZ(0);
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  contain: layout style;
   will-change: transform, opacity;
 }
 
 .compare-picker-flip-stage.is-entering .compare-picker-flip-card {
-  animation: compare-picker-card-flip-vertical 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: 0ms;
-}
-
-.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(2) {
-  animation-delay: 45ms;
-}
-
-.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(3) {
-  animation-delay: 90ms;
-}
-
-.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(4) {
-  animation-delay: 135ms;
-}
-
-.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(5) {
-  animation-delay: 180ms;
-}
-
-.compare-picker-flip-stage.is-entering .compare-picker-flip-card:nth-child(6) {
-  animation-delay: 225ms;
+  animation: compare-picker-card-flip-vertical 640ms var(--ease-spring) both;
+  animation-delay: calc(var(--i, 0) * var(--compare-stagger-step));
 }
 
 @keyframes compare-picker-card-flip-vertical {
   0% {
     opacity: 0;
-    transform: perspective(1600px) rotateX(-72deg) scale(0.94) translateY(14px);
+    transform: rotateX(-64deg) scale(0.95) translateY(12px);
   }
 
-  62% {
+  60% {
     opacity: 1;
-    transform: perspective(1600px) rotateX(10deg) scale(1.01) translateY(-2px);
+    transform: rotateX(8deg) scale(1.01) translateY(-2px);
   }
 
   100% {
     opacity: 1;
-    transform: perspective(1600px) rotateX(0deg) scale(1) translateY(0);
+    transform: rotateX(0deg) scale(1) translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .catalog-flip-card,
+  .compare-picker-flip-card {
+    transition: opacity 0.15s ease !important;
+  }
+
   .compare-picker-flip-stage.is-entering .compare-picker-flip-card {
     animation: none !important;
   }
