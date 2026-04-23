@@ -1,232 +1,158 @@
-# Smartphone Shop
+﻿# Smartphone Shop
 
-Smartphone Shop is an e-commerce web application focused on smartphone retail flows.
-The project is now API-first with Next.js as the primary UI for both storefront and admin operations.
+A full-stack smartphone e-commerce platform built with an API-first backend
+and a Next.js App Router frontend.
+
+This README documents the project architecture, major feature sets,
+technologies, and refactor progress. It also includes a detailed repository
+inventory at file level.
+
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Feature Set](#feature-set)
+- [System Architecture](#system-architecture)
+- [Technology Stack](#technology-stack)
+- [API Domain Map](#api-domain-map)
+- [Local Development](#local-development)
+- [Environment Configuration](#environment-configuration)
+- [Refactor Progress](#refactor-progress)
+- [Testing and Quality](#testing-and-quality)
+- [Repository Structure (Detailed)](#repository-structure-detailed)
+- [Contributor Notes](#contributor-notes)
 
 ## Project Overview
 
-This repository demonstrates a full-stack commerce architecture with:
+Smartphone Shop models a production-oriented commerce workflow:
 
-- A Java/Spring backend exposing REST APIs
-- A fully migrated Next.js App Router frontend for storefront and admin user journeys
-- Redis-backed caching for public product APIs
-- Optional Meilisearch-powered relevance/fuzzy product search with DB fallback
+- Browse catalog and product detail pages.
+- Manage cart, wishlist, and compare slots.
+- Complete checkout with full payment or installment plans.
+- Track order lifecycle and customer/admin chat.
+- Operate an admin area for dashboard, products, and orders.
 
-## Current Status
+## Feature Set
 
-The codebase has moved to a decoupled frontend/backend model for customer and admin operations.
+### Storefront Features
 
-- Backend migration progress: ~95-100%
-- Next.js migration progress (user-journey coverage): ~95-100%
-- Thymeleaf customer flows have been decommissioned
-- Thymeleaf admin fallback has been decommissioned
-- New UI work is developed in `frontend-next/`
-- Backend APIs in `backend/` are the primary contract for Next.js
+- Authentication with JWT in httpOnly cookies.
+- Product catalog with search, filter, sorting, and pagination.
+- Product detail pages with quick actions.
+- Cart and checkout flow.
+- Profile and payment methods.
+- Order history and cancellation (business-rule based).
+- Wishlist and compare.
+- Customer support chat.
 
-### Delivery Status
+### Admin Features
 
-- [x] Migration complete for storefront and admin (Next.js-first)
-- [x] Test coverage in place for Auth, Product, Order, Admin APIs
-- [x] Redis cache integration and cache invalidation flow
-- [x] Production hardening baseline
-- [x] CI/CD workflow
-- [x] Small test gap closed: expanded `CartApi` scenarios + added `CompareService` and `ChatService` tests
-- [x] Monitoring dashboard + alerting provisioning
-- [x] Portfolio polish baseline (screenshots checklist + project narrative)
+- Dashboard overview.
+- Product management.
+- Order management and status updates.
+- Chat conversation management.
 
-## Progress Snapshot (Updated: 2026-04-23)
+### Cross-Cutting Features
 
-### Completed recently
+- Login and API rate limiting.
+- Checkout idempotency.
+- Caching for catalog/detail with user-specific overlays.
+- Optional Meilisearch with database fallback.
+- Metrics, tracing, dashboards, and alerting.
 
-- Ecommerce "wow-level" readiness upgrades:
-  - Added global API rate limiting for `/api/v1/**` (not only login) with configurable exclude paths and `Retry-After` support
-  - Added asynchronous post-checkout workflow via `OrderCreatedEvent` + `@TransactionalEventListener(AFTER_COMMIT)` + dedicated thread pool executor
-  - Added CDN-ready asset URL resolver (`app.assets.base-url`) so product/cart/wishlist image URLs can switch to CDN without frontend code changes
-  - Aligned local infra bootstrap to start Meilisearch together with PostgreSQL and Redis in dev scripts/bootstrapping
-- Auth foundation for Next.js:
-  - JWT cookie (`httpOnly`) login/logout flow
-  - Route guarding via Next.js proxy (`frontend-next/src/proxy.ts`)
-- Role-separated navigation hardening:
-  - Admin sessions default to `/admin` on root access
-  - Storefront navigation no longer exposes an `Admin` shortcut for customer sessions
-  - Admin header navigation includes `Dashboard`, `Products`, `Orders`, `Chat`, `Home`, and `Logout`
-  - Storefront products page removed the `Items / page` selector
-- New/expanded backend API coverage:
-  - `POST /api/v1/orders` for API-first checkout
-  - Admin API namespace under `/api/v1/admin` (dashboard, products, orders, chat)
-- Catalog performance optimization:
-  - Replaced in-memory batch scan/filter flow in `ProductApiController` with DB-side paging/filtering for brand, battery, and screen-size criteria
-  - Preserved existing API response contract while removing full-table scan behavior under advanced filters
-  - Aligned `ProductCatalogSpecificationIntegrationTest` with current `ProductCatalogSpecifications.forCatalog(...)` signature by including `storage` argument before `batteryRange` to prevent argument-order compile errors
-- Admin product query optimization:
-  - Removed in-memory brand filtering from `/api/v1/admin/products`
-  - Moved admin brand filtering into repository query with paging + DB sort to avoid full-list scans
-- Admin dashboard stability fix:
-  - Fixed lazy-loading errors on `/api/v1/admin/dashboard` by loading paged orders with items inside transaction scope
-- Chat SSE concurrency hardening:
-  - Upgraded user emitter registry to `ConcurrentHashMap<String, CopyOnWriteArrayList<SseEmitter>>` to avoid concurrent mutation risks in subscribe/prune/push flows
-- JWT production hardening:
-  - Added fail-fast startup validation for `prod` profile if JWT secret still uses the default placeholder
-  - Kept local `dev/test` startup behavior unchanged
-- Login endpoint hardening:
-  - Added per-client rate limiting filter for `POST /api/v1/auth/login` (returns `429 TOO_MANY_REQUESTS` when threshold is exceeded)
-  - Backed by Caffeine TTL cache (instead of unbounded in-memory map cleanup heuristics)
-  - Configurable via `APP_LOGIN_RATE_LIMIT_MAX_ATTEMPTS`, `APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS`, and `APP_LOGIN_RATE_LIMIT_MAX_CLIENTS`
-- Cart cleanup optimization:
-  - Removed aggressive `cleanupDbCart(...)` calls from item mutation hot-paths (`add/increase/decrease/remove`)
-  - Added scheduled cleanup job `cleanupDbCartForAllUsers` (config: `app.cart.cleanup-delay-ms`)
-  - Replaced per-user cleanup scans with bulk repository maintenance queries to avoid N+1 scheduler work
-- Rate-limit proxy hardening:
-  - Added trusted-proxy-aware client IP resolution so `X-Forwarded-For` is only used when the immediate caller matches `APP_TRUSTED_PROXIES`
-  - Applied consistently to login rate limiting and global API rate limiting
-- Checkout idempotency cleanup hardening:
-  - Added scheduled cleanup for stale `order_idempotency_keys` placeholders
-  - Added dedicated DB index for pending placeholder cleanup scans
-- Admin API modularization:
-  - Split the previous monolith into `AdminDashboardApiController`, `AdminProductApiController`, `AdminOrderApiController`, and `AdminChatApiController`
-  - Kept `/api/v1/admin/**` contracts stable while reducing controller size and coupling
-- Chat SSE maintainability:
-  - Extracted emitter lifecycle management into `ChatSseRegistry`
-  - `ChatService` now focuses on chat business behavior and repository/event orchestration
-- Wishlist hot-path optimization:
-  - Removed orphan cleanup calls from `addItem` / `removeItem`
-  - Added scheduled cleanup job `cleanupOrphanedItemsForAllUsers` (config: `app.wishlist.cleanup-delay-ms`)
-- Cache key stability:
-  - Replaced delimiter-based catalog cache keys with SHA-256 hashed keys via `CacheKeys.catalog(...)`
-  - Added dedicated hashed key builder for product detail via `CacheKeys.productDetail(...)`
-- Product API cache safety:
-  - Product catalog/detail now cache public payload for all sessions
-  - User-specific `wishlisted` flags are overlaid after cache retrieval to avoid cross-user cache leakage
-- JWT cookie deployment safety:
-  - Added `app.jwt.cookie.secure` override for explicit secure-cookie policy
-  - Default remains dev-friendly (`false`) and prod-safe (`true`)
-- Data initialization cleanup:
-  - Unified duplicated product key normalization logic in `DataInitializer` (`canonicalProductKey(...)`)
-- CORS hardening:
-  - Removed unsafe wildcard fallback for empty allowed-origins configuration
-  - Backend now fails fast if `app.cors.allowed-origins` resolves to an empty list
-- Frontend resiliency improvements:
-  - Added retry strategy for safe idempotent API requests in `frontend-next/src/lib/api.ts`
-  - Added automatic client-side redirect to `/login` on `401` for protected calls (with opt-out for auth endpoints)
-  - Added loading skeleton components for products and checkout flows
-- Production-readiness polish:
-  - Enabled graceful shutdown (`server.shutdown=graceful`, `spring.lifecycle.timeout-per-shutdown-phase=30s`)
-  - Enabled Hikari metrics/MBeans in `dev` and `prod` profiles for Prometheus/Grafana visibility
-- New regression coverage:
-  - Added Playwright checkout E2E tests (`frontend-next/tests/checkout.spec.ts`)
-  - Added Testcontainers integration test for DB-side product catalog filtering (`ProductCatalogSpecificationIntegrationTest`)
-- Architecture debt cleanup:
-  - `OrderValidationException` moved to `common/exception`
-  - `ChatWebSocketNotifier` moved to `infrastructure/websocket`
-  - `StorefrontSupport` moved to `common/support`
-- Next.js route migration:
-  - `products`, `products/[id]`
-  - `login`, `register`
-  - `cart`, `checkout`, `profile`, `orders`, `wishlist`, `compare`
-  - `admin`, `admin/products`, `admin/orders`, `admin/chat`
-- CI setup added:
-  - GitHub Actions workflow at `.github/workflows/smartphone-shop-ci.yml`
-- Build tooling stabilization:
-  - Maven source mapping is now IDE-friendly via `build-helper-maven-plugin`
-  - Custom source layout `backend/src/main/java` and `backend/src/test/java` is explicitly registered for Maven/Java Language Server
-- Decommission milestone:
-  - Removed `controller/user/*` customer MVC controllers
-  - Removed `frontend/templates/customer/*`
-  - Removed `frontend/static/customer/css` and `frontend/static/customer/js`
-  - Kept `frontend/static/customer/images` for shared product assets
-  - Removed `controller/admin/*` admin MVC controllers
-  - Removed `frontend/templates/admin/*` and `frontend/static/admin/*`
-  - Removed `ThymeleafConfig` and `GlobalModelAttributes`
-  - Simplified `SecurityConfig` to API-first + static image fallback only
-  - Removed `LoginSuccessHandler` (legacy form-login customer bridge)
-- Test coverage milestone:
-  - Added `OrderApiControllerTest` with business-critical auth and validation scenarios
-  - Added `AdminApiControllerTest` for role-based access verification (`ROLE_USER` forbidden, `ROLE_ADMIN` allowed)
-  - Expanded `CartApiControllerTest` with edge/error/unauthorized cases
-  - Added `CompareServiceTest` and `ChatServiceTest` for service-layer behavior
-- Production hardening milestone:
-  - Enabled Redis cache integration
-  - Added cache for public product catalog/detail endpoints
-  - Added cache eviction on admin product mutations
-  - Hardened `application-prod.properties` (Flyway validation, metrics exposure, Redis settings, SQL/no-stacktrace defaults)
-  - Added optional Prometheus + Grafana stack in `docker-compose` (`monitoring` profile)
-  - Added Alertmanager + Prometheus alert rules (API 5xx, p95 latency, cache hit ratio, backend availability)
-  - Added Grafana auto-provisioned datasource and dashboard (`Smartphone Shop Overview`)
-
-### Validation status
-
-- Backend test suite: passing (`mvnw test`, 111 tests, 0 failures, 0 errors, 1 skipped)
-- Backend compile: passing (`mvnw -DskipTests compile`)
-- Frontend lint: passing (`cd frontend-next && npm run lint`)
-- Frontend build: passing (`cd frontend-next && npm run build`)
-
-## Core Features
-
-- Product catalog and product detail browsing
-- User authentication and profile management
-- Cart, wishlist, and compare list workflows
-- Checkout and order management
-- Payment method selection
-- Customer and admin real-time chat support
-- Admin dashboard and product/order operations
-
-## Architecture
-
-### Backend (`backend/`)
-
-- Spring Boot application with layered architecture (controller/service/repository)
-- Spring Security with JWT support for API authentication
-- API rate limiting on login and global API traffic (Caffeine window counters)
-- Spring Data JPA + Hibernate for persistence
-- Flyway for schema migration
-- Asynchronous order post-processing via domain events (`OrderCreatedEvent`)
-- Meilisearch integration for typo-tolerant/relevance product lookup with DB fallback
-- WebSocket/STOMP for real-time messaging
-- OpenAPI/Swagger for API documentation
-- Custom backend source layout wired through Maven build-helper for IDE consistency
-
-### Legacy Assets (`frontend/`)
-
-- Shared product image assets used by backend `/images/**` mapping (`static/customer/images`)
-- No active Thymeleaf template runtime
-
-### Modern Frontend (`frontend-next/`)
-
-- Next.js App Router + React + TypeScript
-- API-driven rendering for new storefront pages
-
-## Architecture Diagram
+## System Architecture
 
 ```mermaid
 flowchart LR
-    U[User Browser] --> N[Next.js App Router]
-    N -->|REST + Cookie Auth| B[Spring Boot API]
-    B --> P[(PostgreSQL)]
-    B --> R[(Redis Cache)]
-    B --> S[(Meilisearch)]
-    B --> W[WebSocket/STOMP]
-    B -. OrderCreatedEvent .-> O[Async Order Workflow]
-    A[Admin Browser] --> N
-    B --> M[Actuator Metrics]
-    M --> PR[Prometheus]
-    PR --> G[Grafana]
+    Browser[Customer/Admin Browser] --> Next[Next.js 16 App Router]
+    Next -->|REST + Cookie Auth| Api[Spring Boot 3.5 API]
+
+    Api --> Pg[(PostgreSQL)]
+    Api --> Redis[(Redis)]
+    Api --> Meili[(Meilisearch - optional)]
+
+    Api --> Ws[WebSocket/STOMP + SSE]
+    Api --> Actuator[Spring Actuator]
+
+    Actuator --> Prom[Prometheus]
+    Prom --> Grafana[Grafana]
+    Api --> OTel[OTLP Exporter]
+    OTel --> Jaeger[Jaeger]
 ```
 
 ## Technology Stack
 
-- Backend: Java 21, Spring Boot 3, Spring Security, JPA/Hibernate, Caffeine
-- Database/Search: PostgreSQL, Meilisearch
-- Frontend: Next.js, React, TypeScript, Tailwind CSS
-- Tooling: Maven Wrapper, Docker Compose
+### Backend Stack
 
-## Run Locally
+- Java 21.
+- Spring Boot 3.5.13.
+- Spring Web, Validation, Security, Data JPA, Data Redis, WebSocket,
+  and Actuator.
+- Flyway migrations.
+- Caffeine + Redis cache.
+- JWT via `jjwt` 0.12.6.
+- OpenAPI via `springdoc-openapi-starter-webmvc-ui`.
+- Micrometer + Prometheus registry + OpenTelemetry bridge/exporter.
 
-### Option A (recommended scripts)
+### Frontend Stack
+
+- Next.js 16.2.4 (App Router).
+- React 19.2.4.
+- TypeScript 5.x.
+- Tailwind CSS 4.
+- Playwright E2E.
+
+### Data and Infrastructure
+
+- PostgreSQL 16.
+- Redis 7.
+- Meilisearch 1.13.
+- Docker Compose for local orchestration.
+
+### Tooling and CI
+
+- Maven Wrapper.
+- ESLint for `frontend-next`.
+- GitHub Actions workflow in
+  `.github/workflows/smartphone-shop-ci.yml`.
+
+## API Domain Map
+
+### Customer APIs (`/api/v1/**`)
+
+- Auth.
+- Catalog and product detail.
+- Cart.
+- Checkout and orders.
+- Profile and payment methods.
+- Wishlist.
+- Compare.
+- Chat (REST + SSE).
+
+### Admin APIs (`/api/v1/admin/**`)
+
+- Dashboard.
+- Products.
+- Orders.
+- Chat.
+
+### API Docs
+
+- Swagger UI: `<http://localhost:8080/swagger-ui/index.html>`.
+
+## Local Development
+
+### Prerequisites
+
+- Java 21.
+- Node.js 20+.
+- Docker and Docker Compose.
+
+### Recommended One-Command Start
 
 Windows PowerShell:
 
 ```powershell
-.\scripts\start-dev-stack.ps1
+./scripts/start-dev-stack.ps1
 ```
 
 macOS/Linux:
@@ -235,39 +161,21 @@ macOS/Linux:
 ./scripts/start-dev-stack.sh
 ```
 
-This boots:
+### Manual Start
 
-- PostgreSQL + Redis + Meilisearch via Docker Compose
-- Backend at `http://localhost:8080`
-- Next.js frontend at `http://localhost:3000`
-- Health checks for both ports before marking startup as ready
-
-Windows script hardening (`scripts/start-dev-stack.ps1`):
-
-- Auto-installs frontend dependencies if `frontend-next/node_modules` is missing
-- Detects stale smartphone-shop processes on `:3000` / `:8080` and restarts safely
-- Starts frontend first, then backend, to avoid redirect-to-dead-port behavior
-- Disables backend auto-start frontend hook when using the stack script (prevents duplicate frontend race)
-
-Opening `http://localhost:8080/` redirects straight to the Next.js storefront at `http://localhost:3000/`. Use API endpoints such as `/swagger-ui/index.html` or `/actuator/health` directly when you want backend-only surfaces.
-
-On Windows local dev, starting Spring Boot also auto-starts the Next.js frontend if `http://localhost:3000` is not already running, so the root redirect does not land on a dead port. Disable that behavior only if needed with `SMARTPHONE_SHOP_DEV_AUTO_START_FRONTEND=false`.
-
-### Option B (manual start)
-
-1. Start infrastructure:
+- Start infrastructure:
 
 ```bash
 docker compose up -d postgres redis meilisearch
 ```
 
-1. Start backend:
+- Run backend:
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-1. Start frontend:
+- Run frontend:
 
 ```bash
 cd frontend-next
@@ -275,88 +183,97 @@ npm install
 npm run dev
 ```
 
-PowerShell note:
+### Default Endpoints
 
-- If your shell blocks `npm` scripts (`npm.ps1 cannot be loaded`), use `npm.cmd` instead of `npm`.
-- `frontend-next` defaults to `next dev --webpack` for local stability.
-- Use `npm.cmd run dev:turbo` only when you explicitly want Turbopack.
+- Frontend: `<http://localhost:3000>`.
+- Backend: `<http://localhost:8080>`.
+- Swagger UI: `<http://localhost:8080/swagger-ui/index.html>`.
+- Health: `<http://localhost:8080/actuator/health>`.
 
-### Environment defaults
+## Environment Configuration
 
-- Backend profile defaults to `dev` (`spring.profiles.default=dev`)
-- Backend CORS default: `http://localhost:3000`
-- Frontend API base example is in `frontend-next/.env.example`
-- Frontend API retry defaults:
-  - `NEXT_PUBLIC_API_RETRY_COUNT=1`
-  - `NEXT_PUBLIC_API_RETRY_BASE_DELAY_MS=250`
-- Login rate-limit defaults:
-  - `APP_LOGIN_RATE_LIMIT_MAX_ATTEMPTS=8`
-  - `APP_LOGIN_RATE_LIMIT_WINDOW_SECONDS=60`
-  - `APP_LOGIN_RATE_LIMIT_MAX_CLIENTS=50000`
-- Global API rate-limit defaults:
-  - `APP_API_RATE_LIMIT_ENABLED=true`
-  - `APP_API_RATE_LIMIT_MAX_REQUESTS=180`
-  - `APP_API_RATE_LIMIT_WINDOW_SECONDS=60`
-  - `APP_API_RATE_LIMIT_MAX_CLIENTS=200000`
-  - `APP_API_RATE_LIMIT_EXCLUDED_PATHS=/api/v1/auth/login,/api/v1/auth/register,/api/v1/auth/logout,/api/v1/auth/me`
-- Trusted proxy defaults:
-  - `APP_TRUSTED_PROXIES=` (empty by default, so forwarded headers are ignored for rate limiting)
-- Meilisearch defaults:
-  - `APP_SEARCH_MEILI_ENABLED=true` (dev profile)
-  - `APP_SEARCH_MEILI_HOST=http://localhost:7700`
-  - `APP_SEARCH_MEILI_INDEX_NAME=products`
-- Order workflow default:
-  - `APP_ORDER_WORKFLOW_ENABLED=true`
-- CDN-ready asset URL default:
-  - `APP_ASSETS_BASE_URL=` (empty = keep backend/local image paths)
-- Wishlist orphan cleanup scheduler default:
-  - `APP_WISHLIST_CLEANUP_DELAY_MS=300000` (5 minutes)
-- Cart cleanup scheduler default:
-  - `APP_CART_CLEANUP_DELAY_MS=300000` (5 minutes)
-- Idempotency placeholder cleanup scheduler default:
-  - `APP_ORDER_IDEMPOTENCY_CLEANUP_DELAY_MS=300000` (5 minutes)
-- JWT cookie secure policy:
-  - `APP_JWT_COOKIE_SECURE=false` by default (`application.properties`)
-  - `APP_JWT_COOKIE_SECURE=true` by default in production profile (`application-prod.properties`)
-- Dev bootstrap admin account (unless overridden by env vars):
-  - Email: `admin@smartphone.local`
-  - Password: `Admin@123456`
+### Backend Profiles
 
-### Troubleshooting local startup
+- Local default: `dev`.
+- Production: `SPRING_PROFILES_ACTIVE=prod`.
 
-- `ERR_CONNECTION_REFUSED` on `http://localhost:3000`:
-  - Prefer running .\scripts\start-dev-stack.ps1 (it auto-recovers missing deps and startup order).
-  - Ensure frontend is running in `frontend-next` and logs `Ready`.
-  - Start with `npm.cmd run dev` on Windows PowerShell.
-  - Check port conflicts: `Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue`.
-- Next.js guard file naming:
-  - This project uses Next.js `16.x`, where `proxy.ts` is the route-guard entrypoint.
-  - Guard implementation is at `frontend-next/src/proxy.ts` (not `middleware.ts`).
-- Backend reachable but frontend API calls fail:
-  - Verify `NEXT_PUBLIC_API_BASE_URL` in `frontend-next/.env.local`.
-  - Ensure backend is up on `http://localhost:8080`.
+### Important Backend Variables
 
-### Monitoring stack (optional)
+- `JWT_SECRET`, `JWT_ACCESS_TOKEN_MINUTES`.
+- `APP_CORS_ALLOWED_ORIGINS`.
+- `APP_SEARCH_MEILI_ENABLED`, `APP_SEARCH_MEILI_HOST`,
+  `APP_SEARCH_MEILI_API_KEY`.
+- `DATASOURCE_URL`, `DATASOURCE_USER`, `DATASOURCE_PASSWORD`.
+- `REDIS_HOST`, `REDIS_PORT`.
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
 
-Start observability services:
+### Frontend Variables
+
+- `NEXT_PUBLIC_API_BASE_URL` (or compatible API base env wired in
+  `frontend-next/src/lib/api.ts`).
+
+## Refactor Progress
+
+### Backend API-First Standardization
+
+Status: stable baseline completed.
+
+- Modularized service/repository/controller layers.
+- Security filter chain with JWT and rate limits.
+- Idempotent checkout flow and order workflow processing.
+- Cache strategy for catalog/product detail.
+
+### Frontend Migration to Next.js
+
+Status: core user journeys completed and actively iterated.
+
+- Storefront routes migrated under App Router.
+- Admin routes available in Next.js.
+- Shared UI components and storefront modules consolidated.
+
+### Legacy Frontend Footprint
+
+Status: retained for asset compatibility.
+
+- `frontend/static` remains as a legacy asset source.
+- Runtime emphasis is on `frontend-next` for active UI.
+
+### Observability and Operations
+
+Status: production-like local baseline available.
+
+- Prometheus, Grafana, and Alertmanager profile in Docker Compose.
+- Jaeger tracing path enabled via OTLP.
+
+## Testing and Quality
+
+### Backend Test Commands
 
 ```bash
-docker compose --profile monitoring up -d prometheus grafana alertmanager
+./mvnw test
+./mvnw -DskipTests compile
 ```
 
-Access points:
+### Frontend Test Commands
 
-- Prometheus: `http://localhost:9090`
-- Alertmanager: `http://localhost:9093`
-- Grafana: `http://localhost:3001` (`admin` / `admin`)
-- Dashboard folder: `Smartphone Shop`
-- Dashboard name: `Smartphone Shop Overview`
+```bash
+cd frontend-next
+npm run lint
+npm run build
+npm run test:e2e
+```
 
-## Project Structure
+## Repository Structure (Detailed)
 
-The structure below is updated from the current repository state.
-All source/config files are listed to file level.
-Image/SVG assets are intentionally shown only to their containing folders.
+The tree below is file-level for code/config files.
+For image and SVG assets, it intentionally shows only the folder level.
+
+- Scope includes current workspace files.
+- Excludes generated/runtime directories: `.next`, `node_modules`, `target`,
+  `.data`.
+- Excludes local ephemeral files: `.env.local`, Playwright last-run cache.
+
+<!-- markdownlint-disable MD013 -->
 
 ```text
 smartphone-shop/
@@ -426,7 +343,6 @@ smartphone-shop/
 │       │   │                   │   ├── WebConfig.java
 │       │   │                   │   └── WebSocketConfig.java
 │       │   │                   ├── controller/
-│       │   │                   │   ├── admin/
 │       │   │                   │   ├── api/
 │       │   │                   │   │   └── v1/
 │       │   │                   │   │       ├── AdminChatApiController.java
@@ -442,7 +358,6 @@ smartphone-shop/
 │       │   │                   │   │       ├── ProductApiController.java
 │       │   │                   │   │       ├── ProfileApiController.java
 │       │   │                   │   │       └── WishlistApiController.java
-│       │   │                   │   ├── user/
 │       │   │                   │   └── RootController.java
 │       │   │                   ├── event/
 │       │   │                   │   ├── ChatMessageCreatedEvent.java
@@ -497,7 +412,6 @@ smartphone-shop/
 │       │   │                   │   ├── ProductSearchService.java
 │       │   │                   │   ├── SimulatedPaymentGateway.java
 │       │   │                   │   └── WishlistService.java
-│       │   │                   ├── support/
 │       │   │                   ├── DevFrontendBootstrap.java
 │       │   │                   ├── DevInfrastructureBootstrap.java
 │       │   │                   ├── Port8080Guard.java
@@ -535,7 +449,6 @@ smartphone-shop/
 │           │                   │   │       ├── CompareApiControllerTest.java
 │           │                   │   │       ├── OrderApiControllerTest.java
 │           │                   │   │       └── ProductApiControllerTest.java
-│           │                   │   ├── user/
 │           │                   │   └── RootControllerTest.java
 │           │                   ├── model/
 │           │                   │   └── PaymentMethodTest.java
@@ -567,13 +480,12 @@ smartphone-shop/
 │   │   └── README.md
 │   └── portfolio.md
 ├── frontend/
-│   ├── static/
-│   │   ├── customer/
-│   │   │   └── images/
-│   │   └── svg/
-│   │       └── griddy/
-│   │           └── README.md
-│   └── templates/
+│   └── static/
+│       ├── customer/
+│       │   └── images/
+│       └── svg/
+│           └── griddy/
+│               └── README.md
 ├── frontend-next/
 │   ├── public/
 │   │   ├── griddy/
@@ -613,8 +525,6 @@ smartphone-shop/
 │   │   │   │   ├── wishlist/
 │   │   │   │   │   └── page.tsx
 │   │   │   │   └── layout.tsx
-│   │   │   ├── __assets/
-│   │   │   │   └── [...path]/
 │   │   │   ├── admin/
 │   │   │   │   ├── chat/
 │   │   │   │   │   └── page.tsx
@@ -659,13 +569,13 @@ smartphone-shop/
 │   │   │       └── vercel-tabs.tsx
 │   │   ├── lib/
 │   │   │   ├── api.ts
-│   │   │   └── format.ts
+│   │   │   ├── format.ts
+│   │   │   └── order-status.ts
 │   │   └── proxy.ts
 │   ├── tests/
 │   │   ├── auth.spec.ts
 │   │   └── checkout.spec.ts
 │   ├── .env.example
-│   ├── .env.local
 │   ├── .gitignore
 │   ├── AGENTS.md
 │   ├── CLAUDE.md
@@ -705,91 +615,13 @@ smartphone-shop/
 ├── mvnw.cmd
 ├── pom.xml
 └── README.md
-
 ```
 
-### Notes on structure
+<!-- markdownlint-enable MD013 -->
 
-- `frontend-next/` is the active frontend for all storefront and admin journeys.
-- `frontend/` no longer hosts active Thymeleaf flows; it is kept for shared static image/icon assets loaded by backend mappings.
-- Backend source files are not under default Maven `src/main/java`; they are mapped from `backend/src/main/java` in `pom.xml`.
-- Monitoring and alerting configs are fully versioned in `monitoring/`.
+## Contributor Notes
 
-### Local/generated artifacts (ignored)
-
-These are intentionally not committed and can be removed safely when cleaning workspace:
-
-- `.data/`
-- `target/`
-- `frontend-next/.next/`
-- `frontend-next/node_modules/`
-- `frontend-next/test-results/`
-- `*.log`
-
-## Quality and Validation
-
-- Backend tests are located under `backend/src/test`
-- Frontend quality checks (lint/build) are managed inside `frontend-next/`
-- Latest local validation snapshot (updated: 2026-04-23):
-  - `mvnw test`: passing (`BUILD SUCCESS`, 111 tests, 0 failures, 0 errors, 1 skipped)
-  - `cd frontend-next && npm run lint`: passing
-  - `cd frontend-next && npm run build`: passing
-  - `cd frontend-next && npm run test:e2e`: not re-run in this refresh cycle
-
-## Design Decisions
-
-- API-first migration over full rewrite:
-  - Reduced delivery risk while keeping backend business logic stable.
-  - Allowed incremental rollout of Next.js without blocking feature work.
-- `httpOnly` JWT cookie auth:
-  - Better XSS resistance than storing tokens in browser-managed storage.
-  - Works well with server-side and route-guarded flows in Next.js.
-- Keep legacy customer assets only (`frontend/static/customer/images`):
-  - Preserves product image compatibility for backend `/images/**` mapping.
-  - Removes template/CSS/JS debt while avoiding asset migration churn.
-- Cache public product payload + overlay user context:
-  - Keeps cache hit-rate high for both anonymous and authenticated traffic.
-  - Prevents user-specific response leakage by computing wishlist flags after cache retrieval.
-  - Uses explicit cache eviction on admin product writes.
-- Scheduled cart/wishlist cleanup over hot-path cleanup:
-  - Reduces repeated read/write overhead on every cart or wishlist mutation.
-  - Keeps data hygiene via bounded periodic maintenance jobs.
-
-## Optimization Roadmap (Q2 2026)
-
-### P0 (high priority)
-
-- [x] Move cart cleanup from mutation hot-path to scheduled cleanup job.
-- [x] Replace unsafe delimiter-based cache keys with hashed keys.
-- [x] Replace login rate-limit map cleanup heuristic with Caffeine TTL cache.
-- [x] Add explicit JWT cookie secure override (`APP_JWT_COOKIE_SECURE`).
-- [x] Add global API rate limiting baseline for `/api/v1/**` traffic.
-- [x] Add async order post-processing pipeline (event-driven after checkout commit).
-- [x] Add CDN-ready image URL rewrite strategy (`app.assets.base-url`).
-- [ ] Add Flyway migration for persistent `order_code` column/index if DB-side search on order code is required.
-
-### P1 (medium priority)
-
-- [ ] Extract and cache brand facet list independently from catalog page payload.
-- [ ] Move admin chat from polling to SSE stream path end-to-end in frontend.
-- [ ] Add default fetch timeout via `AbortController` in frontend API client.
-- [ ] Review authenticated catalog caching strategy to keep high hit-rate while isolating user-specific fields.
-
-### P2 (low priority)
-
-- [ ] Clarify unsupported payment types strategy (remove from enum or explicitly deprecate).
-- [ ] Review index/query plan for order history at larger datasets.
-- [ ] Expand Playwright scenarios for admin order/product regressions.
-
-## Portfolio Guide
-
-- Technical narrative: `docs/portfolio.md`
-- Screenshot checklist: `docs/screenshots/README.md`
-- Monitoring dashboard: `monitoring/grafana/provisioning/dashboards/json/smartphone-shop-overview.json`
-- Alert rules: `monitoring/alerts/smartphone-shop-alerts.yml`
-
-## Optional Next Iterations
-
-1. Expand Playwright coverage to admin order/product flows.
-1. Add Grafana contact points and notification channels (Slack/Email) for real alert delivery.
-1. Add deployment automation docs for a cloud target (Render/Fly.io/Azure/GCP).
+- Follow `.editorconfig` conventions.
+- Do not commit secrets or local-only credentials.
+- Prefer service-layer business logic over controller-level shortcuts.
+- Keep API contracts backward compatible unless intentionally versioned.

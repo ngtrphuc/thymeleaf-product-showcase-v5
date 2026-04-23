@@ -106,7 +106,7 @@ export function PaymentMethodBadge({
           className="object-contain"
         />
       </span>
-      <span className={joinClassName("text-sm text-slate-800", textClassName)}>{display}</span>
+      <span className={joinClassName("text-sm text-white", textClassName)}>{display}</span>
     </span>
   );
 }

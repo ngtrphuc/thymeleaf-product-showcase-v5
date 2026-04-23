@@ -27,6 +27,7 @@ export function FilterDropdown({
 }: FilterDropdownProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const listHeightClass = options.length <= 10 ? "max-h-[24rem]" : "max-h-64";
 
   const selectedLabel = useMemo(
     () => options.find((option) => option.value === value)?.label ?? options[0]?.label ?? "",
@@ -67,7 +68,7 @@ export function FilterDropdown({
 
         {open && !disabled ? (
           <div className="ui-dropdown-panel absolute left-0 right-0 top-[calc(100%+0.45rem)] z-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[0_16px_38px_rgba(0,0,0,0.5)]">
-            <ul role="listbox" className="max-h-64 space-y-1 overflow-y-auto">
+            <ul role="listbox" className={`${listHeightClass} space-y-1 overflow-y-auto`}>
               {options.map((option) => {
                 const active = option.value === value;
                 return (

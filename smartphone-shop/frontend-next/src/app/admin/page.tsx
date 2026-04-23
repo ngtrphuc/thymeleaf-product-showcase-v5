@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ApiError, fetchAdminDashboard, type AdminDashboardResponse } from "@/lib/api";
 import { formatDateTime, formatPriceVnd } from "@/lib/format";
+import { getOrderStatusBadge } from "@/lib/order-status";
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<AdminDashboardResponse | null>(null);
@@ -72,20 +73,28 @@ export default function AdminDashboardPage() {
           <p className="mt-3 text-sm text-slate-600">No orders yet.</p>
         ) : (
           <div className="mt-4 space-y-3">
-            {data.recentOrders.map((order) => (
-              <article key={order.id} className="rounded-xl border border-[var(--color-border)] bg-white p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-slate-900">{order.orderCode}</p>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                    {order.status}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-slate-600">
-                  {order.customerName} - {formatDateTime(order.createdAt)}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">{formatPriceVnd(order.totalAmount)}</p>
-              </article>
-            ))}
+            {data.recentOrders.map((order) => {
+              const statusBadge = getOrderStatusBadge(order.status);
+              return (
+                <article key={order.id} className="rounded-xl border border-[var(--color-border)] bg-white p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold text-slate-900">{order.orderCode}</p>
+                    <span
+                      className={[
+                        "rounded-full border px-2.5 py-1 text-xs font-semibold",
+                        statusBadge.className,
+                      ].join(" ")}
+                    >
+                      {statusBadge.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {order.customerName} - {formatDateTime(order.createdAt)}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{formatPriceVnd(order.totalAmount)}</p>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>

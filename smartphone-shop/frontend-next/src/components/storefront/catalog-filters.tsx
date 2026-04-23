@@ -58,7 +58,7 @@ const BATTERY_RANGE_OPTIONS: Option[] = [
   { label: "5,000 - 5,499 mAh", value: "5000to5499" },
   { label: "5,500 - 5,999 mAh", value: "5500to5999" },
   { label: "6,000 - 6,999 mAh", value: "6000to6999" },
-  { label: "7,000+ mAh", value: "over7000" },
+  { label: "Over 7,000 mAh", value: "over7000" },
 ];
 
 const SCREEN_SIZE_OPTIONS: Option[] = [
@@ -69,7 +69,6 @@ const SCREEN_SIZE_OPTIONS: Option[] = [
   { label: "7.0+ inch", value: "over7.0" },
   { label: "7.0 - 7.9 inch", value: "7.0to7.9" },
   { label: "8.0+ inch", value: "8.0plus" },
-  { label: "Over 6.6 inch", value: "over6.6" },
 ];
 
 function filterValue(params: URLSearchParams, key: string, value: string) {
@@ -160,7 +159,7 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
   }
 
   return (
-    <section className="glass-panel rounded-3xl p-5">
+    <section className="glass-panel relative z-20 rounded-3xl p-5">
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-slate-700">Keyword</span>
