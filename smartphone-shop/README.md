@@ -373,7 +373,8 @@ smartphone-shop/
 │   └── wrapper/
 │       └── maven-wrapper.properties
 ├── .vscode/
-│   └── launch.json
+│   ├── launch.json
+│   └── tasks.json
 ├── backend/
 │   └── src/
 │       ├── main/
@@ -591,6 +592,8 @@ smartphone-shop/
 │   │   │   │   ├── chat/
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── checkout/
+│   │   │   │   │   ├── success/
+│   │   │   │   │   │   └── page.tsx
 │   │   │   │   │   ├── loading.tsx
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── compare/
