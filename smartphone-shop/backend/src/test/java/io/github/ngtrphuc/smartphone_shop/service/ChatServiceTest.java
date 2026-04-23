@@ -21,6 +21,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.event.ChatMessageCreatedEvent;
 import io.github.ngtrphuc.smartphone_shop.model.ChatMessage;
 import io.github.ngtrphuc.smartphone_shop.repository.ChatMessageRepository;
@@ -128,14 +129,14 @@ class ChatServiceTest {
 
     @Test
     void saveUserMessage_shouldRejectBlankContent() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> chatService.saveUserMessage("user@example.com", "   "));
         assertEquals("Message content cannot be empty.", exception.getMessage());
     }
 
     @Test
     void saveAdminMessage_shouldRejectInvalidConversationEmail() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        ValidationException exception = assertThrows(ValidationException.class,
                 () -> chatService.saveAdminMessage("not-an-email", "hello"));
         assertEquals("Conversation email is invalid.", exception.getMessage());
     }

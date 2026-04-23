@@ -6,14 +6,15 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.model.WishlistItem;
@@ -31,8 +32,12 @@ class WishlistServiceTest {
     @Mock
     private ProductRepository productRepository;
 
-    @InjectMocks
     private WishlistService wishlistService;
+
+    @BeforeEach
+    void setUp() {
+        wishlistService = new WishlistService(wishlistItemRepository, productRepository, 2);
+    }
 
     @Test
     void addItem_shouldReturnAlreadyExistsWhenDuplicate() {
@@ -101,7 +106,7 @@ class WishlistServiceTest {
 
     @Test
     void cleanupOrphanedItemsForAllUsers_shouldProcessEachUser() {
-        when(wishlistItemRepository.findDistinctUserEmails())
+        when(wishlistItemRepository.findDistinctUserEmails(PageRequest.of(0, 2)))
                 .thenReturn(List.of("user-a@example.com", "user-b@example.com"));
         when(wishlistItemRepository.findByUserEmailOrderByCreatedAtDesc("user-a@example.com"))
                 .thenReturn(List.of());

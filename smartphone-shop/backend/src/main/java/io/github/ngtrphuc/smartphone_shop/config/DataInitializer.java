@@ -26,6 +26,7 @@ public class DataInitializer {
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
     private static final String CATALOG_PUBLIC_CACHE = "catalogPublic";
     private static final String PRODUCT_DETAIL_PUBLIC_CACHE = "productDetailPublic";
+    private static final String BRAND_LIST_CACHE = "brandList";
 
     @Bean
     public CommandLineRunner initDatabase(ProductRepository repository, CacheManager cacheManager) {
@@ -64,6 +65,7 @@ public class DataInitializer {
                 repository.saveAll(toSave);
                 clearStorefrontCache(cacheManager, CATALOG_PUBLIC_CACHE);
                 clearStorefrontCache(cacheManager, PRODUCT_DETAIL_PUBLIC_CACHE);
+                clearStorefrontCache(cacheManager, BRAND_LIST_CACHE);
             }
             log.info("Product catalog synced. Inserted: {}, Updated: {}", inserted, updated);
         };

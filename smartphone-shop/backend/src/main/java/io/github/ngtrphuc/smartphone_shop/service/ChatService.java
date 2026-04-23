@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.event.ChatMessageCreatedEvent;
 import io.github.ngtrphuc.smartphone_shop.model.ChatMessage;
 import io.github.ngtrphuc.smartphone_shop.repository.ChatMessageRepository;
@@ -151,10 +152,10 @@ public class ChatService {
     private String normalizeMessageContent(String content) {
         String normalized = content == null ? "" : content.trim();
         if (normalized.isBlank()) {
-            throw new IllegalArgumentException("Message content cannot be empty.");
+            throw new ValidationException("Message content cannot be empty.");
         }
         if (normalized.length() > MAX_MESSAGE_LENGTH) {
-            throw new IllegalArgumentException("Message content is too long.");
+            throw new ValidationException("Message content is too long.");
         }
         return normalized;
     }
@@ -162,13 +163,13 @@ public class ChatService {
     private String normalizeConversationEmail(String email) {
         String normalized = email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
         if (normalized.isBlank()) {
-            throw new IllegalArgumentException("Conversation email cannot be empty.");
+            throw new ValidationException("Conversation email cannot be empty.");
         }
         if (normalized.length() > MAX_EMAIL_LENGTH) {
-            throw new IllegalArgumentException("Conversation email is too long.");
+            throw new ValidationException("Conversation email is too long.");
         }
         if (!EMAIL_PATTERN.matcher(normalized).matches()) {
-            throw new IllegalArgumentException("Conversation email is invalid.");
+            throw new ValidationException("Conversation email is invalid.");
         }
         return normalized;
     }

@@ -104,7 +104,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => mutate(() => decreaseCartItem(item.id))}
+                      onClick={() => void mutate(() => decreaseCartItem(item.id))}
                       className="ui-btn ui-btn-secondary px-3 py-1.5 text-sm"
                     >
                       -
@@ -113,7 +113,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => mutate(() => increaseCartItem(item.id))}
+                      onClick={() => void mutate(() => increaseCartItem(item.id))}
                       className="ui-btn ui-btn-secondary px-3 py-1.5 text-sm"
                     >
                       +
@@ -121,7 +121,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => mutate(() => removeCartItem(item.id))}
+                      onClick={() => void mutate(() => removeCartItem(item.id))}
                       className="ui-btn ui-btn-danger ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm"
                     >
                       <GriddyIcon name="trash" />
@@ -140,7 +140,7 @@ export default function CartPage() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => mutate(() => clearCart())}
+                onClick={() => void mutate(() => clearCart())}
                 className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
               >
                 <GriddyIcon name="close-circle" />

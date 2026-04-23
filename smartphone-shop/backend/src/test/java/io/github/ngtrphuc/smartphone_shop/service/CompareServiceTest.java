@@ -2,6 +2,7 @@ package io.github.ngtrphuc.smartphone_shop.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
@@ -14,11 +15,14 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyList;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpSession;
 
 import io.github.ngtrphuc.smartphone_shop.model.CompareItemEntity;
+import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.CompareItemRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 
@@ -36,6 +40,7 @@ class CompareServiceTest {
     @BeforeEach
     void setUp() {
         compareService = new CompareService(compareItemRepository, productRepository);
+        lenient().when(productRepository.findAllByIdIn(anyList())).thenAnswer(invocation -> toProducts(invocation.getArgument(0)));
     }
 
     @Test
@@ -77,9 +82,6 @@ class CompareServiceTest {
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("compareIds", new java.util.ArrayList<>(List.of(1L, 2L, 3L)));
         when(productRepository.existsById(4L)).thenReturn(true);
-        when(productRepository.existsById(1L)).thenReturn(true);
-        when(productRepository.existsById(2L)).thenReturn(true);
-        when(productRepository.existsById(3L)).thenReturn(true);
 
         CompareService.AddResult result = compareService.addItem(null, session, 4L);
 
@@ -91,7 +93,6 @@ class CompareServiceTest {
     @Test
     void saveCompareIds_shouldSanitizeAndClamp_forAnonymousSession() {
         MockHttpSession session = new MockHttpSession();
-        when(productRepository.existsById(anyLong())).thenReturn(true);
 
         compareService.saveCompareIds(
                 null,
@@ -113,10 +114,9 @@ class CompareServiceTest {
         when(compareItemRepository.findByUserEmailOrderByCreatedAtDesc("user@example.com"))
                 .thenReturn(List.of(dbLatest, dbOlder))
                 .thenReturn(List.of(merged, dbLatest, dbOlder));
-        when(productRepository.existsById(anyLong())).thenAnswer(invocation -> {
-            Long id = invocation.getArgument(0, Long.class);
-            return id != null && id != 4L && id != 5L;
-        });
+        when(productRepository.findAllByIdIn(anyList())).thenAnswer(invocation -> toProducts(invocation.getArgument(0)).stream()
+                .filter(product -> product.getId() != 4L && product.getId() != 5L)
+                .collect(Collectors.toList()));
 
         compareService.mergeSessionCompareToDb(session, "user@example.com");
 
@@ -131,9 +131,9 @@ class CompareServiceTest {
     @Test
     void saveCompareIds_shouldDropUnavailableProducts() {
         MockHttpSession session = new MockHttpSession();
-        when(productRepository.existsById(3L)).thenReturn(true);
-        when(productRepository.existsById(2L)).thenReturn(false);
-        when(productRepository.existsById(1L)).thenReturn(true);
+        when(productRepository.findAllByIdIn(anyList())).thenAnswer(invocation -> toProducts(invocation.getArgument(0)).stream()
+                .filter(product -> product.getId() != 2L)
+                .collect(Collectors.toList()));
 
         compareService.saveCompareIds(null, session, List.of(3L, 2L, 1L));
 
@@ -144,5 +144,25 @@ class CompareServiceTest {
     void getCompareIds_shouldRejectInvalidEmail() {
         assertThrows(IllegalArgumentException.class,
                 () -> compareService.getCompareIds("not-an-email", null));
+    }
+
+    private List<Product> toProducts(List<Long> ids) {
+        if (ids == null) {
+            return List.of();
+        }
+        return ids.stream()
+                .filter(id -> id != null)
+                .distinct()
+                .map(this::newProduct)
+                .toList();
+    }
+
+    private Product newProduct(Long id) {
+        Product product = new Product();
+        product.setId(id);
+        product.setName("Product " + id);
+        product.setPrice(100.0);
+        product.setStock(10);
+        return product;
     }
 }

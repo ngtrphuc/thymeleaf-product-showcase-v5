@@ -148,22 +148,6 @@ public class ApiMapper {
     }
 
     public ProfileResponse toProfileResponse(User user,
-            List<Order> orders,
-            List<CartItem> cartItems,
-            List<PaymentMethod> paymentMethods) {
-        long deliveredOrderCount = orders.stream()
-                .filter(order -> "delivered".equals(order.getStatus()))
-                .count();
-        long pendingOrderCount = orders.stream()
-                .filter(order -> !"delivered".equals(order.getStatus()) && !"cancelled".equals(order.getStatus()))
-                .count();
-        int cartItemCount = cartItems.stream()
-                .mapToInt(CartItem::getQuantity)
-                .sum();
-        return toProfileResponse(user, deliveredOrderCount, pendingOrderCount, cartItemCount, paymentMethods);
-    }
-
-    public ProfileResponse toProfileResponse(User user,
             long deliveredOrderCount,
             long pendingOrderCount,
             int cartItemCount,

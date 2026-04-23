@@ -3,6 +3,8 @@ package io.github.ngtrphuc.smartphone_shop.service;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -21,6 +23,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.OrderRepository;
 public class OrderIdempotencyService {
 
     private static final int MAX_KEY_LENGTH = 120;
+    private static final Duration STALE_PLACEHOLDER_TIMEOUT = Duration.ofMinutes(5);
 
     private final OrderIdempotencyKeyRepository orderIdempotencyKeyRepository;
     private final OrderRepository orderRepository;
@@ -62,7 +65,13 @@ public class OrderIdempotencyService {
             return resolveExistingOrder(concurrent, normalizedFingerprint);
         }
 
-        Order created = Objects.requireNonNull(orderCreator.get(), "Order creator must not return null.");
+        Order created;
+        try {
+            created = Objects.requireNonNull(orderCreator.get(), "Order creator must not return null.");
+        } catch (RuntimeException ex) {
+            orderIdempotencyKeyRepository.delete(placeholder);
+            throw ex;
+        }
         placeholder.setOrderId(created.getId());
         orderIdempotencyKeyRepository.save(placeholder);
         return created;
@@ -94,11 +103,24 @@ public class OrderIdempotencyService {
                     "This idempotency key was already used for a different checkout payload.");
         }
         if (existing.getOrderId() == null) {
+            if (isStalePlaceholder(existing)) {
+                orderIdempotencyKeyRepository.delete(existing);
+                throw new OrderValidationException(
+                        "The previous checkout attempt timed out. Please retry this request.");
+            }
             throw new IllegalStateException(
                     "A checkout with this idempotency key is already being processed. Please retry shortly.");
         }
         return orderRepository.findByIdWithItems(existing.getOrderId())
                 .orElseThrow(() -> new IllegalStateException("Existing idempotent order could not be loaded."));
+    }
+
+    private boolean isStalePlaceholder(OrderIdempotencyKey key) {
+        LocalDateTime createdAt = key.getCreatedAt();
+        if (createdAt == null) {
+            return true;
+        }
+        return createdAt.isBefore(LocalDateTime.now().minus(STALE_PLACEHOLDER_TIMEOUT));
     }
 
     private String normalizeIdempotencyKey(String idempotencyKey) {

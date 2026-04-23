@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -19,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import io.github.ngtrphuc.smartphone_shop.common.exception.OrderValidationException;
 import io.github.ngtrphuc.smartphone_shop.model.Order;
 import io.github.ngtrphuc.smartphone_shop.model.OrderIdempotencyKey;
 import io.github.ngtrphuc.smartphone_shop.repository.OrderIdempotencyKeyRepository;
@@ -81,6 +83,49 @@ class OrderIdempotencyServiceTest {
 
         assertEquals("This idempotency key was already used for a different checkout payload.", ex.getMessage());
         verify(orderRepository, never()).findByIdWithItems(anyLong());
+    }
+
+    @Test
+    void executeCheckout_shouldDeleteStalePlaceholderAndRequestRetry() {
+        OrderIdempotencyKey key = new OrderIdempotencyKey();
+        key.setUserEmail("user@example.com");
+        key.setIdempotencyKey("checkout-key");
+        key.setRequestFingerprint("fingerprint-1");
+        key.setOrderId(null);
+        key.setCreatedAt(LocalDateTime.now().minusMinutes(10));
+
+        when(orderIdempotencyKeyRepository.findByUserEmailAndIdempotencyKey("user@example.com", "checkout-key"))
+                .thenReturn(Optional.of(key));
+
+        OrderValidationException ex = assertThrows(OrderValidationException.class, () -> orderIdempotencyService.executeCheckout(
+                "user@example.com",
+                "checkout-key",
+                "fingerprint-1",
+                () -> {
+                    throw new AssertionError("Order creator must not run when stale placeholder is detected.");
+                }));
+
+        assertEquals("The previous checkout attempt timed out. Please retry this request.", ex.getMessage());
+        verify(orderIdempotencyKeyRepository).delete(key);
+        verify(orderRepository, never()).findByIdWithItems(anyLong());
+    }
+
+    @Test
+    void executeCheckout_shouldDeletePlaceholderWhenOrderCreationFails() {
+        when(orderIdempotencyKeyRepository.findByUserEmailAndIdempotencyKey("user@example.com", "checkout-key"))
+                .thenReturn(Optional.empty());
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> orderIdempotencyService.executeCheckout(
+                "user@example.com",
+                "checkout-key",
+                "fingerprint-1",
+                () -> {
+                    throw new IllegalStateException("checkout failure");
+                }));
+
+        assertEquals("checkout failure", ex.getMessage());
+        verify(orderIdempotencyKeyRepository).saveAndFlush(any(OrderIdempotencyKey.class));
+        verify(orderIdempotencyKeyRepository).delete(any(OrderIdempotencyKey.class));
     }
 
     @Test

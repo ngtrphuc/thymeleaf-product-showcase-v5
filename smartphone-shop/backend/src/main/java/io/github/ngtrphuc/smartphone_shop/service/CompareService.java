@@ -4,13 +4,17 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.github.ngtrphuc.smartphone_shop.model.CompareItemEntity;
+import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.CompareItemRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import jakarta.servlet.http.HttpSession;
@@ -137,11 +141,12 @@ public class CompareService {
         List<Long> sessionIds = getSessionIds(session);
         if (!sessionIds.isEmpty()) {
             LinkedHashSet<Long> mergedIds = new LinkedHashSet<>(getDbCompareIds(normalizedEmail));
+            Set<Long> existingProductIds = resolveExistingProductIds(sessionIds);
             for (Long id : sessionIds) {
                 if (id == null || mergedIds.size() >= MAX_COMPARE) {
                     break;
                 }
-                if (mergedIds.contains(id) || !productRepository.existsById(id)) {
+                if (mergedIds.contains(id) || !existingProductIds.contains(id)) {
                     continue;
                 }
                 compareItemRepository.save(new CompareItemEntity(normalizedEmail, id));
@@ -184,9 +189,10 @@ public class CompareService {
         if (ids == null || ids.isEmpty()) {
             return new ArrayList<>();
         }
+        Set<Long> existingProductIds = resolveExistingProductIds(ids);
         LinkedHashSet<Long> unique = new LinkedHashSet<>();
         for (Long id : ids) {
-            if (id == null || !productRepository.existsById(id)) {
+            if (id == null || !existingProductIds.contains(id)) {
                 continue;
             }
             unique.add(id);
@@ -195,6 +201,23 @@ public class CompareService {
             }
         }
         return new ArrayList<>(unique);
+    }
+
+    private Set<Long> resolveExistingProductIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Set.of();
+        }
+        List<Long> candidateIds = ids.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (candidateIds.isEmpty()) {
+            return Set.of();
+        }
+        return productRepository.findAllByIdIn(candidateIds).stream()
+                .map(Product::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     private boolean isLoggedIn(String email) {

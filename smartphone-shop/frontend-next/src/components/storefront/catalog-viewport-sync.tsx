@@ -34,13 +34,8 @@ export function CatalogViewportSync() {
 
     syncPageSize();
 
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", syncPageSize);
-      return () => mediaQuery.removeEventListener("change", syncPageSize);
-    }
-
-    mediaQuery.addListener(syncPageSize);
-    return () => mediaQuery.removeListener(syncPageSize);
+    mediaQuery.addEventListener("change", syncPageSize);
+    return () => mediaQuery.removeEventListener("change", syncPageSize);
   }, [pathname, router, searchParamsString]);
 
   return null;

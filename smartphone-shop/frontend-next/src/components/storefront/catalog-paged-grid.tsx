@@ -39,13 +39,8 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
       setIsReducedMotion(mediaQuery.matches);
     };
 
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", syncPreference);
-      return () => mediaQuery.removeEventListener("change", syncPreference);
-    }
-
-    mediaQuery.addListener(syncPreference);
-    return () => mediaQuery.removeListener(syncPreference);
+    mediaQuery.addEventListener("change", syncPreference);
+    return () => mediaQuery.removeEventListener("change", syncPreference);
   }, []);
 
   useEffect(() => {

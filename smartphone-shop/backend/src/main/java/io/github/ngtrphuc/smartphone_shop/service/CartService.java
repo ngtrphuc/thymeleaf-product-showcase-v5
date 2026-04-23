@@ -354,11 +354,17 @@ public class CartService {
 
     @Transactional(readOnly = true)
     public List<CartItem> getUserCart(String email) {
+        if (email == null || email.isBlank() || !isLoggedIn(email)) {
+            return List.of();
+        }
         return getDbCartSnapshot(email);
     }
 
     @Transactional(readOnly = true)
     public int countUserCartItems(String email) {
+        if (email == null || email.isBlank() || !isLoggedIn(email)) {
+            return 0;
+        }
         return Math.toIntExact(cartItemRepository.sumQuantityByUserEmail(email));
     }
 

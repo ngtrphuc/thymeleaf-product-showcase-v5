@@ -223,9 +223,6 @@ public class SecurityConfig {
         if (normalized.isBlank()) {
             return false;
         }
-        return "*".equals(normalized)
-                || "**".equals(normalized)
-                || normalized.contains("://*")
-                || normalized.contains("://**");
+        return normalized.contains("*");
     }
 }

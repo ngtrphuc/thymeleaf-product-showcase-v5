@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { ApiError, fetchProductDetail, toAssetUrl, type ProductSummary } from "@/lib/api";
+import { ApiError, fetchProductDetail, getBackendOrigin, toAssetUrl, type AuthMeResponse, type ProductSummary } from "@/lib/api";
 import { formatPriceVnd } from "@/lib/format";
 import { ProductActions } from "@/components/storefront/product-actions";
 
@@ -22,24 +22,41 @@ function AvailabilityBadge({ product }: { product: ProductSummary }) {
   );
 }
 
-function decodeJwtRole(token: string): string | null {
-  const segments = token.split(".");
-  if (segments.length < 2) {
-    return null;
-  }
-
-  try {
-    const encoded = segments[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=");
-    const payload = JSON.parse(Buffer.from(padded, "base64").toString("utf-8")) as { role?: string };
-    return payload.role ?? null;
-  } catch {
-    return null;
-  }
+function unauthenticatedAuthState(): AuthMeResponse {
+  return {
+    authenticated: false,
+    email: null,
+    role: null,
+    fullName: null,
+  };
 }
 
 function isAdminRole(role: string | null | undefined): boolean {
   return role === "ROLE_ADMIN" || role === "ADMIN";
+}
+
+async function resolveAuthState(cookieHeader: string): Promise<AuthMeResponse> {
+  if (!cookieHeader.includes("jwt=")) {
+    return unauthenticatedAuthState();
+  }
+  try {
+    const response = await fetch(`${getBackendOrigin()}/api/v1/auth/me`, {
+      headers: {
+        Cookie: cookieHeader,
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return unauthenticatedAuthState();
+    }
+    const payload = (await response.json()) as AuthMeResponse;
+    if (!payload.authenticated) {
+      return unauthenticatedAuthState();
+    }
+    return payload;
+  } catch {
+    return unauthenticatedAuthState();
+  }
 }
 
 function SpecItem({ label, value }: { label: string; value: string | number | null | undefined }) {
@@ -53,10 +70,10 @@ function SpecItem({ label, value }: { label: string; value: string | number | nu
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { id } = await params;
-  const jwt = (await cookies()).get("jwt")?.value;
-  const role = jwt ? decodeJwtRole(jwt) : null;
-  const isAdmin = isAdminRole(role);
-  const isAuthenticated = !!jwt;
+  const cookieStore = await cookies();
+  const authState = await resolveAuthState(cookieStore.toString());
+  const isAdmin = isAdminRole(authState.role);
+  const isAuthenticated = authState.authenticated;
 
   let detail;
   try {

@@ -97,7 +97,7 @@ public class AdminProductApiController {
     }
 
     @PostMapping("/products")
-    @CacheEvict(value = { "catalogPublic", "productDetailPublic" }, allEntries = true)
+    @CacheEvict(value = { "catalogPublic", "productDetailPublic", "brandList" }, allEntries = true)
     public Product createProduct(@RequestBody Product request) {
         Product product = new Product();
         applyProductInput(product, request);
@@ -109,7 +109,7 @@ public class AdminProductApiController {
     }
 
     @PutMapping("/products/{id}")
-    @CacheEvict(value = { "catalogPublic", "productDetailPublic" }, allEntries = true)
+    @CacheEvict(value = { "catalogPublic", "productDetailPublic", "brandList" }, allEntries = true)
     public Product updateProduct(@PathVariable(name = "id") long id, @RequestBody Product request) {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
@@ -123,7 +123,7 @@ public class AdminProductApiController {
 
     @DeleteMapping("/products/{id}")
     @Transactional
-    @CacheEvict(value = { "catalogPublic", "productDetailPublic" }, allEntries = true)
+    @CacheEvict(value = { "catalogPublic", "productDetailPublic", "brandList" }, allEntries = true)
     public OperationStatusResponse deleteProduct(@PathVariable(name = "id") long id) {
         if (!productRepository.existsById(id)) {
             throw new NoSuchElementException("Product not found.");

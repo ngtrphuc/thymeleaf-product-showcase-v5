@@ -65,9 +65,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         if (normalized.isBlank()) {
             return false;
         }
-        return "*".equals(normalized)
-                || "**".equals(normalized)
-                || normalized.contains("://*")
-                || normalized.contains("://**");
+        return normalized.contains("*");
     }
 }

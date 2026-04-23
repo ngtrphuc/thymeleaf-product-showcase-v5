@@ -201,13 +201,8 @@ export default function ComparePage() {
       setPickerReducedMotion(mediaQuery.matches);
     };
 
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", syncPreference);
-      return () => mediaQuery.removeEventListener("change", syncPreference);
-    }
-
-    mediaQuery.addListener(syncPreference);
-    return () => mediaQuery.removeListener(syncPreference);
+    mediaQuery.addEventListener("change", syncPreference);
+    return () => mediaQuery.removeEventListener("change", syncPreference);
   }, []);
 
   async function mutate(
@@ -262,6 +257,7 @@ export default function ComparePage() {
 
     setPickerLoading(true);
     setPickerError(null);
+    setPickerData(null);
     try {
       const params = new URLSearchParams();
       params.set("page", String(page));
@@ -577,7 +573,7 @@ export default function ComparePage() {
             <button
               type="button"
               disabled={busy}
-              onClick={() => mutate(() => clearCompare(), createEmptySlotIds(maxCompare))}
+              onClick={() => void mutate(() => clearCompare(), createEmptySlotIds(maxCompare))}
               className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-4 py-2 text-sm"
             >
               <GriddyIcon name="close-circle" />
@@ -655,7 +651,7 @@ export default function ComparePage() {
                     type="button"
                     disabled={busy}
                     onClick={() =>
-                      mutate(
+                      void mutate(
                         () => removeCompareItem(item.id ?? 0),
                         normalizedSlotIds.map((slotId) => (slotId === item.id ? null : slotId)),
                       )

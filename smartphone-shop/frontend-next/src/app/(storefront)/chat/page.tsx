@@ -46,7 +46,7 @@ export default function StorefrontChatPage() {
   useEffect(() => {
     void loadHistory(true);
     const timer = setInterval(() => {
-      void loadHistory(false);
+      void loadHistory(document.hasFocus());
     }, 8000);
     return () => clearInterval(timer);
   }, [loadHistory]);

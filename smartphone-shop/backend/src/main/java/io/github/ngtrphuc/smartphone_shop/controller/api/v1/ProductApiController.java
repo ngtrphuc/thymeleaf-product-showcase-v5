@@ -41,6 +41,7 @@ public class ProductApiController {
     private static final int COMPACT_PAGE_SIZE = 8;
     private static final String CATALOG_PUBLIC_CACHE = "catalogPublic";
     private static final String PRODUCT_DETAIL_PUBLIC_CACHE = "productDetailPublic";
+    private static final String BRAND_LIST_CACHE = "brandList";
 
     private final ProductRepository productRepository;
     private final WishlistService wishlistService;
@@ -341,6 +342,10 @@ public class ProductApiController {
     }
 
     private List<String> resolveAvailableBrands() {
+        return getOrLoadCache(BRAND_LIST_CACHE, "all", this::loadAvailableBrands);
+    }
+
+    private List<String> loadAvailableBrands() {
         return productRepository.findAllNamesOrdered().stream()
                 .map(StorefrontSupport::extractBrand)
                 .distinct()

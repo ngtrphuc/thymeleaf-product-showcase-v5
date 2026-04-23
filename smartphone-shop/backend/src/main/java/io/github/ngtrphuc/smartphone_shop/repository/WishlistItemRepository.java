@@ -3,6 +3,7 @@ package io.github.ngtrphuc.smartphone_shop.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -22,4 +23,7 @@ public interface WishlistItemRepository extends JpaRepository<WishlistItemEntity
 
     @Query("SELECT DISTINCT w.userEmail FROM WishlistItemEntity w")
     List<String> findDistinctUserEmails();
+
+    @Query("SELECT DISTINCT w.userEmail FROM WishlistItemEntity w ORDER BY w.userEmail")
+    List<String> findDistinctUserEmails(Pageable pageable);
 }
