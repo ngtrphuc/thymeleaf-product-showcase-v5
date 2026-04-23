@@ -8,6 +8,8 @@
   "settings": {
     "window.title": "smartphone-shop v5",
     "git.openRepositoryInParentFolders": "never",
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "git.ignoreLimitWarning": true,
+    "java.debug.settings.onBuildFailureProceed": true
   }
 }

@@ -74,7 +74,7 @@ export function FilterDropdown({
                         setOpen(false);
                       }}
                       className={[
-                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-all duration-150",
+                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors transition-transform transition-shadow duration-150",
                         active
                           ? "bg-white/10 text-white shadow-[0_8px_18px_rgba(255,255,255,0.12)]"
                           : "text-[var(--color-text-muted)] hover:-translate-y-0.5 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(255,255,255,0.24)]",

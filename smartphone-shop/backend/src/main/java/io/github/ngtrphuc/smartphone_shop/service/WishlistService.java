@@ -8,10 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,17 +33,13 @@ public class WishlistService {
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
-    private final AtomicInteger cleanupPage = new AtomicInteger(0);
     private final WishlistItemRepository wishlistItemRepository;
     private final ProductRepository productRepository;
-    private final int cleanupBatchSize;
 
     public WishlistService(WishlistItemRepository wishlistItemRepository,
-            ProductRepository productRepository,
-            @Value("${app.wishlist.cleanup-batch-size:200}") int cleanupBatchSize) {
+            ProductRepository productRepository) {
         this.wishlistItemRepository = wishlistItemRepository;
         this.productRepository = productRepository;
-        this.cleanupBatchSize = Math.max(1, cleanupBatchSize);
     }
 
     @Transactional
@@ -111,47 +104,13 @@ public class WishlistService {
     @Transactional
     public void cleanupOrphanedItems(String email) {
         String normalizedEmail = normalizeEmail(email);
-        List<WishlistItemEntity> entities = wishlistItemRepository.findByUserEmailOrderByCreatedAtDesc(normalizedEmail);
-        if (entities.isEmpty()) {
-            return;
-        }
-
-        List<Long> productIds = entities.stream()
-                .map(WishlistItemEntity::getProductId)
-                .filter(id -> id != null)
-                .distinct()
-                .toList();
-        Set<Long> existingProductIds = productRepository.findAllByIdIn(productIds).stream()
-                .map(Product::getId)
-                .filter(id -> id != null)
-                .collect(Collectors.toSet());
-
-        List<WishlistItemEntity> orphaned = entities.stream()
-                .filter(entity -> entity.getProductId() == null || !existingProductIds.contains(entity.getProductId()))
-                .toList();
-        if (!orphaned.isEmpty()) {
-            wishlistItemRepository.deleteAll(orphaned);
-        }
+        wishlistItemRepository.deleteOrphanedByUserEmail(normalizedEmail);
     }
 
     @Scheduled(fixedDelayString = "${app.wishlist.cleanup-delay-ms:300000}")
     @Transactional
     public void cleanupOrphanedItemsForAllUsers() {
-        int currentPage = Math.max(0, cleanupPage.get());
-        List<String> emails = wishlistItemRepository.findDistinctUserEmails(
-                PageRequest.of(currentPage, cleanupBatchSize));
-        if (emails.isEmpty()) {
-            cleanupPage.set(0);
-            emails = wishlistItemRepository.findDistinctUserEmails(PageRequest.of(0, cleanupBatchSize));
-        }
-        for (String email : emails) {
-            cleanupOrphanedItems(email);
-        }
-        if (emails.size() < cleanupBatchSize) {
-            cleanupPage.set(0);
-        } else {
-            cleanupPage.incrementAndGet();
-        }
+        wishlistItemRepository.deleteOrphanedItems();
     }
 
     @Transactional(readOnly = true)

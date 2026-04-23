@@ -14,7 +14,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageRequest;
 
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.model.WishlistItem;
@@ -36,7 +35,7 @@ class WishlistServiceTest {
 
     @BeforeEach
     void setUp() {
-        wishlistService = new WishlistService(wishlistItemRepository, productRepository, 2);
+        wishlistService = new WishlistService(wishlistItemRepository, productRepository);
     }
 
     @Test
@@ -90,33 +89,16 @@ class WishlistServiceTest {
 
     @Test
     void cleanupOrphanedItems_shouldDeleteOnlyMissingProducts() {
-        WishlistItemEntity keep = new WishlistItemEntity("user@example.com", 2L);
-        WishlistItemEntity orphan = new WishlistItemEntity("user@example.com", 3L);
-        Product p2 = new Product();
-        p2.setId(2L);
-
-        when(wishlistItemRepository.findByUserEmailOrderByCreatedAtDesc("user@example.com"))
-                .thenReturn(List.of(keep, orphan));
-        when(productRepository.findAllByIdIn(List.of(2L, 3L))).thenReturn(List.of(p2));
-
         wishlistService.cleanupOrphanedItems("user@example.com");
 
-        verify(wishlistItemRepository).deleteAll(List.of(orphan));
+        verify(wishlistItemRepository).deleteOrphanedByUserEmail("user@example.com");
     }
 
     @Test
     void cleanupOrphanedItemsForAllUsers_shouldProcessEachUser() {
-        when(wishlistItemRepository.findDistinctUserEmails(PageRequest.of(0, 2)))
-                .thenReturn(List.of("user-a@example.com", "user-b@example.com"));
-        when(wishlistItemRepository.findByUserEmailOrderByCreatedAtDesc("user-a@example.com"))
-                .thenReturn(List.of());
-        when(wishlistItemRepository.findByUserEmailOrderByCreatedAtDesc("user-b@example.com"))
-                .thenReturn(List.of());
-
         wishlistService.cleanupOrphanedItemsForAllUsers();
 
-        verify(wishlistItemRepository).findByUserEmailOrderByCreatedAtDesc("user-a@example.com");
-        verify(wishlistItemRepository).findByUserEmailOrderByCreatedAtDesc("user-b@example.com");
+        verify(wishlistItemRepository).deleteOrphanedItems();
     }
 
     @Test

@@ -155,10 +155,10 @@ The codebase has moved to a decoupled frontend/backend model for customer and ad
 
 ### Validation status
 
-- Backend test suite: passing (`mvnw test`, re-run after decommission)
-- Backend compile: passing (`mvnw -DskipTests compile`, verified after Maven source-mapping update)
-- Frontend lint: last known passing
-- Frontend build: last known passing
+- Backend test suite: passing (`mvnw test`, 111 tests, 0 failures, 0 errors, 1 skipped)
+- Backend compile: passing (`mvnw -DskipTests compile`)
+- Frontend lint: passing (`cd frontend-next && npm run lint`)
+- Frontend build: passing (`cd frontend-next && npm run build`)
 
 ## Core Features
 
@@ -354,22 +354,26 @@ Access points:
 
 ## Project Structure
 
-Folders that mainly contain images or SVG assets are intentionally collapsed at folder level.
+The structure below is updated from the current repository state.
+All source/config files are listed to file level.
+Image/SVG assets are intentionally shown only to their containing folders.
 
 ```text
 smartphone-shop/
 ├── .github/
 │   ├── java-upgrade/
-│   │   ├── .gitignore
-│   │   └── hooks/
-│   │       └── scripts/
-│   │           ├── recordToolUse.ps1
-│   │           └── recordToolUse.sh
+│   │   ├── hooks/
+│   │   │   └── scripts/
+│   │   │       ├── recordToolUse.ps1
+│   │   │       └── recordToolUse.sh
+│   │   └── .gitignore
 │   └── workflows/
 │       └── smartphone-shop-ci.yml
 ├── .mvn/
 │   └── wrapper/
 │       └── maven-wrapper.properties
+├── .vscode/
+│   └── launch.json
 ├── backend/
 │   └── src/
 │       ├── main/
@@ -378,31 +382,27 @@ smartphone-shop/
 │       │   │       └── github/
 │       │   │           └── ngtrphuc/
 │       │   │               └── smartphone_shop/
-│       │   │                   ├── DevFrontendBootstrap.java
-│       │   │                   ├── DevInfrastructureBootstrap.java
-│       │   │                   ├── Port8080Guard.java
-│       │   │                   ├── SmartphoneShopApplication.java
 │       │   │                   ├── api/
+│       │   │                   │   ├── dto/
+│       │   │                   │   │   ├── AuthMeResponse.java
+│       │   │                   │   │   ├── AuthTokenResponse.java
+│       │   │                   │   │   ├── CartItemResponse.java
+│       │   │                   │   │   ├── CartResponse.java
+│       │   │                   │   │   ├── CatalogPageResponse.java
+│       │   │                   │   │   ├── ChatMessageResponse.java
+│       │   │                   │   │   ├── CompareResponse.java
+│       │   │                   │   │   ├── ErrorResponse.java
+│       │   │                   │   │   ├── OperationStatusResponse.java
+│       │   │                   │   │   ├── OrderItemResponse.java
+│       │   │                   │   │   ├── OrderResponse.java
+│       │   │                   │   │   ├── PaymentMethodResponse.java
+│       │   │                   │   │   ├── ProductDetailResponse.java
+│       │   │                   │   │   ├── ProductSummary.java
+│       │   │                   │   │   ├── ProfileResponse.java
+│       │   │                   │   │   ├── WishlistItemResponse.java
+│       │   │                   │   │   └── WishlistResponse.java
 │       │   │                   │   ├── ApiExceptionHandler.java
-│       │   │                   │   ├── ApiMapper.java
-│       │   │                   │   └── dto/
-│       │   │                   │       ├── AuthMeResponse.java
-│       │   │                   │       ├── AuthTokenResponse.java
-│       │   │                   │       ├── CartItemResponse.java
-│       │   │                   │       ├── CartResponse.java
-│       │   │                   │       ├── CatalogPageResponse.java
-│       │   │                   │       ├── ChatMessageResponse.java
-│       │   │                   │       ├── CompareResponse.java
-│       │   │                   │       ├── ErrorResponse.java
-│       │   │                   │       ├── OperationStatusResponse.java
-│       │   │                   │       ├── OrderItemResponse.java
-│       │   │                   │       ├── OrderResponse.java
-│       │   │                   │       ├── PaymentMethodResponse.java
-│       │   │                   │       ├── ProductDetailResponse.java
-│       │   │                   │       ├── ProductSummary.java
-│       │   │                   │       ├── ProfileResponse.java
-│       │   │                   │       ├── WishlistItemResponse.java
-│       │   │                   │       └── WishlistResponse.java
+│       │   │                   │   └── ApiMapper.java
 │       │   │                   ├── common/
 │       │   │                   │   ├── exception/
 │       │   │                   │   │   ├── BusinessException.java
@@ -419,27 +419,30 @@ smartphone-shop/
 │       │   │                   │   ├── AsyncExecutionConfig.java
 │       │   │                   │   ├── DataInitializer.java
 │       │   │                   │   ├── PaymentMethodSchemaInitializer.java
+│       │   │                   │   ├── PaymentSimulationProperties.java
 │       │   │                   │   ├── ProductSearchProperties.java
 │       │   │                   │   ├── SecurityConfig.java
 │       │   │                   │   ├── WebConfig.java
 │       │   │                   │   └── WebSocketConfig.java
 │       │   │                   ├── controller/
-│       │   │                   │   ├── RootController.java
-│       │   │                   │   └── api/
-│       │   │                   │       └── v1/
-│       │   │                   │           ├── AdminChatApiController.java
-│       │   │                   │           ├── AdminDashboardApiController.java
-│       │   │                   │           ├── AdminOrderApiController.java
-│       │   │                   │           ├── AdminProductApiController.java
-│       │   │                   │           ├── AuthApiController.java
-│       │   │                   │           ├── CartApiController.java
-│       │   │                   │           ├── ChatApiController.java
-│       │   │                   │           ├── CompareApiController.java
-│       │   │                   │           ├── OrderApiController.java
-│       │   │                   │           ├── PaymentMethodApiController.java
-│       │   │                   │           ├── ProductApiController.java
-│       │   │                   │           ├── ProfileApiController.java
-│       │   │                   │           └── WishlistApiController.java
+│       │   │                   │   ├── admin/
+│       │   │                   │   ├── api/
+│       │   │                   │   │   └── v1/
+│       │   │                   │   │       ├── AdminChatApiController.java
+│       │   │                   │   │       ├── AdminDashboardApiController.java
+│       │   │                   │   │       ├── AdminOrderApiController.java
+│       │   │                   │   │       ├── AdminProductApiController.java
+│       │   │                   │   │       ├── AuthApiController.java
+│       │   │                   │   │       ├── CartApiController.java
+│       │   │                   │   │       ├── ChatApiController.java
+│       │   │                   │   │       ├── CompareApiController.java
+│       │   │                   │   │       ├── OrderApiController.java
+│       │   │                   │   │       ├── PaymentMethodApiController.java
+│       │   │                   │   │       ├── ProductApiController.java
+│       │   │                   │   │       ├── ProfileApiController.java
+│       │   │                   │   │       └── WishlistApiController.java
+│       │   │                   │   ├── user/
+│       │   │                   │   └── RootController.java
 │       │   │                   ├── event/
 │       │   │                   │   ├── ChatMessageCreatedEvent.java
 │       │   │                   │   └── OrderCreatedEvent.java
@@ -460,6 +463,8 @@ smartphone-shop/
 │       │   │                   │   ├── WishlistItem.java
 │       │   │                   │   └── WishlistItemEntity.java
 │       │   │                   ├── repository/
+│       │   │                   │   ├── spec/
+│       │   │                   │   │   └── ProductCatalogSpecifications.java
 │       │   │                   │   ├── CartItemRepository.java
 │       │   │                   │   ├── ChatMessageRepository.java
 │       │   │                   │   ├── CompareItemRepository.java
@@ -468,9 +473,7 @@ smartphone-shop/
 │       │   │                   │   ├── PaymentMethodRepository.java
 │       │   │                   │   ├── ProductRepository.java
 │       │   │                   │   ├── UserRepository.java
-│       │   │                   │   ├── WishlistItemRepository.java
-│       │   │                   │   └── spec/
-│       │   │                   │       └── ProductCatalogSpecifications.java
+│       │   │                   │   └── WishlistItemRepository.java
 │       │   │                   ├── security/
 │       │   │                   │   ├── ApiRateLimitFilter.java
 │       │   │                   │   ├── ClientIpResolver.java
@@ -479,38 +482,41 @@ smartphone-shop/
 │       │   │                   │   ├── JwtStompChannelInterceptor.java
 │       │   │                   │   ├── JwtTokenProvider.java
 │       │   │                   │   └── LoginRateLimitFilter.java
-│       │   │                   └── service/
-│       │   │                       ├── AuthService.java
-│       │   │                       ├── CartService.java
-│       │   │                       ├── ChatService.java
-│       │   │                       ├── ChatSseRegistry.java
-│       │   │                       ├── CompareService.java
-│       │   │                       ├── CustomUserDetailsService.java
-│       │   │                       ├── OrderIdempotencyService.java
-│       │   │                       ├── OrderService.java
-│       │   │                       ├── OrderWorkflowProcessor.java
-│       │   │                       ├── PaymentMethodService.java
-│       │   │                       ├── ProductSearchService.java
-│       │   │                       └── WishlistService.java
+│       │   │                   ├── service/
+│       │   │                   │   ├── AuthService.java
+│       │   │                   │   ├── CartService.java
+│       │   │                   │   ├── ChatService.java
+│       │   │                   │   ├── ChatSseRegistry.java
+│       │   │                   │   ├── CompareService.java
+│       │   │                   │   ├── CustomUserDetailsService.java
+│       │   │                   │   ├── OrderIdempotencyService.java
+│       │   │                   │   ├── OrderService.java
+│       │   │                   │   ├── OrderWorkflowProcessor.java
+│       │   │                   │   ├── PaymentMethodService.java
+│       │   │                   │   ├── ProductSearchService.java
+│       │   │                   │   ├── SimulatedPaymentGateway.java
+│       │   │                   │   └── WishlistService.java
+│       │   │                   ├── support/
+│       │   │                   ├── DevFrontendBootstrap.java
+│       │   │                   ├── DevInfrastructureBootstrap.java
+│       │   │                   ├── Port8080Guard.java
+│       │   │                   └── SmartphoneShopApplication.java
 │       │   └── resources/
-│       │       ├── application-dev.properties
-│       │       ├── application-prod.properties
+│       │       ├── db/
+│       │       │   └── migration/
+│       │       │       ├── V1__baseline_schema.sql
+│       │       │       ├── V2__performance_indexes.sql
+│       │       │       ├── V3__idempotency_and_recommendation_indexes.sql
+│       │       │       └── V4__stale_placeholder_cleanup.sql
 │       │       ├── application.properties
-│       │       └── db/
-│       │           └── migration/
-│       │               ├── V1__baseline_schema.sql
-│       │               ├── V2__performance_indexes.sql
-│       │               ├── V3__idempotency_and_recommendation_indexes.sql
-│       │               └── V4__stale_placeholder_cleanup.sql
+│       │       ├── application-dev.properties
+│       │       └── application-prod.properties
 │       └── test/
 │           ├── java/
 │           │   └── io/
 │           │       └── github/
 │           │           └── ngtrphuc/
 │           │               └── smartphone_shop/
-│           │                   ├── DevFrontendBootstrapTest.java
-│           │                   ├── Port8080GuardTest.java
-│           │                   ├── SmartphoneShopApplicationTests.java
 │           │                   ├── common/
 │           │                   │   └── support/
 │           │                   │       ├── AssetUrlResolverTest.java
@@ -520,15 +526,16 @@ smartphone-shop/
 │           │                   │   ├── DataInitializerTest.java
 │           │                   │   └── PaymentMethodSchemaInitializerTest.java
 │           │                   ├── controller/
-│           │                   │   ├── RootControllerTest.java
-│           │                   │   └── api/
-│           │                   │       └── v1/
-│           │                   │           ├── AdminApiControllerTest.java
-│           │                   │           ├── AuthApiControllerTest.java
-│           │                   │           ├── CartApiControllerTest.java
-│           │                   │           ├── CompareApiControllerTest.java
-│           │                   │           ├── OrderApiControllerTest.java
-│           │                   │           └── ProductApiControllerTest.java
+│           │                   │   ├── api/
+│           │                   │   │   └── v1/
+│           │                   │   │       ├── AdminApiControllerTest.java
+│           │                   │   │       ├── AuthApiControllerTest.java
+│           │                   │   │       ├── CartApiControllerTest.java
+│           │                   │   │       ├── CompareApiControllerTest.java
+│           │                   │   │       ├── OrderApiControllerTest.java
+│           │                   │   │       └── ProductApiControllerTest.java
+│           │                   │   ├── user/
+│           │                   │   └── RootControllerTest.java
 │           │                   ├── model/
 │           │                   │   └── PaymentMethodTest.java
 │           │                   ├── repository/
@@ -537,59 +544,48 @@ smartphone-shop/
 │           │                   │   ├── ApiRateLimitFilterTest.java
 │           │                   │   ├── JwtTokenProviderTest.java
 │           │                   │   └── LoginRateLimitFilterTest.java
-│           │                   └── service/
-│           │                       ├── AuthServiceTest.java
-│           │                       ├── CartServiceTest.java
-│           │                       ├── ChatServiceTest.java
-│           │                       ├── CompareServiceTest.java
-│           │                       ├── MockitoNullSafety.java
-│           │                       ├── OrderIdempotencyServiceTest.java
-│           │                       ├── OrderServiceTest.java
-│           │                       ├── PaymentMethodServiceTest.java
-│           │                       └── WishlistServiceTest.java
+│           │                   ├── service/
+│           │                   │   ├── AuthServiceTest.java
+│           │                   │   ├── CartServiceTest.java
+│           │                   │   ├── ChatServiceTest.java
+│           │                   │   ├── CompareServiceTest.java
+│           │                   │   ├── MockitoNullSafety.java
+│           │                   │   ├── OrderIdempotencyServiceTest.java
+│           │                   │   ├── OrderServiceTest.java
+│           │                   │   ├── OrderWorkflowProcessorTest.java
+│           │                   │   ├── PaymentMethodServiceTest.java
+│           │                   │   ├── SimulatedPaymentGatewayTest.java
+│           │                   │   └── WishlistServiceTest.java
+│           │                   ├── DevFrontendBootstrapTest.java
+│           │                   ├── Port8080GuardTest.java
+│           │                   └── SmartphoneShopApplicationTests.java
 │           └── resources/
 │               └── application-test.properties
 ├── docs/
-│   ├── portfolio.md
-│   └── screenshots/
-│       └── README.md
+│   ├── screenshots/
+│   │   └── README.md
+│   └── portfolio.md
 ├── frontend/
 │   ├── static/
 │   │   ├── customer/
 │   │   │   └── images/
 │   │   └── svg/
 │   │       └── griddy/
+│   │           └── README.md
 │   └── templates/
 ├── frontend-next/
-│   ├── .env.example
-│   ├── .gitignore
-│   ├── AGENTS.md
-│   ├── CLAUDE.md
-│   ├── README.md
-│   ├── eslint.config.mjs
-│   ├── next-env.d.ts
-│   ├── next.config.ts
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── playwright.config.ts
-│   ├── postcss.config.mjs
 │   ├── public/
 │   │   ├── griddy/
 │   │   └── payments/
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── favicon.ico
-│   │   │   ├── globals.css
-│   │   │   ├── layout.tsx
-│   │   │   ├── page.tsx
 │   │   │   ├── (auth)/
-│   │   │   │   ├── layout.tsx
 │   │   │   │   ├── login/
 │   │   │   │   │   └── page.tsx
-│   │   │   │   └── register/
-│   │   │   │       └── page.tsx
+│   │   │   │   ├── register/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── layout.tsx
 │   │   │   ├── (storefront)/
-│   │   │   │   ├── layout.tsx
 │   │   │   │   ├── cart/
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── chat/
@@ -602,29 +598,35 @@ smartphone-shop/
 │   │   │   │   ├── orders/
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── products/
+│   │   │   │   │   ├── [id]/
+│   │   │   │   │   │   ├── loading.tsx
+│   │   │   │   │   │   ├── not-found.tsx
+│   │   │   │   │   │   └── page.tsx
 │   │   │   │   │   ├── error.tsx
 │   │   │   │   │   ├── loading.tsx
-│   │   │   │   │   ├── page.tsx
-│   │   │   │   │   └── [id]/
-│   │   │   │   │       ├── loading.tsx
-│   │   │   │   │       ├── not-found.tsx
-│   │   │   │   │       └── page.tsx
+│   │   │   │   │   └── page.tsx
 │   │   │   │   ├── profile/
 │   │   │   │   │   └── page.tsx
-│   │   │   │   └── wishlist/
-│   │   │   │       └── page.tsx
+│   │   │   │   ├── wishlist/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── layout.tsx
+│   │   │   ├── __assets/
+│   │   │   │   └── [...path]/
 │   │   │   ├── admin/
-│   │   │   │   ├── layout.tsx
-│   │   │   │   ├── page.tsx
 │   │   │   │   ├── chat/
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── orders/
 │   │   │   │   │   └── page.tsx
-│   │   │   │   └── products/
-│   │   │   │       └── page.tsx
-│   │   │   └── asset-proxy/
-│   │   │       └── [...path]/
-│   │   │           └── route.ts
+│   │   │   │   ├── products/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── page.tsx
+│   │   │   ├── asset-proxy/
+│   │   │   │   └── [...path]/
+│   │   │   │       └── route.ts
+│   │   │   ├── globals.css
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
 │   │   ├── components/
 │   │   │   ├── admin/
 │   │   │   │   ├── admin-header-nav.tsx
@@ -659,6 +661,19 @@ smartphone-shop/
 │   ├── tests/
 │   │   ├── auth.spec.ts
 │   │   └── checkout.spec.ts
+│   ├── .env.example
+│   ├── .env.local
+│   ├── .gitignore
+│   ├── AGENTS.md
+│   ├── CLAUDE.md
+│   ├── eslint.config.mjs
+│   ├── next.config.ts
+│   ├── next-env.d.ts
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── playwright.config.ts
+│   ├── postcss.config.mjs
+│   ├── README.md
 │   └── tsconfig.json
 ├── monitoring/
 │   ├── alertmanager/
@@ -668,9 +683,9 @@ smartphone-shop/
 │   ├── grafana/
 │   │   └── provisioning/
 │   │       ├── dashboards/
-│   │       │   ├── dashboard.yml
-│   │       │   └── json/
-│   │       │       └── smartphone-shop-overview.json
+│   │       │   ├── json/
+│   │       │   │   └── smartphone-shop-overview.json
+│   │       │   └── dashboard.yml
 │   │       └── datasources/
 │   │           └── prometheus.yml
 │   └── prometheus.yml
@@ -687,149 +702,36 @@ smartphone-shop/
 ├── mvnw.cmd
 ├── pom.xml
 └── README.md
+
 ```
 
-### Support and operations detail
+### Notes on structure
 
-- `docs/portfolio.md`
-  - Project narrative for portfolio/interview presentation.
-- `docs/screenshots/README.md`
-  - Screenshot capture checklist.
-- `monitoring/`
-  - Prometheus, Grafana, Alertmanager config, dashboards, and alert rules.
-- `scripts/`
-  - Local startup/orchestration scripts for infra, backend, and frontend.
-- `.github/workflows/`
-  - CI workflow definitions.
+- `frontend-next/` is the active frontend for all storefront and admin journeys.
+- `frontend/` no longer hosts active Thymeleaf flows; it is kept for shared static image/icon assets loaded by backend mappings.
+- Backend source files are not under default Maven `src/main/java`; they are mapped from `backend/src/main/java` in `pom.xml`.
+- Monitoring and alerting configs are fully versioned in `monitoring/`.
 
-### Legacy structure snapshot
+### Local/generated artifacts (ignored)
 
-```text
-smartphone-shop/
-├── 📁 .data/
-│   └── 📁 logs/                        (local runtime logs)
-├── 📁 .github/
-│   └── 📁 workflows/
-│       └── 📄 smartphone-shop-ci.yml
-├── 📁 .mvn/
-│   └── 📁 wrapper/
-│       └── 📄 maven-wrapper.properties
-├── 📁 backend/
-│   └── 📁 src/
-│       ├── 📁 main/
-│       │   ├── 📁 java/io/github/ngtrphuc/smartphone_shop/
-│       │   │   ├── 📁 api/
-│       │   │   │   ├── 📁 dto/
-│       │   │   │   ├── 📄 ApiExceptionHandler.java
-│       │   │   │   └── 📄 ApiMapper.java
-│       │   │   ├── 📁 common/                 (exception, support)
-│       │   │   ├── 📁 config/
-│       │   │   ├── 📁 controller/
-│       │   │   │   ├── 📄 RootController.java
-│       │   │   │   └── 📁 api/v1/             (admin/auth/cart/chat/order/product/profile APIs)
-│       │   │   ├── 📁 event/
-│       │   │   ├── 📁 infrastructure/websocket/
-│       │   │   ├── 📁 model/
-│       │   │   ├── 📁 repository/
-│       │   │   │   └── 📁 spec/
-│       │   │   ├── 📁 security/
-│       │   │   ├── 📁 service/
-│       │   │   ├── 📄 DevFrontendBootstrap.java
-│       │   │   ├── 📄 DevInfrastructureBootstrap.java
-│       │   │   ├── 📄 Port8080Guard.java
-│       │   │   └── 📄 SmartphoneShopApplication.java
-│       │   └── 📁 resources/
-│       │       ├── 📁 db/migration/
-│       │       │   ├── 📄 V1__baseline_schema.sql
-│       │       │   ├── 📄 V2__performance_indexes.sql
-│       │       │   └── 📄 V3__idempotency_and_recommendation_indexes.sql
-│       │       ├── 📄 application.properties
-│       │       ├── 📄 application-dev.properties
-│       │       └── 📄 application-prod.properties
-│       └── 📁 test/
-│           ├── 📁 java/io/github/ngtrphuc/smartphone_shop/
-│           │   ├── 📁 common/
-│           │   ├── 📁 config/
-│           │   ├── 📁 controller/
-│           │   ├── 📁 model/
-│           │   ├── 📁 repository/
-│           │   ├── 📁 security/
-│           │   └── 📁 service/
-│           └── 📁 resources/
-│               └── 📄 application-test.properties
-├── 📁 frontend/
-│   ├── 📁 static/
-│   │   ├── 📁 customer/images/         (shared product + payment image assets)
-│   │   └── 📁 svg/griddy/              (legacy icon set)
-│   └── 📁 templates/                   (legacy placeholder; no active Thymeleaf runtime)
-├── 📁 frontend-next/
-│   ├── 📁 public/
-│   │   ├── 📁 griddy/
-│   │   └── 📁 payments/
-│   ├── 📁 src/
-│   │   ├── 📁 app/
-│   │   │   ├── 📁 (auth)/              (login/register)
-│   │   │   ├── 📁 (storefront)/        (products, cart, checkout, orders, wishlist, compare, chat)
-│   │   │   └── 📁 admin/               (dashboard, products, orders, chat)
-│   │   ├── 📁 components/
-│   │   │   ├── 📁 admin/
-│   │   │   ├── 📁 auth/
-│   │   │   ├── 📁 storefront/
-│   │   │   └── 📁 ui/
-│   │   ├── 📁 lib/
-│   │   │   ├── 📄 api.ts
-│   │   │   └── 📄 format.ts
-│   │   └── 📄 proxy.ts
-│   ├── 📁 tests/
-│   │   └── 📄 checkout.spec.ts
-│   ├── 📄 package.json
-│   ├── 📄 next.config.ts
-│   └── 📄 tsconfig.json
-├── 📁 docs/
-│   ├── 📄 portfolio.md
-│   └── 📄 screenshots/README.md
-├── 📁 monitoring/
-│   ├── 📁 alerts/
-│   │   └── 📄 smartphone-shop-alerts.yml
-│   ├── 📁 alertmanager/
-│   │   └── 📄 alertmanager.yml
-│   ├── 📁 grafana/provisioning/
-│   │   ├── 📁 dashboards/
-│   │   └── 📁 datasources/
-│   └── 📄 prometheus.yml
-├── 📁 scripts/
-│   ├── 📄 start-dev-infra.ps1
-│   ├── 📄 start-frontend-dev.ps1
-│   ├── 📄 start-dev-stack.ps1
-│   └── 📄 start-dev-stack.sh
-├── 📄 .editorconfig
-├── 📄 .gitattributes
-├── 📄 .gitignore
-├── 📄 docker-compose.yml
-├── 📄 mvnw
-├── 📄 mvnw.cmd
-├── 📄 pom.xml
-└── 📄 README.md
-```
-
-Local/generated artifacts intentionally excluded from source control:
+These are intentionally not committed and can be removed safely when cleaning workspace:
 
 - `.data/`
 - `target/`
 - `frontend-next/.next/`
 - `frontend-next/node_modules/`
+- `frontend-next/test-results/`
 - `*.log`
 
 ## Quality and Validation
 
 - Backend tests are located under `backend/src/test`
 - Frontend quality checks (lint/build) are managed inside `frontend-next/`
-- Latest local validation snapshot:
-  - `mvnw -Dtest=ProductCatalogSpecificationIntegrationTest test`: build success (test is skipped automatically when Docker/Testcontainers is unavailable)
-  - `mvnw -Dtest=ApiRateLimitFilterTest,LoginRateLimitFilterTest,OrderServiceTest,AssetUrlResolverTest,ProductApiControllerTest,AuthApiControllerTest test`: passing
-  - `mvnw test`: passing
-  - `cd frontend-next && npm run lint`: passing (1 existing non-blocking hook warning in `compare/page.tsx`)
-  - `cd frontend-next && npm run test:e2e`: passing (2 checkout flow tests)
+- Latest local validation snapshot (updated: 2026-04-23):
+  - `mvnw test`: passing (`BUILD SUCCESS`, 111 tests, 0 failures, 0 errors, 1 skipped)
+  - `cd frontend-next && npm run lint`: passing
+  - `cd frontend-next && npm run build`: passing
+  - `cd frontend-next && npm run test:e2e`: not re-run in this refresh cycle
 
 ## Design Decisions
 

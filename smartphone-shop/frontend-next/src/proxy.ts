@@ -42,7 +42,7 @@ export function proxy(request: NextRequest) {
 
   if ((requiresCustomerAuth || requiresAdminAuth) && (!token || tokenExpired)) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
+    loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     if (tokenExpired) {
       const response = NextResponse.redirect(loginUrl);
       response.cookies.delete("jwt");

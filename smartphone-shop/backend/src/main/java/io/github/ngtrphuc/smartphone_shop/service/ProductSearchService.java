@@ -7,7 +7,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -18,6 +17,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,6 +37,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 public class ProductSearchService {
 
     private static final Logger log = LoggerFactory.getLogger(ProductSearchService.class);
+    private static final int SYNC_BATCH_SIZE = 200;
 
     private final ProductSearchProperties properties;
     private final ProductRepository productRepository;
@@ -122,15 +125,32 @@ public class ProductSearchService {
         }
         try {
             ensureIndex();
-            Collection<Product> products = productRepository.findAll();
-            ArrayNode documents = objectMapper.createArrayNode();
-            for (Product product : products) {
-                if (product != null && product.getId() != null) {
-                    documents.add(toDocument(product));
+            int syncedCount = 0;
+            int pageNumber = 0;
+            Page<Product> page;
+            do {
+                page = productRepository.findAll(PageRequest.of(
+                        pageNumber,
+                        SYNC_BATCH_SIZE,
+                        Sort.by(Sort.Order.asc("id"))));
+                if (!page.hasContent()) {
+                    break;
                 }
-            }
-            sendJsonRequest("POST", indexPath() + "/documents?primaryKey=id", documents);
-            log.info("Synchronized {} products to Meilisearch index '{}'.", documents.size(), properties.getIndexName());
+                ArrayNode documents = objectMapper.createArrayNode();
+                for (Product product : page.getContent()) {
+                    if (product != null && product.getId() != null) {
+                        documents.add(toDocument(product));
+                    }
+                }
+                if (!documents.isEmpty()) {
+                    sendJsonRequest("POST", indexPath() + "/documents?primaryKey=id", documents);
+                    syncedCount += documents.size();
+                }
+                pageNumber++;
+            } while (page.hasNext());
+            log.info("Synchronized {} products to Meilisearch index '{}' in batched mode.",
+                    syncedCount,
+                    properties.getIndexName());
         } catch (Exception ex) {
             log.warn("Failed to synchronize product catalog to Meilisearch. Cause: {}", rootCauseMessage(ex));
         }
