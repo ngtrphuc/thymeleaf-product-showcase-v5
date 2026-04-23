@@ -85,6 +85,15 @@ public final class ProductCatalogSpecifications {
         Expression<String> storageLower = cb.lower(cb.coalesce(root.get("storage"), ""));
         return switch (storage) {
             case "1tb" -> cb.or(like(cb, storageLower, "%1tb%"), like(cb, storageLower, "%1 tb%"));
+            case "over1tb" -> cb.or(
+                    like(cb, storageLower, "%2tb%"),
+                    like(cb, storageLower, "%2 tb%"),
+                    like(cb, storageLower, "%3tb%"),
+                    like(cb, storageLower, "%3 tb%"),
+                    like(cb, storageLower, "%4tb%"),
+                    like(cb, storageLower, "%4 tb%"),
+                    like(cb, storageLower, "%1536gb%"),
+                    like(cb, storageLower, "%2048gb%"));
             default -> like(cb, storageLower, "%" + storage + "%");
         };
     }
@@ -131,6 +140,33 @@ public final class ProductCatalogSpecifications {
     private static Predicate buildScreenSizePredicate(Root<Product> root, CriteriaBuilder cb, String screenSize) {
         Expression<String> sizeLower = cb.lower(cb.coalesce(root.get("size"), ""));
         return switch (screenSize) {
+            case "6.1to6.3" -> cb.or(
+                    like(cb, sizeLower, "6.1%"),
+                    like(cb, sizeLower, "6.2%"),
+                    like(cb, sizeLower, "6.3%"));
+            case "6.4to6.6" -> cb.or(
+                    like(cb, sizeLower, "6.4%"),
+                    like(cb, sizeLower, "6.5%"),
+                    like(cb, sizeLower, "6.6%"));
+            case "6.7to6.9" -> cb.or(
+                    like(cb, sizeLower, "6.7%"),
+                    like(cb, sizeLower, "6.8%"),
+                    like(cb, sizeLower, "6.9%"));
+            case "over6.6" -> cb.or(
+                    like(cb, sizeLower, "6.7%"),
+                    like(cb, sizeLower, "6.8%"),
+                    like(cb, sizeLower, "6.9%"),
+                    like(cb, sizeLower, "7%"),
+                    like(cb, sizeLower, "8%"),
+                    like(cb, sizeLower, "9%"));
+            case "over7.0" -> cb.or(
+                    like(cb, sizeLower, "7%"),
+                    like(cb, sizeLower, "8%"),
+                    like(cb, sizeLower, "9%"));
+            case "7.0to7.9" -> like(cb, sizeLower, "7%");
+            case "8.0plus" -> cb.or(
+                    like(cb, sizeLower, "8%"),
+                    like(cb, sizeLower, "9%"));
             case "under6.1" -> cb.or(
                     like(cb, sizeLower, "0%"),
                     like(cb, sizeLower, "1%"),
@@ -178,6 +214,10 @@ public final class ProductCatalogSpecifications {
 
     private static Predicate buildBatteryRangePredicate(CriteriaBuilder cb, Expression<String> batteryValue, String batteryRange) {
         return switch (batteryRange) {
+            case "under3500" -> cb.lessThan(batteryValue, paddedNumber(3500));
+            case "3500to3999" -> cb.and(
+                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(3500)),
+                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(3999)));
             case "under4000" -> cb.lessThan(batteryValue, paddedNumber(4000));
             case "4000to4499" -> cb.and(
                     cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4000)),
@@ -188,6 +228,13 @@ public final class ProductCatalogSpecifications {
             case "5000to5499" -> cb.and(
                     cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000)),
                     cb.lessThanOrEqualTo(batteryValue, paddedNumber(5499)));
+            case "5500to5999" -> cb.and(
+                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5500)),
+                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(5999)));
+            case "6000to6999" -> cb.and(
+                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(6000)),
+                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(6999)));
+            case "over7000" -> cb.greaterThanOrEqualTo(batteryValue, paddedNumber(7000));
             case "over5500" -> cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5500));
             case "under5000" -> cb.lessThan(batteryValue, paddedNumber(5000));
             case "over5000" -> cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000));

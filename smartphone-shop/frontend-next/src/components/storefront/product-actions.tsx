@@ -29,8 +29,6 @@ export function ProductActions({
   maxQuantity,
 }: ProductActionsProps) {
   const router = useRouter();
-  const inversePrimaryButtonClass =
-    "border border-white/10 bg-white text-black hover:border-white/12 hover:bg-[var(--color-surface-soft)] hover:text-white";
   const inverseSecondaryButtonClass =
     "border border-[var(--color-border-2)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] hover:border-white/10 hover:bg-white hover:text-black";
   const [quantity, setQuantity] = useState(1);
@@ -92,7 +90,7 @@ export function ProductActions({
           </button>
           <Link
             href={editHref}
-            className={`ui-btn ui-btn-primary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inversePrimaryButtonClass}`}
+            className={`ui-btn ui-btn-secondary inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm ${inverseSecondaryButtonClass}`}
           >
             <GriddyIcon name="box" />
             Edit

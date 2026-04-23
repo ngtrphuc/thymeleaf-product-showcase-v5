@@ -151,6 +151,27 @@ public class ProductApiController {
         if (priceRange != null) {
             switch (priceRange) {
                 case "under150" -> resolvedPriceMax = resolvedPriceMax == null ? 149999.0 : resolvedPriceMax;
+                case "150to179" -> {
+                    resolvedPriceMin = resolveMin(resolvedPriceMin, 150000.0);
+                    resolvedPriceMax = resolveMax(resolvedPriceMax, 179999.0);
+                }
+                case "180to209" -> {
+                    resolvedPriceMin = resolveMin(resolvedPriceMin, 180000.0);
+                    resolvedPriceMax = resolveMax(resolvedPriceMax, 209999.0);
+                }
+                case "210to239" -> {
+                    resolvedPriceMin = resolveMin(resolvedPriceMin, 210000.0);
+                    resolvedPriceMax = resolveMax(resolvedPriceMax, 239999.0);
+                }
+                case "240to269" -> {
+                    resolvedPriceMin = resolveMin(resolvedPriceMin, 240000.0);
+                    resolvedPriceMax = resolveMax(resolvedPriceMax, 269999.0);
+                }
+                case "270to299" -> {
+                    resolvedPriceMin = resolveMin(resolvedPriceMin, 270000.0);
+                    resolvedPriceMax = resolveMax(resolvedPriceMax, 299999.0);
+                }
+                case "over300" -> resolvedPriceMin = resolveMin(resolvedPriceMin, 300000.0);
                 case "150to200" -> {
                     resolvedPriceMin = resolveMin(resolvedPriceMin, 150000.0);
                     resolvedPriceMax = resolveMax(resolvedPriceMax, 199999.0);

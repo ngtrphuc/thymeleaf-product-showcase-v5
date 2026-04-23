@@ -689,6 +689,129 @@ smartphone-shop/
 └── README.md
 ```
 
+### Support and operations detail
+
+- `docs/portfolio.md`
+  - Project narrative for portfolio/interview presentation.
+- `docs/screenshots/README.md`
+  - Screenshot capture checklist.
+- `monitoring/`
+  - Prometheus, Grafana, Alertmanager config, dashboards, and alert rules.
+- `scripts/`
+  - Local startup/orchestration scripts for infra, backend, and frontend.
+- `.github/workflows/`
+  - CI workflow definitions.
+
+### Legacy structure snapshot
+
+```text
+smartphone-shop/
+├── 📁 .data/
+│   └── 📁 logs/                        (local runtime logs)
+├── 📁 .github/
+│   └── 📁 workflows/
+│       └── 📄 smartphone-shop-ci.yml
+├── 📁 .mvn/
+│   └── 📁 wrapper/
+│       └── 📄 maven-wrapper.properties
+├── 📁 backend/
+│   └── 📁 src/
+│       ├── 📁 main/
+│       │   ├── 📁 java/io/github/ngtrphuc/smartphone_shop/
+│       │   │   ├── 📁 api/
+│       │   │   │   ├── 📁 dto/
+│       │   │   │   ├── 📄 ApiExceptionHandler.java
+│       │   │   │   └── 📄 ApiMapper.java
+│       │   │   ├── 📁 common/                 (exception, support)
+│       │   │   ├── 📁 config/
+│       │   │   ├── 📁 controller/
+│       │   │   │   ├── 📄 RootController.java
+│       │   │   │   └── 📁 api/v1/             (admin/auth/cart/chat/order/product/profile APIs)
+│       │   │   ├── 📁 event/
+│       │   │   ├── 📁 infrastructure/websocket/
+│       │   │   ├── 📁 model/
+│       │   │   ├── 📁 repository/
+│       │   │   │   └── 📁 spec/
+│       │   │   ├── 📁 security/
+│       │   │   ├── 📁 service/
+│       │   │   ├── 📄 DevFrontendBootstrap.java
+│       │   │   ├── 📄 DevInfrastructureBootstrap.java
+│       │   │   ├── 📄 Port8080Guard.java
+│       │   │   └── 📄 SmartphoneShopApplication.java
+│       │   └── 📁 resources/
+│       │       ├── 📁 db/migration/
+│       │       │   ├── 📄 V1__baseline_schema.sql
+│       │       │   ├── 📄 V2__performance_indexes.sql
+│       │       │   └── 📄 V3__idempotency_and_recommendation_indexes.sql
+│       │       ├── 📄 application.properties
+│       │       ├── 📄 application-dev.properties
+│       │       └── 📄 application-prod.properties
+│       └── 📁 test/
+│           ├── 📁 java/io/github/ngtrphuc/smartphone_shop/
+│           │   ├── 📁 common/
+│           │   ├── 📁 config/
+│           │   ├── 📁 controller/
+│           │   ├── 📁 model/
+│           │   ├── 📁 repository/
+│           │   ├── 📁 security/
+│           │   └── 📁 service/
+│           └── 📁 resources/
+│               └── 📄 application-test.properties
+├── 📁 frontend/
+│   ├── 📁 static/
+│   │   ├── 📁 customer/images/         (shared product + payment image assets)
+│   │   └── 📁 svg/griddy/              (legacy icon set)
+│   └── 📁 templates/                   (legacy placeholder; no active Thymeleaf runtime)
+├── 📁 frontend-next/
+│   ├── 📁 public/
+│   │   ├── 📁 griddy/
+│   │   └── 📁 payments/
+│   ├── 📁 src/
+│   │   ├── 📁 app/
+│   │   │   ├── 📁 (auth)/              (login/register)
+│   │   │   ├── 📁 (storefront)/        (products, cart, checkout, orders, wishlist, compare, chat)
+│   │   │   └── 📁 admin/               (dashboard, products, orders, chat)
+│   │   ├── 📁 components/
+│   │   │   ├── 📁 admin/
+│   │   │   ├── 📁 auth/
+│   │   │   ├── 📁 storefront/
+│   │   │   └── 📁 ui/
+│   │   ├── 📁 lib/
+│   │   │   ├── 📄 api.ts
+│   │   │   └── 📄 format.ts
+│   │   └── 📄 proxy.ts
+│   ├── 📁 tests/
+│   │   └── 📄 checkout.spec.ts
+│   ├── 📄 package.json
+│   ├── 📄 next.config.ts
+│   └── 📄 tsconfig.json
+├── 📁 docs/
+│   ├── 📄 portfolio.md
+│   └── 📄 screenshots/README.md
+├── 📁 monitoring/
+│   ├── 📁 alerts/
+│   │   └── 📄 smartphone-shop-alerts.yml
+│   ├── 📁 alertmanager/
+│   │   └── 📄 alertmanager.yml
+│   ├── 📁 grafana/provisioning/
+│   │   ├── 📁 dashboards/
+│   │   └── 📁 datasources/
+│   └── 📄 prometheus.yml
+├── 📁 scripts/
+│   ├── 📄 start-dev-infra.ps1
+│   ├── 📄 start-frontend-dev.ps1
+│   ├── 📄 start-dev-stack.ps1
+│   └── 📄 start-dev-stack.sh
+├── 📄 .editorconfig
+├── 📄 .gitattributes
+├── 📄 .gitignore
+├── 📄 docker-compose.yml
+├── 📄 mvnw
+├── 📄 mvnw.cmd
+├── 📄 pom.xml
+└── 📄 README.md
+```
+
 Local/generated artifacts intentionally excluded from source control:
 
 - `.data/`

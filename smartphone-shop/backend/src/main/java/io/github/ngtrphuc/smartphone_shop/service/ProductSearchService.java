@@ -64,6 +64,12 @@ public class ProductSearchService {
             ObjectNode payload = objectMapper.createObjectNode();
             payload.put("q", normalizedKeyword);
             payload.put("limit", Math.max(1, Math.min(limit, properties.getSearchLimit())));
+            ArrayNode facets = payload.putArray("facets");
+            facets.add("brand");
+            facets.add("storage");
+            facets.add("os");
+            ArrayNode attributesToRetrieve = payload.putArray("attributesToRetrieve");
+            attributesToRetrieve.add("id");
             JsonNode root = sendJsonRequest("POST", indexPath() + "/search", payload);
             ArrayNode hits = root != null && root.has("hits") && root.get("hits").isArray()
                     ? (ArrayNode) root.get("hits")
@@ -154,15 +160,44 @@ public class ProductSearchService {
             ArrayNode searchable = settings.putArray("searchableAttributes");
             searchable.add("name");
             searchable.add("brand");
-            searchable.add("description");
             searchable.add("os");
             searchable.add("chipset");
             searchable.add("storage");
+            searchable.add("description");
 
             ArrayNode filterable = settings.putArray("filterableAttributes");
             filterable.add("brand");
+            filterable.add("storage");
+            filterable.add("os");
             filterable.add("price");
             filterable.add("stock");
+
+            ArrayNode sortable = settings.putArray("sortableAttributes");
+            sortable.add("price");
+            sortable.add("name");
+            sortable.add("stock");
+
+            ArrayNode rankingRules = settings.putArray("rankingRules");
+            rankingRules.add("words");
+            rankingRules.add("typo");
+            rankingRules.add("proximity");
+            rankingRules.add("attribute");
+            rankingRules.add("sort");
+            rankingRules.add("exactness");
+
+            ObjectNode faceting = settings.putObject("faceting");
+            faceting.put("maxValuesPerFacet", 40);
+            ObjectNode facetSort = faceting.putObject("sortFacetValuesBy");
+            facetSort.put("brand", "alpha");
+            facetSort.put("storage", "alpha");
+            facetSort.put("os", "alpha");
+            facetSort.put("*", "count");
+
+            ObjectNode typoTolerance = settings.putObject("typoTolerance");
+            typoTolerance.put("enabled", true);
+            ObjectNode minWordSizeForTypos = typoTolerance.putObject("minWordSizeForTypos");
+            minWordSizeForTypos.put("oneTypo", 4);
+            minWordSizeForTypos.put("twoTypos", 8);
 
             sendJsonRequest("PATCH", indexPath() + "/settings", settings, 200, 202);
             indexEnsured = true;

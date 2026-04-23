@@ -30,7 +30,7 @@ wait_until() {
 }
 
 echo "[1/4] Starting Docker infra..."
-docker compose -f "${REPO_ROOT}/docker-compose.yml" up -d postgres redis meilisearch
+docker compose -f "${REPO_ROOT}/docker-compose.yml" up -d postgres redis meilisearch jaeger
 
 echo "[2/4] Ensuring frontend is healthy on :3000..."
 if ! is_http_ready "http://localhost:3000/products"; then
@@ -68,3 +68,4 @@ echo "[4/4] Startup verification complete."
 echo "- Frontend: http://localhost:3000"
 echo "- Backend:  http://localhost:8080"
 echo "- API docs: http://localhost:8080/swagger-ui/index.html"
+echo "- Jaeger:   http://localhost:16686"

@@ -95,6 +95,21 @@ function Wait-UntilMeilisearchReady {
     return $false
 }
 
+function Wait-UntilJaegerReady {
+    param(
+        [int]$TimeoutSeconds = 90
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (Test-TcpPortOpen -TargetHost "127.0.0.1" -Port 4318) {
+            return $true
+        }
+        Start-Sleep -Seconds 1
+    }
+    return $false
+}
+
 if (-not (Test-DockerReady)) {
     Start-DockerDesktop
     if (-not (Wait-UntilDockerReady -TimeoutSeconds 120)) {
@@ -104,7 +119,7 @@ if (-not (Test-DockerReady)) {
 
 Push-Location $repoRoot
 try {
-    docker compose up -d postgres redis meilisearch
+    docker compose up -d postgres redis meilisearch jaeger
     if ($LASTEXITCODE -ne 0) {
         throw "docker compose up failed."
     }
@@ -118,5 +133,8 @@ if (-not (Wait-UntilPostgresReady -TimeoutSeconds 90)) {
 if (-not (Wait-UntilMeilisearchReady -TimeoutSeconds 90)) {
     throw "Meilisearch (localhost:7700) is not ready yet."
 }
+if (-not (Wait-UntilJaegerReady -TimeoutSeconds 90)) {
+    throw "Jaeger OTLP endpoint (localhost:4318) is not ready yet."
+}
 
-Write-Host "Dev infra ready: Docker + PostgreSQL + Redis + Meilisearch."
+Write-Host "Dev infra ready: Docker + PostgreSQL + Redis + Meilisearch + Jaeger."
