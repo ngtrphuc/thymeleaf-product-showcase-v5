@@ -16,8 +16,6 @@ type CatalogFiltersProps = {
     priceMin: string;
     priceMax: string;
     batteryRange: string;
-    batteryMin: string;
-    batteryMax: string;
     screenSize: string;
   };
 };
@@ -49,14 +47,19 @@ const PRICE_RANGE_OPTIONS: Option[] = [
 
 const BATTERY_RANGE_OPTIONS: Option[] = [
   { label: "Any battery", value: "" },
-  { label: "Under 5000 mAh", value: "under5000" },
-  { label: "5000+ mAh", value: "over5000" },
+  { label: "Under 4,000 mAh", value: "under4000" },
+  { label: "4,000 - 4,499 mAh", value: "4000to4499" },
+  { label: "4,500 - 4,999 mAh", value: "4500to4999" },
+  { label: "5,000 - 5,499 mAh", value: "5000to5499" },
+  { label: "5,500+ mAh", value: "over5500" },
 ];
 
 const SCREEN_SIZE_OPTIONS: Option[] = [
   { label: "Any screen size", value: "" },
-  { label: "Under 6.5 inch", value: "under6.5" },
-  { label: "6.5 - 6.8 inch", value: "6.5to6.8" },
+  { label: "Under 6.1 inch", value: "under6.1" },
+  { label: "6.1 - 6.4 inch", value: "6.1to6.4" },
+  { label: "6.5 - 6.6 inch", value: "6.5to6.6" },
+  { label: "6.7 - 6.8 inch", value: "6.7to6.8" },
   { label: "Over 6.8 inch", value: "over6.8" },
 ];
 
@@ -80,8 +83,6 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
   const [priceMin, setPriceMin] = useState(initialValues.priceMin);
   const [priceMax, setPriceMax] = useState(initialValues.priceMax);
   const [batteryRange, setBatteryRange] = useState(initialValues.batteryRange);
-  const [batteryMin, setBatteryMin] = useState(initialValues.batteryMin);
-  const [batteryMax, setBatteryMax] = useState(initialValues.batteryMax);
   const [screenSize, setScreenSize] = useState(initialValues.screenSize);
 
   const brandOptions = useMemo<Option[]>(
@@ -99,8 +100,6 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
     filterValue(params, "priceMin", priceMin);
     filterValue(params, "priceMax", priceMax);
     filterValue(params, "batteryRange", batteryRange);
-    filterValue(params, "batteryMin", batteryMin);
-    filterValue(params, "batteryMax", batteryMax);
     filterValue(params, "screenSize", screenSize);
     params.set("page", "0");
 
@@ -117,8 +116,6 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
     setPriceMin("");
     setPriceMax("");
     setBatteryRange("");
-    setBatteryMin("");
-    setBatteryMax("");
     setScreenSize("");
     router.push(pathname);
   }
@@ -126,7 +123,7 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
   return (
     <section className="glass-panel rounded-3xl p-5">
       <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        <label className="flex flex-col gap-2 md:col-span-2 lg:col-span-1">
+        <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-slate-700">Keyword</span>
           <input
             value={keyword}
@@ -136,8 +133,8 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
           />
         </label>
 
-        <FilterDropdown label="Brand" options={brandOptions} value={brand} onChange={setBrand} />
         <FilterDropdown label="Sort" options={SORT_OPTIONS} value={sort} onChange={setSort} />
+        <FilterDropdown label="Brand" options={brandOptions} value={brand} onChange={setBrand} />
         <FilterDropdown label="Storage" options={STORAGE_OPTIONS} value={storage} onChange={setStorage} />
 
         <FilterDropdown label="Price Range" options={PRICE_RANGE_OPTIONS} value={priceRange} onChange={setPriceRange} />
@@ -165,29 +162,6 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
         </label>
 
         <FilterDropdown label="Battery Range" options={BATTERY_RANGE_OPTIONS} value={batteryRange} onChange={setBatteryRange} />
-        <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Battery Min (mAh)</span>
-          <input
-            type="number"
-            min="0"
-            value={batteryMin}
-            onChange={(event) => setBatteryMin(event.target.value)}
-            placeholder="Optional"
-            className="ui-input px-3 py-2 text-sm"
-          />
-        </label>
-        <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Battery Max (mAh)</span>
-          <input
-            type="number"
-            min="0"
-            value={batteryMax}
-            onChange={(event) => setBatteryMax(event.target.value)}
-            placeholder="Optional"
-            className="ui-input px-3 py-2 text-sm"
-          />
-        </label>
-
         <FilterDropdown label="Screen Size" options={SCREEN_SIZE_OPTIONS} value={screenSize} onChange={setScreenSize} />
       </div>
 

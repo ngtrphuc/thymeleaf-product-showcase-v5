@@ -62,10 +62,10 @@ class ProductCatalogSpecificationIntegrationTest {
                         null,
                         "apple",
                         null,
-                        "over5000",
-                        5000,
+                        "5000to5499",
                         null,
-                        "6.5to6.8"),
+                        null,
+                        "6.7to6.8"),
                 PageRequest.of(0, 10, Sort.by(Sort.Order.asc("name").ignoreCase())));
 
         assertEquals(1, page.getTotalElements());

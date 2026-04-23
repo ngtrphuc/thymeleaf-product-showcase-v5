@@ -62,10 +62,8 @@ public final class ProductCatalogSpecifications {
 
             if ((batteryRange != null && !batteryRange.isBlank()) || batteryMin != null || batteryMax != null) {
                 Expression<String> batteryValue = batteryComparableValue(root, cb);
-                if ("under5000".equals(batteryRange)) {
-                    predicates.add(cb.lessThan(batteryValue, paddedNumber(5000)));
-                } else if ("over5000".equals(batteryRange)) {
-                    predicates.add(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000)));
+                if (batteryRange != null && !batteryRange.isBlank()) {
+                    predicates.add(buildBatteryRangePredicate(cb, batteryValue, batteryRange.trim()));
                 }
                 if (batteryMin != null) {
                     predicates.add(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(batteryMin)));
@@ -133,6 +131,25 @@ public final class ProductCatalogSpecifications {
     private static Predicate buildScreenSizePredicate(Root<Product> root, CriteriaBuilder cb, String screenSize) {
         Expression<String> sizeLower = cb.lower(cb.coalesce(root.get("size"), ""));
         return switch (screenSize) {
+            case "under6.1" -> cb.or(
+                    like(cb, sizeLower, "0%"),
+                    like(cb, sizeLower, "1%"),
+                    like(cb, sizeLower, "2%"),
+                    like(cb, sizeLower, "3%"),
+                    like(cb, sizeLower, "4%"),
+                    like(cb, sizeLower, "5%"),
+                    like(cb, sizeLower, "6.0%"));
+            case "6.1to6.4" -> cb.or(
+                    like(cb, sizeLower, "6.1%"),
+                    like(cb, sizeLower, "6.2%"),
+                    like(cb, sizeLower, "6.3%"),
+                    like(cb, sizeLower, "6.4%"));
+            case "6.5to6.6" -> cb.or(
+                    like(cb, sizeLower, "6.5%"),
+                    like(cb, sizeLower, "6.6%"));
+            case "6.7to6.8" -> cb.or(
+                    like(cb, sizeLower, "6.7%"),
+                    like(cb, sizeLower, "6.8%"));
             case "under6.5" -> cb.or(
                     like(cb, sizeLower, "0%"),
                     like(cb, sizeLower, "1%"),
@@ -155,6 +172,25 @@ public final class ProductCatalogSpecifications {
                     like(cb, sizeLower, "7%"),
                     like(cb, sizeLower, "8%"),
                     like(cb, sizeLower, "9%"));
+            default -> cb.conjunction();
+        };
+    }
+
+    private static Predicate buildBatteryRangePredicate(CriteriaBuilder cb, Expression<String> batteryValue, String batteryRange) {
+        return switch (batteryRange) {
+            case "under4000" -> cb.lessThan(batteryValue, paddedNumber(4000));
+            case "4000to4499" -> cb.and(
+                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4000)),
+                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(4499)));
+            case "4500to4999" -> cb.and(
+                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4500)),
+                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(4999)));
+            case "5000to5499" -> cb.and(
+                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000)),
+                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(5499)));
+            case "over5500" -> cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5500));
+            case "under5000" -> cb.lessThan(batteryValue, paddedNumber(5000));
+            case "over5000" -> cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000));
             default -> cb.conjunction();
         };
     }

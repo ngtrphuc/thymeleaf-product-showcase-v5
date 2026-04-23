@@ -42,8 +42,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const priceMin = readFirst(resolved.priceMin)?.trim() ?? "";
   const priceMax = readFirst(resolved.priceMax)?.trim() ?? "";
   const batteryRange = readFirst(resolved.batteryRange)?.trim() ?? "";
-  const batteryMin = readFirst(resolved.batteryMin)?.trim() ?? "";
-  const batteryMax = readFirst(resolved.batteryMax)?.trim() ?? "";
   const screenSize = readFirst(resolved.screenSize)?.trim() ?? "";
   const page = positiveInt(readFirst(resolved.page), 0);
   const pageSize = resolvePageSize(readFirst(resolved.pageSize)?.trim());
@@ -57,8 +55,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   if (priceMin.length > 0) query.set("priceMin", priceMin);
   if (priceMax.length > 0) query.set("priceMax", priceMax);
   if (batteryRange.length > 0) query.set("batteryRange", batteryRange);
-  if (batteryMin.length > 0) query.set("batteryMin", batteryMin);
-  if (batteryMax.length > 0) query.set("batteryMax", batteryMax);
   if (screenSize.length > 0) query.set("screenSize", screenSize);
   query.set("page", String(page));
   query.set("pageSize", String(pageSize));
@@ -103,8 +99,6 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           priceMin,
           priceMax,
           batteryRange,
-          batteryMin,
-          batteryMax,
           screenSize,
         }}
       />
