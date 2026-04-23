@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -109,10 +110,17 @@ public class OrderIdempotencyService {
                         "The previous checkout attempt timed out. Please retry this request.");
             }
             throw new IllegalStateException(
-                    "A checkout with this idempotency key is already being processed. Please retry shortly.");
+                "A checkout with this idempotency key is already being processed. Please retry shortly.");
         }
         return orderRepository.findByIdWithItems(existing.getOrderId())
                 .orElseThrow(() -> new IllegalStateException("Existing idempotent order could not be loaded."));
+    }
+
+    @Scheduled(fixedDelayString = "${app.order.idempotency.cleanup-delay-ms:300000}")
+    @Transactional
+    public void cleanupStalePlaceholders() {
+        LocalDateTime cutoff = LocalDateTime.now().minus(STALE_PLACEHOLDER_TIMEOUT);
+        orderIdempotencyKeyRepository.deleteStalePlaceholders(cutoff);
     }
 
     private boolean isStalePlaceholder(OrderIdempotencyKey key) {

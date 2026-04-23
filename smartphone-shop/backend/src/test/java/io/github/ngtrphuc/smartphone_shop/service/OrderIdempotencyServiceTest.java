@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -124,8 +123,15 @@ class OrderIdempotencyServiceTest {
                 }));
 
         assertEquals("checkout failure", ex.getMessage());
-        verify(orderIdempotencyKeyRepository).saveAndFlush(any(OrderIdempotencyKey.class));
-        verify(orderIdempotencyKeyRepository).delete(any(OrderIdempotencyKey.class));
+        verify(orderIdempotencyKeyRepository).saveAndFlush(MockitoNullSafety.anyNonNull(OrderIdempotencyKey.class));
+        verify(orderIdempotencyKeyRepository).delete(MockitoNullSafety.anyNonNull(OrderIdempotencyKey.class));
+    }
+
+    @Test
+    void cleanupStalePlaceholders_shouldDeletePendingRowsBeforeCutoff() {
+        orderIdempotencyService.cleanupStalePlaceholders();
+
+        verify(orderIdempotencyKeyRepository).deleteStalePlaceholders(MockitoNullSafety.anyNonNull(LocalDateTime.class));
     }
 
     @Test

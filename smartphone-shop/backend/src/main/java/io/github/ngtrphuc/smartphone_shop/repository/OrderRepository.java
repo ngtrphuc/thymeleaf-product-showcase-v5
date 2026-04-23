@@ -50,7 +50,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             SELECT COUNT(o)
             FROM Order o
             WHERE o.userEmail = :email
-              AND LOWER(COALESCE(o.status, '')) = 'delivered'
+              AND o.status = 'delivered'
             """)
     long countDeliveredByUserEmail(@Param("email") String email);
 
@@ -58,7 +58,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             SELECT COUNT(o)
             FROM Order o
             WHERE o.userEmail = :email
-              AND LOWER(COALESCE(o.status, '')) NOT IN ('delivered', 'cancelled')
+              AND o.status NOT IN ('delivered', 'cancelled')
             """)
     long countPendingByUserEmail(@Param("email") String email);
 }

@@ -27,11 +27,13 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
     private final Cache<String, AttemptWindow> attemptsByClient;
     private final int maxAttempts;
     private final long windowMillis;
+    private final ClientIpResolver clientIpResolver;
 
     public LoginRateLimitFilter(
             @Value("${app.security.login-rate-limit.max-attempts:8}") int maxAttempts,
             @Value("${app.security.login-rate-limit.window-seconds:60}") long windowSeconds,
-            @Value("${app.security.login-rate-limit.max-clients:50000}") long maxClients) {
+            @Value("${app.security.login-rate-limit.max-clients:50000}") long maxClients,
+            ClientIpResolver clientIpResolver) {
         if (maxAttempts < 1) {
             throw new IllegalStateException("app.security.login-rate-limit.max-attempts must be greater than 0.");
         }
@@ -43,6 +45,7 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
         }
         this.maxAttempts = maxAttempts;
         this.windowMillis = windowSeconds * 1000L;
+        this.clientIpResolver = clientIpResolver;
         this.attemptsByClient = Caffeine.newBuilder()
                 .expireAfterWrite(windowSeconds, TimeUnit.SECONDS)
                 .maximumSize(maxClients)
@@ -64,7 +67,7 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         long now = System.currentTimeMillis();
-        String clientKey = resolveClientKey(request);
+        String clientKey = clientIpResolver.resolveClientKey(request);
 
         AttemptWindow updated = attemptsByClient.asMap().compute(clientKey, (key, existing) -> {
             if (existing == null || now - existing.windowStartMillis >= windowMillis) {
@@ -87,19 +90,6 @@ public class LoginRateLimitFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
-
-    private String resolveClientKey(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            String first = forwardedFor.split(",")[0].trim();
-            if (!first.isBlank()) {
-                return first;
-            }
-        }
-        String remoteAddr = request.getRemoteAddr();
-        return (remoteAddr == null || remoteAddr.isBlank()) ? "unknown" : remoteAddr;
-    }
-
     private record AttemptWindow(long windowStartMillis, int attempts) {
     }
 }

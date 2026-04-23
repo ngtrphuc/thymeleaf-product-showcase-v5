@@ -19,7 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @TestPropertySource(properties = {
         "app.security.api-rate-limit.enabled=true",
         "app.security.api-rate-limit.max-requests=2",
-        "app.security.api-rate-limit.window-seconds=300"
+        "app.security.api-rate-limit.window-seconds=300",
+        "app.security.trusted-proxies=127.0.0.1"
 })
 class ApiRateLimitFilterTest {
 
@@ -31,14 +32,26 @@ class ApiRateLimitFilterTest {
         String clientIp = "203.0.113.81";
 
         mockMvc.perform(get("/api/v1/products")
+                .with(request -> {
+                    request.setRemoteAddr("127.0.0.1");
+                    return request;
+                })
                 .header("X-Forwarded-For", clientIp))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/v1/products")
+                .with(request -> {
+                    request.setRemoteAddr("127.0.0.1");
+                    return request;
+                })
                 .header("X-Forwarded-For", clientIp))
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/v1/products")
+                .with(request -> {
+                    request.setRemoteAddr("127.0.0.1");
+                    return request;
+                })
                 .header("X-Forwarded-For", clientIp))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"))

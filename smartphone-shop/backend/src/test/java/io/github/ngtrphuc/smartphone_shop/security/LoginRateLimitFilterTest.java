@@ -21,7 +21,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
         "app.security.login-rate-limit.max-attempts=2",
-        "app.security.login-rate-limit.window-seconds=300"
+        "app.security.login-rate-limit.window-seconds=300",
+        "app.security.trusted-proxies=127.0.0.1"
 })
 class LoginRateLimitFilterTest {
 
@@ -37,18 +38,30 @@ class LoginRateLimitFilterTest {
         MediaType jsonMediaType = Objects.requireNonNull(MediaType.APPLICATION_JSON);
 
         mockMvc.perform(post("/api/v1/auth/login")
+                .with(request -> {
+                    request.setRemoteAddr("127.0.0.1");
+                    return request;
+                })
                 .header("X-Forwarded-For", clientIp)
                 .contentType(jsonMediaType)
                 .content(requestBody))
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/v1/auth/login")
+                .with(request -> {
+                    request.setRemoteAddr("127.0.0.1");
+                    return request;
+                })
                 .header("X-Forwarded-For", clientIp)
                 .contentType(jsonMediaType)
                 .content(requestBody))
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/v1/auth/login")
+                .with(request -> {
+                    request.setRemoteAddr("127.0.0.1");
+                    return request;
+                })
                 .header("X-Forwarded-For", clientIp)
                 .contentType(jsonMediaType)
                 .content(requestBody))

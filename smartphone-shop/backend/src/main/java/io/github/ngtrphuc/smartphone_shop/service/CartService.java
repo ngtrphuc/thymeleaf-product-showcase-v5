@@ -175,39 +175,11 @@ public class CartService {
 
     @Transactional
     public void cleanupDbCart(String email) {
-        List<CartItemEntity> entities = cartItemRepository.findByUserEmail(email);
-        if (entities.isEmpty()) {
+        if (!isLoggedIn(email)) {
             return;
         }
-
-        List<Long> productIds = entities.stream().map(CartItemEntity::getProductId).toList();
-        Map<Long, Product> productMap = productRepository.findAllByIdIn(productIds)
-                .stream()
-                .filter(p -> p.getId() != null)
-                .collect(Collectors.toMap(Product::getId, p -> p));
-
-        List<CartItemEntity> removableItems = new ArrayList<>();
-        List<CartItemEntity> adjustedItems = new ArrayList<>();
-        for (CartItemEntity entity : entities) {
-            Product product = productMap.get(entity.getProductId());
-            if (product == null || stockOf(product) <= 0) {
-                removableItems.add(entity);
-                continue;
-            }
-
-            int safeQuantity = Math.max(1, Math.min(entity.getQuantity(), stockOf(product)));
-            if (safeQuantity != entity.getQuantity()) {
-                entity.setQuantity(safeQuantity);
-                adjustedItems.add(entity);
-            }
-        }
-
-        if (!removableItems.isEmpty()) {
-            cartItemRepository.deleteAll(removableItems);
-        }
-        if (!adjustedItems.isEmpty()) {
-            cartItemRepository.saveAll(adjustedItems);
-        }
+        cartItemRepository.deleteUnavailableItemsByUserEmail(email);
+        cartItemRepository.clampQuantitiesToAvailableStockByUserEmail(email);
     }
 
     @Transactional
@@ -371,9 +343,8 @@ public class CartService {
     @Scheduled(fixedDelayString = "${app.cart.cleanup-delay-ms:300000}")
     @Transactional
     public void cleanupDbCartForAllUsers() {
-        for (String email : cartItemRepository.findDistinctUserEmails()) {
-            cleanupDbCart(email);
-        }
+        cartItemRepository.deleteUnavailableItems();
+        cartItemRepository.clampQuantitiesToAvailableStock();
     }
 
     public double calculateTotal(List<CartItem> cart) {

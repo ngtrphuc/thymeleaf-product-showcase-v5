@@ -31,13 +31,15 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
     private final int maxRequests;
     private final long windowMillis;
     private final List<String> excludedPaths;
+    private final ClientIpResolver clientIpResolver;
 
     public ApiRateLimitFilter(
             @Value("${app.security.api-rate-limit.enabled:true}") boolean enabled,
             @Value("${app.security.api-rate-limit.max-requests:180}") int maxRequests,
             @Value("${app.security.api-rate-limit.window-seconds:60}") long windowSeconds,
             @Value("${app.security.api-rate-limit.max-clients:200000}") long maxClients,
-            @Value("${app.security.api-rate-limit.excluded-paths:/api/v1/auth/login,/api/v1/auth/register,/api/v1/auth/logout,/api/v1/auth/me}") String excludedPaths) {
+            @Value("${app.security.api-rate-limit.excluded-paths:/api/v1/auth/login,/api/v1/auth/register,/api/v1/auth/logout,/api/v1/auth/me}") String excludedPaths,
+            ClientIpResolver clientIpResolver) {
         if (maxRequests < 1) {
             throw new IllegalStateException("app.security.api-rate-limit.max-requests must be greater than 0.");
         }
@@ -54,6 +56,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
                 .map(String::trim)
                 .filter(path -> !path.isBlank())
                 .toList();
+        this.clientIpResolver = clientIpResolver;
         this.attemptsByClient = Caffeine.newBuilder()
                 .expireAfterWrite(windowSeconds, TimeUnit.SECONDS)
                 .maximumSize(maxClients)
@@ -82,7 +85,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
         long now = System.currentTimeMillis();
-        String clientKey = resolveClientKey(request);
+        String clientKey = clientIpResolver.resolveClientKey(request);
 
         AttemptWindow updated = attemptsByClient.asMap().compute(clientKey, (key, existing) -> {
             if (existing == null || now - existing.windowStartMillis >= windowMillis) {
@@ -105,19 +108,6 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
-
-    private String resolveClientKey(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            String first = forwardedFor.split(",")[0].trim();
-            if (!first.isBlank()) {
-                return first;
-            }
-        }
-        String remoteAddr = request.getRemoteAddr();
-        return (remoteAddr == null || remoteAddr.isBlank()) ? "unknown" : remoteAddr;
-    }
-
     private String resolvePath(HttpServletRequest request) {
         String path = request.getServletPath();
         if (path == null || path.isBlank()) {

@@ -25,4 +25,74 @@ public interface CartItemRepository extends JpaRepository<CartItemEntity, Long> 
     void updateQuantity(@Param("email") String email,
                         @Param("productId") Long productId,
                         @Param("qty") int qty);
+
+    @Modifying
+    @Query("""
+            DELETE FROM CartItemEntity c
+            WHERE c.userEmail = :email
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM Product p
+                    WHERE p.id = c.productId
+                      AND COALESCE(p.stock, 0) > 0
+              )
+            """)
+    int deleteUnavailableItemsByUserEmail(@Param("email") String email);
+
+    @Modifying
+    @Query("""
+            UPDATE CartItemEntity c
+            SET c.quantity = (
+                SELECT CASE
+                    WHEN c.quantity < 1 THEN 1
+                    WHEN c.quantity > p.stock THEN p.stock
+                    ELSE c.quantity
+                END
+                FROM Product p
+                WHERE p.id = c.productId
+            )
+            WHERE c.userEmail = :email
+              AND EXISTS (
+                    SELECT 1
+                    FROM Product p
+                    WHERE p.id = c.productId
+                      AND COALESCE(p.stock, 0) > 0
+                      AND (c.quantity < 1 OR c.quantity > p.stock)
+              )
+            """)
+    int clampQuantitiesToAvailableStockByUserEmail(@Param("email") String email);
+
+    @Modifying
+    @Query("""
+            DELETE FROM CartItemEntity c
+            WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM Product p
+                    WHERE p.id = c.productId
+                      AND COALESCE(p.stock, 0) > 0
+            )
+            """)
+    int deleteUnavailableItems();
+
+    @Modifying
+    @Query("""
+            UPDATE CartItemEntity c
+            SET c.quantity = (
+                SELECT CASE
+                    WHEN c.quantity < 1 THEN 1
+                    WHEN c.quantity > p.stock THEN p.stock
+                    ELSE c.quantity
+                END
+                FROM Product p
+                WHERE p.id = c.productId
+            )
+            WHERE EXISTS (
+                    SELECT 1
+                    FROM Product p
+                    WHERE p.id = c.productId
+                      AND COALESCE(p.stock, 0) > 0
+                      AND (c.quantity < 1 OR c.quantity > p.stock)
+            )
+            """)
+    int clampQuantitiesToAvailableStock();
 }

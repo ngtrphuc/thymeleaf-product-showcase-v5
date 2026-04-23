@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -115,21 +114,11 @@ class CartServiceTest {
     }
 
     @Test
-    void cleanupDbCart_shouldRemoveOrphanedAndClampQuantities() {
-        CartItemEntity orphan = new CartItemEntity("user@example.com", 99L, 2);
-        CartItemEntity limited = new CartItemEntity("user@example.com", 7L, 5);
-        Product product = new Product();
-        product.setId(7L);
-        product.setStock(2);
-
-        when(cartItemRepository.findByUserEmail("user@example.com")).thenReturn(List.of(orphan, limited));
-        when(productRepository.findAllByIdIn(List.of(99L, 7L))).thenReturn(List.of(product));
-
+    void cleanupDbCart_shouldUseBulkQueriesForLoggedInUser() {
         cartService.cleanupDbCart("user@example.com");
 
-        assertEquals(2, limited.getQuantity());
-        verify(cartItemRepository).deleteAll(MockitoNullSafety.nonNullIterable(List.of(orphan)));
-        verify(cartItemRepository).saveAll(MockitoNullSafety.nonNullIterable(List.of(limited)));
+        verify(cartItemRepository).deleteUnavailableItemsByUserEmail("user@example.com");
+        verify(cartItemRepository).clampQuantitiesToAvailableStockByUserEmail("user@example.com");
     }
 
     @Test
@@ -148,8 +137,8 @@ class CartServiceTest {
         cartService.syncCartCount(session, "user@example.com");
 
         assertEquals(2, session.getAttribute("cartCount"));
-        verify(cartItemRepository, never()).saveAll(anyIterable());
-        verify(cartItemRepository, never()).deleteAll(anyIterable());
+        verify(cartItemRepository, never()).clampQuantitiesToAvailableStockByUserEmail("user@example.com");
+        verify(cartItemRepository, never()).deleteUnavailableItemsByUserEmail("user@example.com");
     }
 
     @Test
@@ -199,13 +188,10 @@ class CartServiceTest {
     }
 
     @Test
-    void cleanupDbCartForAllUsers_shouldScanDistinctEmails() {
-        when(cartItemRepository.findDistinctUserEmails()).thenReturn(List.of("a@example.com", "b@example.com"));
-        when(cartItemRepository.findByUserEmail(anyString())).thenReturn(List.of());
-
+    void cleanupDbCartForAllUsers_shouldUseBulkQueries() {
         cartService.cleanupDbCartForAllUsers();
 
-        verify(cartItemRepository).findByUserEmail("a@example.com");
-        verify(cartItemRepository).findByUserEmail("b@example.com");
+        verify(cartItemRepository).deleteUnavailableItems();
+        verify(cartItemRepository).clampQuantitiesToAvailableStock();
     }
 }
