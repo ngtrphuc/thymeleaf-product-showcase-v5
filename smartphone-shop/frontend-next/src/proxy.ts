@@ -63,8 +63,7 @@ export function proxy(request: NextRequest) {
     if (isReauthFlow) {
       return NextResponse.next();
     }
-    const destination = isAdminRole(role) ? "/admin" : "/products";
-    return NextResponse.redirect(new URL(destination, request.url));
+    return NextResponse.redirect(new URL("/products", request.url));
   }
 
   return NextResponse.next();

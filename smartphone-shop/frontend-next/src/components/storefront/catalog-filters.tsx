@@ -184,7 +184,7 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
             min="0"
             value={priceMin}
             onChange={(event) => setPriceMin(event.target.value)}
-            placeholder="Optional"
+            placeholder="Min"
             className="ui-input px-3 py-2 text-sm"
           />
         </label>
@@ -195,7 +195,7 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
             min="0"
             value={priceMax}
             onChange={(event) => setPriceMax(event.target.value)}
-            placeholder="Optional"
+            placeholder="Max"
             className="ui-input px-3 py-2 text-sm"
           />
         </label>

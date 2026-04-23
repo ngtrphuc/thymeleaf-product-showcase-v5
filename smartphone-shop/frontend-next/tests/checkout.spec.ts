@@ -145,5 +145,7 @@ test("checkout submits order successfully for authenticated user", async ({ cont
   await page.getByLabel("Shipping Address").fill("Osaka, Naniwa");
   await page.getByRole("button", { name: "Place Order" }).click();
 
-  await expect(page.getByText("Order ORDER-9001 placed successfully.")).toBeVisible();
+  await expect(page).toHaveURL(/\/checkout\/success\?code=ORDER-9001/);
+  await expect(page.getByRole("heading", { name: "Order placed successfully" })).toBeVisible();
+  await expect(page.getByText("ORDER-9001")).toBeVisible();
 });

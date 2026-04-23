@@ -39,7 +39,7 @@ export default function LoginPage() {
 
     try {
       const auth = await authLogin(email, password);
-      const destination = isAdminRole(auth.role) ? "/admin" : nextPath;
+      const destination = isAdminRole(auth.role) ? "/products" : nextPath;
       router.push(destination);
       router.refresh();
     } catch (err) {

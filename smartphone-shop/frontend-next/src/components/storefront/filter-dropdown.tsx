@@ -14,6 +14,7 @@ type FilterDropdownProps = {
   value: string;
   onChange: (value: string) => void;
   triggerClassName?: string;
+  disabled?: boolean;
 };
 
 export function FilterDropdown({
@@ -22,6 +23,7 @@ export function FilterDropdown({
   value,
   onChange,
   triggerClassName,
+  disabled = false,
 }: FilterDropdownProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -52,16 +54,19 @@ export function FilterDropdown({
         <button
           type="button"
           onClick={() => setOpen((current) => !current)}
-          className={`ui-input flex w-full items-center justify-between px-3 py-2 text-sm text-left ${triggerClassName ?? ""}`}
+          className={`ui-input ui-dropdown-trigger flex w-full items-center justify-between px-3 py-2 text-sm text-left ${disabled ? "cursor-not-allowed opacity-65" : ""} ${triggerClassName ?? ""}`}
           aria-haspopup="listbox"
           aria-expanded={open}
+          aria-disabled={disabled}
+          disabled={disabled}
+          data-open={open ? "true" : "false"}
         >
           <span className="truncate">{selectedLabel}</span>
-          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown className="ui-dropdown-trigger-icon h-4 w-4 shrink-0" />
         </button>
 
-        {open ? (
-          <div className="absolute left-0 right-0 top-[calc(100%+0.45rem)] z-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[0_16px_38px_rgba(0,0,0,0.5)]">
+        {open && !disabled ? (
+          <div className="ui-dropdown-panel absolute left-0 right-0 top-[calc(100%+0.45rem)] z-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[0_16px_38px_rgba(0,0,0,0.5)]">
             <ul role="listbox" className="max-h-64 space-y-1 overflow-y-auto">
               {options.map((option) => {
                 const active = option.value === value;

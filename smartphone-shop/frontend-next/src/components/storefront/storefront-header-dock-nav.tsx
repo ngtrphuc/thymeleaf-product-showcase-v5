@@ -19,7 +19,7 @@ type NavItem = {
   key: string;
   label: string;
   href?: string;
-  icon: ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
 };
 
 const authenticatedDockItems: NavItem[] = [
@@ -166,7 +166,7 @@ export function StorefrontHeaderDockNav() {
             className={item.key === "login" ? "dock-item-login" : item.key === "logout" ? "dock-item-logout" : ""}
           >
             <DockIcon>
-              <Icon className="h-4 w-4" />
+              <Icon className={itemActive ? "h-[1.06rem] w-[1.06rem]" : "h-4 w-4"} strokeWidth={itemActive ? 2.45 : 2} />
             </DockIcon>
             {!itemActive ? <DockLabel>{item.label}</DockLabel> : null}
           </DockItem>

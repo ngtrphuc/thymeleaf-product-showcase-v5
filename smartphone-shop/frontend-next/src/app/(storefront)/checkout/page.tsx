@@ -2,6 +2,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ApiError,
   fetchCart,
@@ -15,9 +16,28 @@ import { CheckoutSkeleton } from "@/components/storefront/checkout-skeleton";
 import { formatPriceVnd } from "@/lib/format";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge";
+import { FilterDropdown, type FilterDropdownOption } from "@/components/storefront/filter-dropdown";
 
 type PaymentMethodType = "CASH_ON_DELIVERY" | "BANK_TRANSFER" | "PAYPAY" | "MASTERCARD";
 type PaymentPlanType = "FULL_PAYMENT" | "INSTALLMENT";
+
+const PAYMENT_METHOD_OPTIONS: FilterDropdownOption[] = [
+  { label: "Cash on Delivery", value: "CASH_ON_DELIVERY" },
+  { label: "Bank Transfer", value: "BANK_TRANSFER" },
+  { label: "PayPay", value: "PAYPAY" },
+  { label: "Credit Card", value: "MASTERCARD" },
+];
+
+const PAYMENT_PLAN_OPTIONS: FilterDropdownOption[] = [
+  { label: "Full Payment", value: "FULL_PAYMENT" },
+  { label: "Installment", value: "INSTALLMENT" },
+];
+
+const INSTALLMENT_MONTH_OPTIONS: FilterDropdownOption[] = [
+  { label: "6 months", value: "6" },
+  { label: "12 months", value: "12" },
+  { label: "24 months", value: "24" },
+];
 
 function createIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -27,12 +47,12 @@ function createIdempotencyKey(): string {
 }
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const [cart, setCart] = useState<CartResponse | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const [customerName, setCustomerName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -100,7 +120,6 @@ export default function CheckoutPage() {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
-    setSuccess(null);
 
     try {
       const created = await placeOrder({
@@ -112,9 +131,12 @@ export default function CheckoutPage() {
         paymentPlan,
         installmentMonths: paymentPlan === "INSTALLMENT" ? installmentMonths : null,
       }, idempotencyKey);
-      setSuccess(`Order ${created.orderCode} placed successfully.`);
       setIdempotencyKey(createIdempotencyKey());
-      await loadCheckoutData();
+      const successParams = new URLSearchParams({
+        code: created.orderCode,
+      });
+      router.replace(`/checkout/success?${successParams.toString()}`);
+      return;
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -146,7 +168,6 @@ export default function CheckoutPage() {
       </header>
 
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
-      {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
 
       <form className="grid gap-6 lg:grid-cols-2" onSubmit={onSubmit}>
         <section className="glass-panel space-y-4 rounded-3xl p-6">
@@ -188,19 +209,12 @@ export default function CheckoutPage() {
             <PaymentMethodBadge method={paymentMethod} />
           </div>
 
-          <label className="block space-y-1">
-            <span className="text-sm text-slate-700">Payment Method</span>
-            <select
-              value={paymentMethod}
-              onChange={(event) => setPaymentMethod(event.target.value as PaymentMethodType)}
-              className="ui-input w-full px-3 py-2 text-sm"
-            >
-              <option value="CASH_ON_DELIVERY">Cash on Delivery</option>
-              <option value="BANK_TRANSFER">Bank Transfer</option>
-              <option value="PAYPAY">PayPay</option>
-              <option value="MASTERCARD">Credit Card</option>
-            </select>
-          </label>
+          <FilterDropdown
+            label="Payment Method"
+            options={PAYMENT_METHOD_OPTIONS}
+            value={paymentMethod}
+            onChange={(nextValue) => setPaymentMethod(nextValue as PaymentMethodType)}
+          />
 
           {paymentMethod === "BANK_TRANSFER" ? (
             <label className="block space-y-1">
@@ -214,32 +228,21 @@ export default function CheckoutPage() {
             </label>
           ) : null}
 
-          <label className="block space-y-1">
-            <span className="text-sm text-slate-700">Payment Plan</span>
-            <select
-              value={paymentPlan}
-              onChange={(event) => setPaymentPlan(event.target.value as PaymentPlanType)}
-              className="ui-input w-full px-3 py-2 text-sm"
-              disabled={isInstallmentDisabled}
-            >
-              <option value="FULL_PAYMENT">Full Payment</option>
-              <option value="INSTALLMENT">Installment</option>
-            </select>
-          </label>
+          <FilterDropdown
+            label="Payment Plan"
+            options={PAYMENT_PLAN_OPTIONS}
+            value={paymentPlan}
+            onChange={(nextValue) => setPaymentPlan(nextValue as PaymentPlanType)}
+            disabled={isInstallmentDisabled}
+          />
 
           {paymentPlan === "INSTALLMENT" ? (
-            <label className="block space-y-1">
-              <span className="text-sm text-slate-700">Installment Months</span>
-              <select
-                value={installmentMonths}
-                onChange={(event) => setInstallmentMonths(Number.parseInt(event.target.value, 10))}
-                className="ui-input w-full px-3 py-2 text-sm"
-              >
-                <option value={6}>6 months</option>
-                <option value={12}>12 months</option>
-                <option value={24}>24 months</option>
-              </select>
-            </label>
+            <FilterDropdown
+              label="Installment Months"
+              options={INSTALLMENT_MONTH_OPTIONS}
+              value={String(installmentMonths)}
+              onChange={(nextValue) => setInstallmentMonths(Number.parseInt(nextValue, 10))}
+            />
           ) : null}
         </section>
 

@@ -298,7 +298,7 @@ export default function ProfilePage() {
             <select
               value={newPaymentType}
               onChange={(event) => setNewPaymentType(event.target.value)}
-              className="rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+              className="ui-dropdown-native rounded-xl border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
             >
               <option value="CASH_ON_DELIVERY">Cash on Delivery</option>
               <option value="BANK_TRANSFER">Bank Transfer</option>

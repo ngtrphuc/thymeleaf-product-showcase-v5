@@ -32,11 +32,13 @@ function isAdminRole(role: string | null | undefined): boolean {
 
 export function StorefrontChatBubble() {
   const pathname = usePathname();
+  const chatPanelRef = useRef<HTMLElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const unreadCountRef = useRef(0);
   const pulseTimerRef = useRef<number | null>(null);
   const shouldAutoScrollRef = useRef(true);
+  const pendingOpenScrollRef = useRef(false);
   const [authState, setAuthState] = useState<AuthMeResponse>({
     authenticated: false,
     email: null,
@@ -62,7 +64,7 @@ export function StorefrontChatBubble() {
       return;
     }
     const remaining = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
-    const nearBottom = remaining <= 24;
+    const nearBottom = remaining <= 36;
     shouldAutoScrollRef.current = nearBottom;
     setShowJumpToLatest(!nearBottom);
   }, []);
@@ -168,6 +170,28 @@ export function StorefrontChatBubble() {
   }, [open, shouldShow]);
 
   useEffect(() => {
+    if (!shouldShow || !open) {
+      return;
+    }
+
+    function onPointerDown(event: MouseEvent) {
+      const targetNode = event.target as Node | null;
+      if (!targetNode || !chatPanelRef.current) {
+        return;
+      }
+      if (!chatPanelRef.current.contains(targetNode)) {
+        pendingOpenScrollRef.current = false;
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", onPointerDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+    };
+  }, [open, shouldShow]);
+
+  useEffect(() => {
     if (!open || !messagesEndRef.current || !shouldAutoScrollRef.current) {
       return;
     }
@@ -175,8 +199,25 @@ export function StorefrontChatBubble() {
   }, [messages, open]);
 
   useEffect(() => {
+    if (!open || loadingChat || !pendingOpenScrollRef.current) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      scrollToLatest("auto");
+      syncScrollModeFromViewport();
+      pendingOpenScrollRef.current = false;
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [loadingChat, messages.length, open, syncScrollModeFromViewport]);
+
+  useEffect(() => {
     if (!open) {
       shouldAutoScrollRef.current = true;
+      pendingOpenScrollRef.current = false;
       return;
     }
     const frame = window.requestAnimationFrame(() => {
@@ -217,6 +258,7 @@ export function StorefrontChatBubble() {
 
   async function openChat() {
     shouldAutoScrollRef.current = true;
+    pendingOpenScrollRef.current = true;
     setShowJumpToLatest(false);
     setOpen(true);
     setLoadingChat(true);
@@ -229,7 +271,6 @@ export function StorefrontChatBubble() {
       unreadCountRef.current = 0;
       setUnreadCount(0);
       setHasUnreadPulse(false);
-      scrollToLatest("auto");
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -280,18 +321,24 @@ export function StorefrontChatBubble() {
   return (
     <>
       {open ? (
-        <section className="fixed bottom-5 right-5 z-40 w-[min(24rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.6rem] border border-white/10 bg-[var(--color-surface)] shadow-[0_22px_54px_rgba(0,0,0,0.48)] backdrop-blur-xl sm:bottom-6 sm:right-6">
-          <header className="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-soft)] px-4 py-3">
+        <section
+          ref={chatPanelRef}
+          className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.4rem] border border-white/12 bg-[radial-gradient(120%_120%_at_100%_0%,rgba(255,255,255,0.14),rgba(255,255,255,0.02)_52%,rgba(0,0,0,0.95)_100%)] shadow-[0_24px_56px_rgba(0,0,0,0.52)] backdrop-blur-2xl sm:bottom-6 sm:right-6"
+        >
+          <header className="flex items-center justify-between border-b border-white/10 bg-black/25 px-4 py-3">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900">Chat With Shop</h2>
-              <p className="text-xs text-slate-600">Ask about products, orders, or shipping.</p>
+              <h2 className="text-sm font-semibold text-[var(--color-text)]">Chat With Shop</h2>
+              <p className="text-xs text-[var(--color-text-muted)]">Ask about products, orders, or shipping.</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  pendingOpenScrollRef.current = false;
+                  setOpen(false);
+                }}
                 aria-label="Close chat"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition-[background-color,color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white hover:text-black"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-black/35 text-[var(--color-text-muted)] transition-[background-color,color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/18 hover:bg-white hover:text-black"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -302,11 +349,11 @@ export function StorefrontChatBubble() {
             {error ? <p className="mb-3 text-sm text-red-700">{error}</p> : null}
 
             {loadingChat ? (
-              <div className="flex h-72 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-white text-sm text-slate-600">
+              <div className="flex h-72 items-center justify-center rounded-2xl border border-white/10 bg-black/30 text-sm text-[var(--color-text-muted)]">
                 Loading chat...
               </div>
             ) : messages.length === 0 ? (
-              <div className="flex h-72 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-white text-sm text-slate-600">
+              <div className="flex h-72 items-center justify-center rounded-2xl border border-white/10 bg-black/30 text-sm text-[var(--color-text-muted)]">
                 Start a conversation with the shop.
               </div>
             ) : (
@@ -314,23 +361,23 @@ export function StorefrontChatBubble() {
                 <div
                   ref={messagesViewportRef}
                   onScroll={syncScrollModeFromViewport}
-                  className="max-h-[20rem] min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-white p-3"
+                  className="max-h-[20rem] min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl border border-white/10 bg-black/30 p-3.5"
                 >
                   {messages.map((message) => {
                     const isUser = message.senderRole === "USER";
                     const sideClass = isUser ? "justify-end" : "justify-start";
                     const toneClass = isUser
-                      ? "bg-[var(--color-primary)] text-black"
-                      : "bg-slate-100 text-slate-800";
-                    const metaClass = isUser ? "text-black/60" : "text-slate-500";
+                      ? "bg-[var(--color-primary)] text-black shadow-[0_8px_20px_rgba(255,255,255,0.22)]"
+                      : "border border-white/12 bg-white/6 text-[var(--color-text)]";
+                    const metaClass = isUser ? "text-white/68" : "text-[var(--color-text-muted)]";
                     return (
                       <div key={message.id} className={`flex ${sideClass}`}>
                         <div className={`flex max-w-[88%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
-                          <article className={`inline-block w-fit break-words rounded-xl px-3 py-2 text-sm ${toneClass}`}>
+                          <article className={`inline-block w-fit break-words rounded-2xl px-3 py-2.5 text-sm ${toneClass}`}>
                             <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                           </article>
                           <p className={`px-1 text-[11px] ${metaClass}`}>
-                            {isUser ? "You" : "Shop"} | {formatChatClock(message.createdAt)}
+                            {isUser ? "You" : "Shop"} - {formatChatClock(message.createdAt)}
                           </p>
                         </div>
                       </div>
@@ -344,26 +391,26 @@ export function StorefrontChatBubble() {
                     onClick={() => scrollToLatest("smooth")}
                     aria-label="Jump to latest message"
                     title="Jump to latest"
-                    className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-white/16 bg-[var(--color-surface-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] shadow-[0_14px_30px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white hover:text-black"
+                    className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-black/65 px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] shadow-[0_14px_30px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/24 hover:bg-white hover:text-black"
                   >
-                    Newest
+                    Latest
                     <ChevronsDown className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
               </div>
             )}
 
-            <form onSubmit={onSend} className="mt-3 flex gap-2">
+            <form onSubmit={onSend} className="mt-3 flex gap-2 rounded-2xl border border-white/10 bg-black/25 p-2">
               <input
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder="Write your message..."
-                className="ui-input flex-1 px-3 py-2 text-sm"
+                className="ui-input flex-1 border-white/12 bg-black/35 px-3 py-2 text-sm"
               />
               <button
                 type="submit"
                 disabled={sending || !draft.trim()}
-                className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
+                className="ui-btn ui-btn-primary inline-flex min-w-[92px] items-center justify-center gap-2 px-4 py-2 text-sm"
               >
                 {sending ? "Sending..." : "Send"}
               </button>
