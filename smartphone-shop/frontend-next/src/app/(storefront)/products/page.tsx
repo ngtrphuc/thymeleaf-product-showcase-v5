@@ -29,6 +29,10 @@ function resolvePageSize(value: string | undefined): number {
   return value === "8" ? 8 : 9;
 }
 
+function resolveDirection(value: string | undefined): "forward" | "backward" {
+  return value === "backward" ? "backward" : "forward";
+}
+
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const resolved: Record<string, SearchValue> = await (
     searchParams ?? Promise.resolve({} as Record<string, SearchValue>)
@@ -43,6 +47,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const priceMax = readFirst(resolved.priceMax)?.trim() ?? "";
   const batteryRange = readFirst(resolved.batteryRange)?.trim() ?? "";
   const screenSize = readFirst(resolved.screenSize)?.trim() ?? "";
+  const direction = resolveDirection(readFirst(resolved.dir)?.trim());
   const page = positiveInt(readFirst(resolved.page), 0);
   const pageSize = resolvePageSize(readFirst(resolved.pageSize)?.trim());
 
@@ -121,6 +126,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       ) : (
         <CatalogPagedGrid
           key={`${pageSize}:${currentPage}:${catalog.products.map((product) => product.id ?? product.name).join("|")}`}
+          initialDirection={direction}
           products={catalog.products}
           paginationItems={[
             {

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ApiError, authLogout } from "@/lib/api";
-import { GriddyIcon } from "@/components/ui/griddy-icon";
+import { AuthMotionIcon } from "@/components/ui/auth-motion-icon";
 
 export function AdminSessionActions() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export function AdminSessionActions() {
         disabled={loggingOut}
         className="ui-btn ui-btn-logout inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
       >
-        <GriddyIcon name="logout" />
+        <AuthMotionIcon variant="logout" className="h-4 w-4" />
         {loggingOut ? "Signing out..." : "Sign Out"}
       </button>
       {error ? <span className="text-xs text-red-700">{error}</span> : null}

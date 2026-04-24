@@ -1,6 +1,6 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 import { startTransition, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -20,14 +20,22 @@ type PaginationItem = {
 type CatalogPagedGridProps = {
   products: ProductSummary[];
   paginationItems: PaginationItem[];
+  initialDirection?: NavigationDirection;
 };
 
-const EXIT_DURATION_MS = 140;
+const EXIT_DURATION_MS = 240;
 
-export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGridProps) {
+type NavigationDirection = "forward" | "backward";
+
+export function CatalogPagedGrid({
+  products,
+  paginationItems,
+  initialDirection = "forward",
+}: CatalogPagedGridProps) {
   const router = useRouter();
   const navigationTimerRef = useRef<number | null>(null);
   const [phase, setPhase] = useState<"idle" | "entering" | "exiting">("entering");
+  const [direction, setDirection] = useState<NavigationDirection>(initialDirection);
   const [isReducedMotion, setIsReducedMotion] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
@@ -35,7 +43,9 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
   const previousItem = paginationItems[0];
   const nextItem = paginationItems[paginationItems.length - 1];
   const pageItems = paginationItems.slice(1, -1);
-  const reduceCardMotion = products.length >= 8;
+  const currentPageIndex = pageItems.findIndex((item) => item.active);
+  const reduceCardMotion = products.length > 12;
+  const allowCardFlip = !isReducedMotion && products.length <= 9;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -52,7 +62,7 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
       return;
     }
 
-    const timerId = window.setTimeout(() => setPhase("idle"), 240);
+    const timerId = window.setTimeout(() => setPhase("idle"), 420);
     return () => window.clearTimeout(timerId);
   }, [isReducedMotion, phase]);
 
@@ -64,46 +74,85 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
     };
   }, []);
 
+  function resolveDirection(item: PaginationItem): NavigationDirection {
+    if (item.icon === "arrow-left") {
+      return "backward";
+    }
+
+    if (item.icon === "arrow-right") {
+      return "forward";
+    }
+
+    if (typeof window === "undefined") {
+      return "forward";
+    }
+
+    const targetPage = new URL(item.href, window.location.origin).searchParams.get("page");
+    const parsedTargetPage = Number.parseInt(targetPage ?? "", 10);
+
+    if (!Number.isFinite(parsedTargetPage) || currentPageIndex < 0) {
+      return "forward";
+    }
+
+    return parsedTargetPage > currentPageIndex ? "forward" : "backward";
+  }
+
+  function hrefWithDirection(href: string, nextDirection: NavigationDirection) {
+    if (typeof window === "undefined") {
+      return href;
+    }
+
+    const nextUrl = new URL(href, window.location.origin);
+    nextUrl.searchParams.set("dir", nextDirection);
+    return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+  }
+
   function handleNavigate(event: MouseEvent<HTMLAnchorElement>, item: PaginationItem) {
     if (item.disabled || item.active || pendingHref !== null) {
       event.preventDefault();
       return;
     }
 
+    const nextDirection = resolveDirection(item);
+    const nextHref = hrefWithDirection(item.href, nextDirection);
+    setDirection(nextDirection);
+
     if (isReducedMotion) {
       event.preventDefault();
-      startTransition(() => router.push(item.href, { scroll: false }));
+      startTransition(() => router.push(nextHref, { scroll: false }));
       return;
     }
 
     event.preventDefault();
-    setPendingHref(item.href);
+    setPendingHref(nextHref);
     setPhase("exiting");
 
     navigationTimerRef.current = window.setTimeout(() => {
-      startTransition(() => router.push(item.href, { scroll: false }));
+      startTransition(() => router.push(nextHref, { scroll: false }));
     }, EXIT_DURATION_MS);
   }
 
   function renderPaginationLink(item: PaginationItem, edge: boolean) {
     const isDisabled = item.disabled || pendingHref !== null;
     const isActivePage = !edge && Boolean(item.active);
+    const nextDirection = item.active ? direction : resolveDirection(item);
+    const resolvedHref = item.active ? item.href : hrefWithDirection(item.href, nextDirection);
     const className = edge
-      ? `ui-btn inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] text-sm transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ${
+      ? `ui-btn pagination-rail-edge inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] text-sm transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ${
           isDisabled
             ? "pointer-events-none opacity-45"
-            : "hover:-translate-y-0.5 hover:border-white/12 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(0,0,0,0.32)]"
+            : "hover:border-white/12 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(0,0,0,0.32)]"
         }`
-      : `ui-btn inline-flex h-11 min-w-11 items-center justify-center rounded-xl border px-3 py-1.5 text-sm transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ${
+      : `ui-btn pagination-rail-link inline-flex h-11 min-w-11 items-center justify-center rounded-xl border px-3 py-1.5 text-sm transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ${
           isActivePage
-            ? "pointer-events-none cursor-default border-black/80 bg-[var(--color-primary)] font-semibold text-black hover:!translate-y-0"
-            : "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] hover:-translate-y-0.5 hover:border-white/12 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(0,0,0,0.32)]"
+            ? "pointer-events-none cursor-default border-black/80 bg-[var(--color-primary)] font-semibold text-black"
+            : "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] hover:border-white/12 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(0,0,0,0.32)]"
         } ${isDisabled ? "pointer-events-none opacity-55" : ""}`;
 
     return (
       <Link
         key={`${item.label}-${item.href}`}
-        href={item.href}
+        href={resolvedHref}
         onClick={(event) => handleNavigate(event, item)}
         aria-current={item.active ? "page" : undefined}
         aria-disabled={item.disabled || pendingHref !== null}
@@ -126,15 +175,27 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
       <div
         className={
           phase === "entering"
-            ? "catalog-motion-shell is-entering"
+            ? `catalog-motion-shell is-entering is-${direction}`
             : phase === "exiting"
-              ? "catalog-motion-shell is-exiting"
-              : "catalog-motion-shell"
+              ? `catalog-motion-shell is-exiting is-${direction}`
+              : `catalog-motion-shell is-${direction}`
         }
       >
-        <section className="catalog-grid grid grid-cols-2 gap-5 lg:grid-cols-3">
-          {products.map((product) => (
-            <div key={product.id ?? `${product.name}-${product.brand}`} className="catalog-grid-item">
+        <section
+          className={`catalog-grid grid grid-cols-2 gap-5 lg:grid-cols-3 ${
+            allowCardFlip && phase === "entering"
+              ? "is-flip-enter"
+              : allowCardFlip && phase === "exiting"
+                ? "is-flip-exit"
+                : ""
+          }`}
+        >
+          {products.map((product, index) => (
+            <div
+              key={product.id ?? `${product.name}-${product.brand}`}
+              className="catalog-grid-item"
+              style={{ "--i": index } as CSSProperties}
+            >
               <ProductCard product={product} motionReduced={reduceCardMotion || pendingHref !== null} />
             </div>
           ))}
@@ -143,8 +204,10 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
 
       <nav className="glass-panel hidden flex-col items-center gap-2 rounded-2xl p-3 xl:sticky xl:top-24 xl:flex">
         {previousItem ? renderPaginationLink(previousItem, true) : null}
-        <div className="flex max-h-[52vh] flex-col gap-2 overflow-y-auto pr-1">
-          {pageItems.map((item) => renderPaginationLink(item, false))}
+        <div className="max-h-[52vh] overflow-y-auto px-3 py-2">
+          <div className="flex flex-col items-center gap-2">
+            {pageItems.map((item) => renderPaginationLink(item, false))}
+          </div>
         </div>
         {nextItem ? renderPaginationLink(nextItem, true) : null}
       </nav>

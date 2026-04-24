@@ -6,13 +6,12 @@ import {
   ClipboardList,
   Heart,
   LayoutDashboard,
-  LogIn,
-  LogOut,
   ShoppingCart,
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
 import { Dock, DockIcon, DockItem, DockLabel } from "@/components/ui/dock";
+import { AuthMotionIcon } from "@/components/ui/auth-motion-icon";
 import { ApiError, authLogout, fetchAuthMeCached, type AuthMeResponse } from "@/lib/api";
 
 type NavItem = {
@@ -21,6 +20,14 @@ type NavItem = {
   href?: string;
   icon: ComponentType<{ className?: string; strokeWidth?: number }>;
 };
+
+function LoginDockIcon({ className }: { className?: string; strokeWidth?: number }) {
+  return <AuthMotionIcon variant="login" className={className} />;
+}
+
+function LogoutDockIcon({ className }: { className?: string; strokeWidth?: number }) {
+  return <AuthMotionIcon variant="logout" className={className} />;
+}
 
 const authenticatedDockItems: NavItem[] = [
   { key: "cart", label: "Cart", href: "/cart", icon: ShoppingCart },
@@ -32,13 +39,13 @@ const authenticatedDockItems: NavItem[] = [
 
 const guestDockItems: NavItem[] = [
   { key: "compare", label: "Compare", href: "/compare", icon: SlidersHorizontal },
-  { key: "login", label: "Sign In", icon: LogIn },
+  { key: "login", label: "Sign In", icon: LoginDockIcon },
 ];
 
 const adminDockItems: NavItem[] = [
   { key: "compare", label: "Compare", href: "/compare", icon: SlidersHorizontal },
   { key: "admin-panel", label: "Admin Panel", href: "/admin", icon: LayoutDashboard },
-  { key: "logout", label: "Sign Out", icon: LogOut },
+  { key: "logout", label: "Sign Out", icon: LogoutDockIcon },
 ];
 
 function isAdminRole(role: string | null | undefined): boolean {
@@ -174,7 +181,13 @@ export function StorefrontHeaderDockNav() {
             active={itemActive}
             activeLabel={item.label}
             onClick={() => void onNavigate(item)}
-            className={item.key === "login" ? "dock-item-login" : item.key === "logout" ? "dock-item-logout" : ""}
+            className={
+              item.key === "login"
+                ? "dock-item-login hover:!translate-y-0 hover:!scale-100 focus-visible:!translate-y-0 focus-visible:!scale-100"
+                : item.key === "logout"
+                  ? "dock-item-logout hover:!translate-y-0 hover:!scale-100 focus-visible:!translate-y-0 focus-visible:!scale-100"
+                  : ""
+            }
           >
             <DockIcon>
               <Icon className={itemActive ? "h-[1.06rem] w-[1.06rem]" : "h-4 w-4"} strokeWidth={itemActive ? 2.45 : 2} />

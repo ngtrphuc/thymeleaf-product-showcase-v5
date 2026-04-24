@@ -6,7 +6,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, authLogin } from "@/lib/api";
 import { PasswordField } from "@/components/auth/password-field";
-import { GriddyIcon } from "@/components/ui/griddy-icon";
+import { AuthMotionIcon } from "@/components/ui/auth-motion-icon";
 
 function isAdminRole(role: string | null | undefined): boolean {
   return role === "ROLE_ADMIN" || role === "ADMIN";
@@ -86,7 +86,7 @@ export default function LoginPage() {
           disabled={loading}
           className="ui-btn ui-btn-login inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm"
         >
-          <GriddyIcon name="login" />
+          <AuthMotionIcon variant="login" className="h-4 w-4" />
           {loading ? "Signing in..." : "Sign In"}
         </button>
       </form>

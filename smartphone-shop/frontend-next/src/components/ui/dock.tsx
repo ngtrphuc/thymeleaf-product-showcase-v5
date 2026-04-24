@@ -10,6 +10,8 @@ type DockProps = {
 type DockItemProps = {
   children: ReactNode;
   onClick?: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
   ariaLabel?: string;
   className?: string;
   active?: boolean;
@@ -24,24 +26,35 @@ type DockPartProps = {
 export function Dock({ children, className }: DockProps) {
   return (
     <div className={`flex h-24 items-end justify-center ${className ?? ""}`}>
-      <div className="flex items-end gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.34)]">
+      <div className="flex items-end gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 shadow-[0_10px_34px_rgba(0,0,0,0.45)]">
         {children}
       </div>
     </div>
   );
 }
 
-export function DockItem({ children, onClick, ariaLabel, className, active = false, activeLabel }: DockItemProps) {
+export function DockItem({
+  children,
+  onClick,
+  onMouseEnter,
+  onMouseLeave,
+  ariaLabel,
+  className,
+  active = false,
+  activeLabel,
+}: DockItemProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       aria-label={ariaLabel}
       className={[
-        "group/dockitem relative flex h-11 origin-bottom items-center rounded-xl border transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ease-out will-change-transform",
+        "group/dockitem relative flex h-11 origin-bottom items-center rounded-xl border transform-gpu transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ease-out will-change-transform",
         active
-          ? "w-auto min-w-[8rem] justify-start gap-2 border border-black/80 bg-[var(--color-primary)] px-3.5 text-black shadow-[0_8px_18px_rgba(0,0,0,0.28),inset_0_0_0_0.55px_rgba(0,0,0,0.38)]"
-          : "w-11 justify-center border-[var(--color-border)] bg-[var(--color-surface-soft)] px-0 text-[var(--color-text-muted)] hover:-translate-y-px hover:border-white/10 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(0,0,0,0.3)]",
+          ? "w-auto min-w-0 justify-start gap-2 border border-black/80 bg-[var(--color-primary)] px-3 text-black shadow-[0_10px_22px_rgba(0,0,0,0.38),inset_0_0_0_0.55px_rgba(0,0,0,0.38)]"
+          : "w-11 justify-center border-[var(--color-border)] bg-[var(--color-surface-soft)] px-0 text-[var(--color-text-muted)] hover:-translate-y-[3px] hover:scale-[1.06] hover:border-white/12 hover:bg-white hover:text-black hover:shadow-[0_14px_30px_rgba(255,255,255,0.2)]",
         className ?? "",
       ].join(" ")}
     >

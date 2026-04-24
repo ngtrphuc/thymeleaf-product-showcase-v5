@@ -13,6 +13,7 @@ import {
   type ProfileResponse,
 } from "@/lib/api";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
+import { AuthMotionIcon } from "@/components/ui/auth-motion-icon";
 import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge";
 
 export default function ProfilePage() {
@@ -177,7 +178,7 @@ export default function ProfilePage() {
             disabled={saving}
             className="ui-btn ui-btn-logout inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
           >
-            <GriddyIcon name="logout" />
+            <AuthMotionIcon variant="logout" className="h-4 w-4" />
             Sign Out
           </button>
         </div>

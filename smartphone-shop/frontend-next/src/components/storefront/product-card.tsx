@@ -78,9 +78,18 @@ export function ProductCard({ product, motionReduced = false }: ProductCardProps
         {productHref ? (
           <Link
             href={productHref}
-            className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center px-4 py-2.5 text-sm"
+            className="ui-btn ui-btn-primary group/details inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm"
           >
-            <GriddyIcon name="eye" className="mr-1" />
+            <span className="relative inline-flex h-4 w-4 items-center justify-center">
+              <GriddyIcon
+                name="eye-closed"
+                className="absolute inset-0 transition-[opacity,transform] duration-150 group-hover/details:opacity-0 group-hover/details:scale-95 group-focus-visible/details:opacity-0 group-focus-visible/details:scale-95"
+              />
+              <GriddyIcon
+                name="eye"
+                className="absolute inset-0 opacity-0 transition-[opacity,transform] duration-150 group-hover/details:opacity-100 group-hover/details:scale-100 group-focus-visible/details:opacity-100 group-focus-visible/details:scale-100"
+              />
+            </span>
             View Details
           </Link>
         ) : null}
