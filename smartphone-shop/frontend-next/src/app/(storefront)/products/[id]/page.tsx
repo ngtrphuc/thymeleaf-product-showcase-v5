@@ -166,7 +166,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 <Link
                   key={recommended.id}
                   href={`/products/${recommended.id}`}
-                  className="glass-panel rounded-2xl p-3 hover:-translate-y-0.5"
+                  className="glass-panel rounded-2xl p-3 hover:-translate-y-px"
                 >
                   <Image
                     src={toAssetUrl(recommended.imageUrl)}

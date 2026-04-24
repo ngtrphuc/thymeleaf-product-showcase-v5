@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentType, useEffect, useMemo, useState } from "react";
+import { startTransition, type ComponentType, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ClipboardList,
@@ -109,7 +109,9 @@ export function StorefrontHeaderDockNav() {
 
     if (item.key === "login") {
       const next = encodeURIComponent(pathname || "/products");
-      router.push(`/login?next=${next}`);
+      startTransition(() => {
+        router.push(`/login?next=${next}`);
+      });
       return;
     }
 
@@ -117,8 +119,10 @@ export function StorefrontHeaderDockNav() {
       setLoggingOut(true);
       try {
         await authLogout();
-        router.push("/login?reauth=1");
-        router.refresh();
+        startTransition(() => {
+          router.push("/login?reauth=1");
+          router.refresh();
+        });
       } catch (error) {
         if (error instanceof ApiError) {
           console.error(error.message);
@@ -131,23 +135,30 @@ export function StorefrontHeaderDockNav() {
     }
 
     if (item.href) {
+      const href = item.href;
       const requiresFreshAuthCheck =
         item.key === "cart" || item.key === "orders" || item.key === "wishlist" || item.key === "profile";
       if (requiresFreshAuthCheck) {
         try {
           const latestAuth = await fetchAuthMeCached({ force: true });
           if (!latestAuth.authenticated) {
-            const next = encodeURIComponent(item.href);
-            router.push(`/login?next=${next}&reauth=1`);
+            const next = encodeURIComponent(href);
+            startTransition(() => {
+              router.push(`/login?next=${next}&reauth=1`);
+            });
             return;
           }
         } catch {
-          const next = encodeURIComponent(item.href);
-          router.push(`/login?next=${next}&reauth=1`);
+          const next = encodeURIComponent(href);
+          startTransition(() => {
+            router.push(`/login?next=${next}&reauth=1`);
+          });
           return;
         }
       }
-      router.push(item.href);
+      startTransition(() => {
+        router.push(href);
+      });
     }
   }
 

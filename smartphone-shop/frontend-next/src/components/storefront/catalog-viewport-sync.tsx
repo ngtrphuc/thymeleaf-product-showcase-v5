@@ -7,22 +7,29 @@ const DESKTOP_BREAKPOINT_PX = 1024;
 const DESKTOP_PAGE_SIZE = "9";
 const COMPACT_PAGE_SIZE = "8";
 
-export function CatalogViewportSync() {
+type CatalogViewportSyncProps = {
+  currentPageSize: number;
+};
+
+export function CatalogViewportSync({ currentPageSize }: CatalogViewportSyncProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchParamsString = searchParams.toString();
+  const requestedPageSize = searchParams.get("pageSize");
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT_PX}px)`);
 
     function syncPageSize() {
       const desiredPageSize = mediaQuery.matches ? DESKTOP_PAGE_SIZE : COMPACT_PAGE_SIZE;
-      const nextParams = new URLSearchParams(searchParamsString);
+      const effectivePageSize = requestedPageSize ?? String(currentPageSize);
 
-      if (nextParams.get("pageSize") === desiredPageSize) {
+      if (effectivePageSize === desiredPageSize) {
         return;
       }
+
+      const nextParams = new URLSearchParams(searchParamsString);
 
       nextParams.set("pageSize", desiredPageSize);
       const nextQuery = nextParams.toString();
@@ -36,7 +43,7 @@ export function CatalogViewportSync() {
 
     mediaQuery.addEventListener("change", syncPageSize);
     return () => mediaQuery.removeEventListener("change", syncPageSize);
-  }, [pathname, router, searchParamsString]);
+  }, [currentPageSize, pathname, requestedPageSize, router, searchParamsString]);
 
   return null;
 }

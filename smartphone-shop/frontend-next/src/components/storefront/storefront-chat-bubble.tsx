@@ -55,6 +55,9 @@ export function StorefrontChatBubble() {
   const [hasUnreadPulse, setHasUnreadPulse] = useState(false);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [pageVisible, setPageVisible] = useState(
+    () => typeof document === "undefined" || document.visibilityState === "visible",
+  );
 
   const syncScrollModeFromViewport = useCallback(() => {
     const viewport = messagesViewportRef.current;
@@ -102,6 +105,17 @@ export function StorefrontChatBubble() {
     };
   }, []);
 
+  useEffect(() => {
+    function onVisibilityChange() {
+      setPageVisible(document.visibilityState === "visible");
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, []);
+
   const shouldShow =
     authState.authenticated &&
     !isAdminRole(authState.role) &&
@@ -109,7 +123,7 @@ export function StorefrontChatBubble() {
     !pathname.startsWith("/chat/");
 
   useEffect(() => {
-    if (!shouldShow) {
+    if (!shouldShow || !pageVisible) {
       return;
     }
 
@@ -161,13 +175,13 @@ export function StorefrontChatBubble() {
     void syncChat();
     const timerId = window.setInterval(() => {
       void syncChat();
-    }, 8000);
+    }, 10000);
 
     return () => {
       alive = false;
       window.clearInterval(timerId);
     };
-  }, [open, shouldShow]);
+  }, [open, pageVisible, shouldShow]);
 
   useEffect(() => {
     if (!shouldShow || !open) {
@@ -323,7 +337,7 @@ export function StorefrontChatBubble() {
       {open ? (
         <section
           ref={chatPanelRef}
-          className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.4rem] border border-white/12 bg-[radial-gradient(120%_120%_at_100%_0%,rgba(255,255,255,0.14),rgba(255,255,255,0.02)_52%,rgba(0,0,0,0.95)_100%)] shadow-[0_20px_44px_rgba(0,0,0,0.48)] backdrop-blur-md sm:bottom-6 sm:right-6"
+          className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.4rem] border border-white/12 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(5,5,5,0.98))] shadow-[0_14px_30px_rgba(0,0,0,0.38)] sm:bottom-6 sm:right-6"
         >
           <header className="flex items-center justify-between border-b border-white/10 bg-black/25 px-4 py-3">
             <div>
@@ -338,7 +352,7 @@ export function StorefrontChatBubble() {
                   setOpen(false);
                 }}
                 aria-label="Close chat"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-black/35 text-[var(--color-text-muted)] transition-[background-color,color,border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-white/18 hover:bg-white hover:text-black"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-black/35 text-[var(--color-text-muted)] transition-[background-color,color,border-color,transform] duration-200 hover:-translate-y-px hover:border-white/18 hover:bg-white hover:text-black"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -367,7 +381,7 @@ export function StorefrontChatBubble() {
                     const isUser = message.senderRole === "USER";
                     const sideClass = isUser ? "justify-end" : "justify-start";
                     const toneClass = isUser
-                      ? "bg-[var(--color-primary)] text-black shadow-[0_8px_20px_rgba(255,255,255,0.22)]"
+                      ? "bg-[var(--color-primary)] text-black shadow-[0_6px_14px_rgba(255,255,255,0.16)]"
                       : "border border-white/12 bg-white/6 text-[var(--color-text)]";
                     const metaClass = isUser ? "text-white/68" : "text-[var(--color-text-muted)]";
                     return (
@@ -391,7 +405,7 @@ export function StorefrontChatBubble() {
                     onClick={() => scrollToLatest("smooth")}
                     aria-label="Jump to latest message"
                     title="Jump to latest"
-                    className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-black/65 px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] shadow-[0_14px_30px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/24 hover:bg-white hover:text-black"
+                    className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-black/65 px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] shadow-[0_10px_22px_rgba(0,0,0,0.35)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-px hover:border-white/24 hover:bg-white hover:text-black"
                   >
                     Latest
                     <ChevronsDown className="h-3.5 w-3.5" />
@@ -426,7 +440,7 @@ export function StorefrontChatBubble() {
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             aria-label="Scroll to top"
             title="Scroll to top"
-            className="fixed bottom-3 right-5 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-[var(--color-surface-soft)] text-[var(--color-text)] shadow-[0_14px_30px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white hover:text-black sm:bottom-3 sm:right-6"
+            className="fixed bottom-3 right-5 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-[var(--color-surface-soft)] text-[var(--color-text)] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-px hover:border-white/10 hover:bg-white hover:text-black sm:bottom-3 sm:right-6"
           >
             <ArrowUp className="h-4 w-4" />
           </button>
@@ -439,10 +453,10 @@ export function StorefrontChatBubble() {
           onClick={() => void openChat()}
           aria-label="Open chat"
           title="Open chat"
-          className={`fixed right-5 z-40 inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-white/16 bg-[var(--color-surface-soft)] px-4 text-[var(--color-text)] shadow-[0_18px_40px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color,opacity] duration-200 hover:-translate-y-1 hover:border-white/10 hover:bg-white hover:text-black sm:right-6 ${
+          className={`fixed right-5 z-40 inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-white/16 bg-[var(--color-surface-soft)] px-4 text-[var(--color-text)] shadow-[0_12px_24px_rgba(0,0,0,0.36)] transition-[transform,background-color,color,border-color,opacity] duration-200 hover:-translate-y-px hover:border-white/10 hover:bg-white hover:text-black sm:right-6 ${
             showScrollTop ? "bottom-16 sm:bottom-16" : "bottom-5 sm:bottom-6"
           } ${
-            hasUnreadPulse ? "animate-pulse" : ""
+            hasUnreadPulse ? "ui-notify-pulse" : ""
           }`}
         >
           <MessageSquare className="h-5 w-5" />

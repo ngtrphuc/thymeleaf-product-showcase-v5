@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   addCartItem,
   ApiError,
@@ -258,7 +258,6 @@ export default function ComparePage() {
 
     setPickerLoading(true);
     setPickerError(null);
-    setPickerData(null);
     try {
       const params = new URLSearchParams();
       params.set("page", String(page));
@@ -373,7 +372,7 @@ export default function ComparePage() {
     setPickerMotionPhase("entering");
     const timerId = window.setTimeout(() => {
       setPickerMotionPhase("idle");
-    }, 760);
+    }, 240);
 
     return () => window.clearTimeout(timerId);
   }, [isPickerVisible, pickerAnimationKey, pickerData, pickerReducedMotion]);
@@ -388,7 +387,7 @@ export default function ComparePage() {
     }
 
     return (
-      <div className="absolute inset-3 z-10 flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/95 p-3 shadow-[0_18px_36px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+      <div className="absolute inset-3 z-10 flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/98 p-3 shadow-[0_12px_24px_rgba(0,0,0,0.32)]">
         <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] pb-3">
           <div>
             <p className="text-sm font-semibold text-slate-900">{`Product ${slotIndex + 1}`}</p>
@@ -438,7 +437,7 @@ export default function ComparePage() {
 
         {pickerError ? <p className="mt-3 text-sm text-red-700">{pickerError}</p> : null}
 
-        {pickerLoading ? (
+        {!pickerData && pickerLoading ? (
           <div className="flex flex-1 items-center justify-center text-sm text-slate-600">Loading products...</div>
         ) : !pickerData || pickerData.products.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-sm text-slate-600">No products found.</div>
@@ -448,8 +447,9 @@ export default function ComparePage() {
               <p>
                 Showing <strong>{pickerData.products.length}</strong> / <strong>{pickerData.totalElements}</strong>
               </p>
-              <p>
+              <p className="text-right">
                 Page <strong>{pickerData.currentPage + 1}</strong> / <strong>{Math.max(1, pickerData.totalPages)}</strong>
+                {pickerLoading ? <span className="ml-2 text-[var(--color-text-muted)]">Updating...</span> : null}
               </p>
             </div>
 
@@ -461,59 +461,58 @@ export default function ComparePage() {
               }
             >
               <div className="space-y-2">
-              {pickerData.products.map((product, index) => {
-                const inCompare = !!product.id && (compare?.ids ?? []).includes(product.id);
-                const sameAsTarget = !!product.id && !!targetItem?.id && targetItem.id === product.id;
-                const selectable = !!product.id && (!inCompare || sameAsTarget);
+                {pickerData.products.map((product) => {
+                  const inCompare = !!product.id && (compare?.ids ?? []).includes(product.id);
+                  const sameAsTarget = !!product.id && !!targetItem?.id && targetItem.id === product.id;
+                  const selectable = !!product.id && (!inCompare || sameAsTarget);
 
-                return (
-                  <article
-                    key={product.id ?? `${product.name}-${product.brand}`}
-                    className="compare-picker-flip-card rounded-xl border border-[var(--color-border)] bg-white p-2.5"
-                    style={{ "--i": index } as CSSProperties}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <Image
-                          src={toAssetUrl(product.imageUrl)}
-                          alt={product.name}
-                          width={56}
-                          height={56}
-                          sizes="56px"
-                          className="h-14 w-14 rounded-lg bg-[var(--color-surface-soft)] object-contain p-1"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
-                          <p className="mt-0.5 text-xs text-slate-600">
-                            {product.storage || "N/A"} / {product.ram || "N/A"}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold text-[var(--color-primary-strong)]">
-                            {formatPriceVnd(product.price)}
-                          </p>
+                  return (
+                    <article
+                      key={product.id ?? `${product.name}-${product.brand}`}
+                      className="compare-picker-flip-card rounded-xl border border-[var(--color-border)] bg-white p-2.5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                          <Image
+                            src={toAssetUrl(product.imageUrl)}
+                            alt={product.name}
+                            width={56}
+                            height={56}
+                            sizes="56px"
+                            className="h-14 w-14 rounded-lg bg-[var(--color-surface-soft)] object-contain p-1"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
+                            <p className="mt-0.5 text-xs text-slate-600">
+                              {product.storage || "N/A"} / {product.ram || "N/A"}
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-[var(--color-primary-strong)]">
+                              {formatPriceVnd(product.price)}
+                            </p>
+                          </div>
                         </div>
-                      </div>
 
-                      <button
-                        type="button"
-                        disabled={busy || !selectable}
+                        <button
+                          type="button"
+                          disabled={busy || !selectable}
                           onClick={() => {
                             if (product.id) {
                               void onSelectProductForSlot(product.id);
                             }
                           }}
-                        className="ui-btn ui-btn-primary inline-flex shrink-0 items-center justify-center gap-2 px-3 py-2 text-xs"
-                      >
-                        <GriddyIcon name={sameAsTarget ? "check" : "clipboard"} />
-                        {sameAsTarget
-                          ? "Selected"
-                          : inCompare
-                            ? "Already in compare"
-                            : `Add to Product ${slotIndex + 1}`}
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
+                          className="ui-btn ui-btn-primary inline-flex shrink-0 items-center justify-center gap-2 px-3 py-2 text-xs"
+                        >
+                          <GriddyIcon name={sameAsTarget ? "check" : "clipboard"} />
+                          {sameAsTarget
+                            ? "Selected"
+                            : inCompare
+                              ? "Already in compare"
+                              : `Add to Product ${slotIndex + 1}`}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </div>
 
@@ -705,7 +704,7 @@ export default function ComparePage() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="compare-matrix-shell overflow-x-auto">
             <table className="min-w-full border-collapse">
               <thead className="bg-[#0f0f0f]">
                 <tr>

@@ -56,7 +56,7 @@ export function StorefrontCompareBanner() {
     <div className="pointer-events-none fixed bottom-5 left-1/2 z-[60] w-[min(92vw,760px)] -translate-x-1/2">
       <Link
         href="/compare"
-        className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl border border-zinc-600/60 bg-[#111111]/95 px-4 py-3 text-sm shadow-[0_12px_24px_rgba(0,0,0,0.42)] transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-zinc-400/80"
+        className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl border border-zinc-600/60 bg-[#111111]/95 px-4 py-3 text-sm shadow-[0_8px_18px_rgba(0,0,0,0.32)] transition-[transform,border-color] duration-200 hover:-translate-y-px hover:border-zinc-400/80"
       >
         <span className="inline-flex items-center gap-2 text-slate-100">
           <GriddyIcon name="clipboard" />

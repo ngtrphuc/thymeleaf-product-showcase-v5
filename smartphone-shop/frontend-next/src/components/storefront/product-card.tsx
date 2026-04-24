@@ -8,14 +8,21 @@ import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 type ProductCardProps = {
   product: ProductSummary;
+  motionReduced?: boolean;
 };
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, motionReduced = false }: ProductCardProps) {
   const productId = product.id ?? 0;
   const productHref = product.id ? `/products/${productId}` : null;
+  const mediaClassName = motionReduced
+    ? "h-full w-full object-contain p-2"
+    : "h-full w-full object-contain p-2 transition-transform duration-150 ease-out group-hover:-translate-y-px";
 
   return (
-    <article className="glass-panel card-hover group overflow-hidden rounded-3xl">
+    <article
+      className="glass-panel card-hover group overflow-hidden rounded-3xl"
+      data-motion={motionReduced ? "reduced" : "full"}
+    >
       <div className="relative aspect-square overflow-hidden bg-[var(--color-surface-soft)]">
         {productHref ? (
           <Link
@@ -29,7 +36,7 @@ export function ProductCard({ product }: ProductCardProps) {
               width={640}
               height={640}
               sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
-              className="h-full w-full object-contain p-2 transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+              className={mediaClassName}
             />
           </Link>
         ) : (
@@ -39,7 +46,7 @@ export function ProductCard({ product }: ProductCardProps) {
             width={640}
             height={640}
             sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
-            className="h-full w-full object-contain p-2 transition-transform duration-200 ease-out group-hover:scale-[1.02]"
+            className={mediaClassName}
           />
         )}
         <div className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700">

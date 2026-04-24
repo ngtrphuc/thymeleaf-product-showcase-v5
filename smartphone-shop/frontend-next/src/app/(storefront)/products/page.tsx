@@ -75,7 +75,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   return (
     <div className="space-y-6">
-      <CatalogViewportSync />
+      <CatalogViewportSync currentPageSize={catalog.pageSize} />
 
       <header className="glass-panel rounded-3xl p-6 sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">

@@ -156,14 +156,14 @@ export function StorefrontFooter() {
                 rel="noreferrer noopener"
                 aria-label={`Open ${social.name} login page`}
                 title={`${social.name} login`}
-                className="ui-btn group relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-0 text-xs text-[var(--color-text-muted)] transition-[transform,background-color,color,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:scale-[1.03] hover:border-white/12 hover:bg-white hover:text-black hover:shadow-[0_12px_26px_rgba(255,255,255,0.22)]"
+                className="ui-btn group relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-0 text-xs text-[var(--color-text-muted)] transition-[transform,background-color,color,border-color,box-shadow] duration-200 hover:-translate-y-px hover:border-white/12 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(255,255,255,0.16)]"
               >
                 <Image
                   src={social.iconPath}
                   alt={`${social.name} logo`}
                   width={14}
                   height={14}
-                  className="h-[14px] w-[14px] object-contain transition-[filter,transform] duration-200 group-hover:scale-110 group-hover:invert"
+                  className="h-[14px] w-[14px] object-contain transition-[filter,transform] duration-200 group-hover:invert"
                 />
                 <span className="pointer-events-none absolute -top-9 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-[11px] font-medium text-[var(--color-text)] opacity-0 shadow-[0_4px_18px_rgba(0,0,0,0.35)] transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
                   {social.name}

@@ -92,7 +92,7 @@ export function QuickProductActions({ productId, initiallyWishlisted, className 
           aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
           aria-pressed={wishlisted}
           title={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-black/92 text-white transition-[transform,background-color,border-color,color,opacity] duration-200 hover:-translate-y-0.5 hover:border-black/10 hover:bg-white hover:text-black disabled:cursor-wait disabled:opacity-70 ${
+          className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-black/92 text-white transition-[transform,background-color,border-color,color,opacity] duration-200 hover:-translate-y-px hover:border-black/10 hover:bg-white hover:text-black disabled:cursor-wait disabled:opacity-70 ${
             wishlisted ? "ring-1 ring-white/35" : ""
           }`}
         >
@@ -101,7 +101,7 @@ export function QuickProductActions({ productId, initiallyWishlisted, className 
           </span>
           <GriddyIcon
             name={wishlisted ? "heart-filled" : "heart-outline"}
-            className={`h-4 w-4 ${loadingAction === "wishlist" ? "animate-pulse" : ""}`}
+            className={`h-4 w-4 ${loadingAction === "wishlist" ? "opacity-70" : ""}`}
           />
         </button>
         <button
@@ -110,14 +110,14 @@ export function QuickProductActions({ productId, initiallyWishlisted, className 
           disabled={loadingAction !== null}
           aria-label="Add to compare"
           title="Add to compare"
-          className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-black/92 text-white transition-[transform,background-color,border-color,color,opacity] duration-200 hover:-translate-y-0.5 hover:border-black/10 hover:bg-white hover:text-black disabled:cursor-wait disabled:opacity-70 ${
+          className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/16 bg-black/92 text-white transition-[transform,background-color,border-color,color,opacity] duration-200 hover:-translate-y-px hover:border-black/10 hover:bg-white hover:text-black disabled:cursor-wait disabled:opacity-70 ${
             compareAdded ? "ring-1 ring-white/35" : ""
           }`}
         >
           <span className="sr-only">{loadingAction === "compare" ? "Adding to compare" : "Add to compare"}</span>
           <GriddyIcon
             name={compareAdded ? "check" : "clipboard"}
-            className={`h-4 w-4 ${loadingAction === "compare" ? "animate-pulse" : ""}`}
+            className={`h-4 w-4 ${loadingAction === "compare" ? "opacity-70" : ""}`}
           />
         </button>
       </div>
@@ -132,7 +132,7 @@ export function QuickProductActions({ productId, initiallyWishlisted, className 
       {!error && compareCount > 0 ? (
         <Link
           href="/compare"
-          className="max-w-[12.5rem] rounded-2xl bg-white/92 px-3 py-1.5 text-right text-[11px] font-semibold text-slate-800 transition-[background-color,opacity,transform] duration-200 hover:bg-white"
+          className="max-w-[12.5rem] rounded-2xl bg-white/92 px-3 py-1.5 text-right text-[11px] font-semibold text-slate-800 transition-[background-color,opacity] duration-200 hover:bg-white"
         >
           Compare list: {compareCount} item(s)
         </Link>
