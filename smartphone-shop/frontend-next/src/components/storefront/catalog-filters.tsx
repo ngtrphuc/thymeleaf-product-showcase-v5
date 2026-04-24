@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { startTransition, useMemo, useState } from "react";
 import { FilterDropdown, type FilterDropdownOption as Option } from "@/components/storefront/filter-dropdown";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
@@ -137,7 +137,9 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
     params.set("page", "0");
 
     const query = params.toString();
-    router.push(`${pathname}${query ? `?${query}` : ""}`);
+    startTransition(() => {
+      router.push(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
+    });
   }
 
   function onSortChange(nextSort: string) {
@@ -155,7 +157,9 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
     setPriceMax("");
     setBatteryRange("");
     setScreenSize("");
-    router.push(pathname);
+    startTransition(() => {
+      router.push(pathname, { scroll: false });
+    });
   }
 
   return (
@@ -207,7 +211,7 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
         <button
           type="button"
           onClick={() => applyFilters()}
-          className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm hover:-translate-y-1 hover:shadow-[0_12px_26px_rgba(255,255,255,0.24)]"
+          className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm"
         >
           <GriddyIcon name="check" />
           Apply Filters

@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
@@ -473,11 +474,12 @@ export default function ComparePage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex min-w-0 flex-1 items-center gap-3">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Image
                           src={toAssetUrl(product.imageUrl)}
                           alt={product.name}
-                          loading="lazy"
+                          width={56}
+                          height={56}
+                          sizes="56px"
                           className="h-14 w-14 rounded-lg bg-[var(--color-surface-soft)] object-contain p-1"
                         />
                         <div className="min-w-0 flex-1">
@@ -605,11 +607,12 @@ export default function ComparePage() {
                   Add
                 </button>
               </div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={toAssetUrl(item.imageUrl)}
                 alt={item.name}
-                loading="lazy"
+                width={520}
+                height={520}
+                sizes="(max-width: 768px) 90vw, (max-width: 1200px) 42vw, 30vw"
                 className="aspect-square w-full rounded-2xl bg-[var(--color-surface-soft)] object-contain p-2"
               />
               <h2 className="mt-3 text-lg font-semibold text-slate-900">{item.name}</h2>

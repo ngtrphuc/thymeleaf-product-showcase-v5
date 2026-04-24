@@ -67,7 +67,7 @@ export function FilterDropdown({
         </button>
 
         {open && !disabled ? (
-          <div className="ui-dropdown-panel absolute left-0 right-0 top-[calc(100%+0.45rem)] z-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[0_16px_38px_rgba(0,0,0,0.5)]">
+          <div className="ui-dropdown-panel absolute left-0 right-0 top-[calc(100%+0.45rem)] z-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[0_10px_24px_rgba(0,0,0,0.42)]">
             <ul role="listbox" className={`${listHeightClass} space-y-1 overflow-y-auto`}>
               {options.map((option) => {
                 const active = option.value === value;
@@ -80,10 +80,10 @@ export function FilterDropdown({
                         setOpen(false);
                       }}
                       className={[
-                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-colors transition-transform transition-shadow duration-150",
+                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-[transform,background-color,color] duration-150",
                         active
-                          ? "bg-white/10 text-white shadow-[0_8px_18px_rgba(255,255,255,0.12)]"
-                          : "text-[var(--color-text-muted)] hover:-translate-y-0.5 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(255,255,255,0.24)]",
+                          ? "bg-white/10 text-white"
+                          : "text-[var(--color-text-muted)] hover:-translate-y-0.5 hover:bg-white hover:text-black",
                       ].join(" ")}
                     >
                       {option.label}

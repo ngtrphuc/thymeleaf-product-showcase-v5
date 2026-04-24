@@ -37,10 +37,16 @@
   --ease-out-fast: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-fast: cubic-bezier(0.55, 0.08, 0.68, 0.53);
   --ease-micro: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-ios: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-ios-soft: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --catalog-stagger-step: 55ms;
-  --catalog-exit-step: 18ms;
-  --compare-stagger-step: 45ms;
+  --motion-fast: 160ms;
+  --motion-normal: 260ms;
+  --motion-slow: 420ms;
+
+  --catalog-stagger-step: 32ms;
+  --catalog-exit-step: 12ms;
+  --compare-stagger-step: 28ms;
 }
 
 @theme inline {
@@ -74,12 +80,38 @@ input,
 select,
 textarea {
   transition:
-    opacity 0.15s var(--ease-micro),
-    transform 0.18s var(--ease-micro),
-    color 0.18s var(--ease-micro),
-    background-color 0.18s var(--ease-micro),
-    border-color 0.18s var(--ease-micro),
-    box-shadow 0.18s var(--ease-micro);
+    opacity var(--motion-fast) var(--ease-ios),
+    transform var(--motion-fast) var(--ease-ios),
+    color var(--motion-fast) var(--ease-ios),
+    background-color var(--motion-fast) var(--ease-ios),
+    border-color var(--motion-fast) var(--ease-ios);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.page-enter {
+  animation: page-enter var(--motion-normal) var(--ease-ios-soft) both;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .glass-panel {
@@ -90,8 +122,8 @@ textarea {
 }
 
 .glass-panel-blur {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .glass-panel:hover {
@@ -115,14 +147,17 @@ textarea {
 }
 
 .ui-negative-hover {
-  will-change: filter;
+  will-change: transform, opacity;
   transform: translateZ(0);
-  transition: filter 200ms var(--ease-micro);
+  transition:
+    transform var(--motion-fast) var(--ease-ios),
+    opacity var(--motion-fast) var(--ease-ios);
 }
 
 .ui-negative-hover:hover,
 .ui-negative-hover:focus-visible {
-  filter: invert(1) hue-rotate(180deg);
+  transform: translateY(-1px) translateZ(0);
+  opacity: 0.92;
 }
 
 .ui-header-contrast {
@@ -222,6 +257,19 @@ textarea {
   opacity: 0.45;
   transform: none !important;
   will-change: auto;
+}
+
+.card-hover {
+  transform: translateZ(0);
+  will-change: transform;
+  transition:
+    transform var(--motion-fast) var(--ease-ios),
+    opacity var(--motion-fast) var(--ease-ios);
+}
+
+.card-hover:hover,
+.card-hover:focus-within {
+  transform: translateY(-3px) scale(1.01) translateZ(0);
 }
 
 .ui-btn-primary {
@@ -579,8 +627,8 @@ input[type="number"] {
   --expand-collapsed-width: 2.8rem;
   --expand-open-width: 9rem;
   position: relative;
-  width: var(--expand-collapsed-width);
-  min-width: var(--expand-collapsed-width);
+  width: var(--expand-open-width);
+  min-width: var(--expand-open-width);
   height: 2.6rem;
   border-radius: 10px;
   border: 1px solid var(--color-border);
@@ -593,13 +641,12 @@ input[type="number"] {
   padding: 0 0.85rem;
   box-shadow: none;
   transition:
-    width 300ms var(--ease-spring),
-    min-width 300ms var(--ease-spring),
-    background-color 180ms var(--ease-micro),
-    border-color 180ms var(--ease-micro),
-    color 180ms var(--ease-micro),
-    box-shadow 180ms var(--ease-micro);
-  will-change: width;
+    transform var(--motion-fast) var(--ease-ios),
+    background-color var(--motion-fast) var(--ease-ios),
+    border-color var(--motion-fast) var(--ease-ios),
+    color var(--motion-fast) var(--ease-ios),
+    box-shadow var(--motion-fast) var(--ease-ios);
+  will-change: transform;
 }
 
 .ui-expand-link .ui-expand-icon {
@@ -612,24 +659,18 @@ input[type="number"] {
   white-space: nowrap;
   max-width: 0;
   opacity: 0;
-  transform: translateX(-8px);
+  transform: translateX(-6px);
   transition:
-    max-width 260ms var(--ease-spring),
-    opacity 200ms var(--ease-micro),
-    transform 240ms var(--ease-spring);
+    max-width var(--motion-normal) var(--ease-ios-soft),
+    opacity var(--motion-fast) var(--ease-ios),
+    transform var(--motion-fast) var(--ease-ios);
   font-size: 12.5px;
   will-change: opacity, transform;
 }
 
 .ui-expand-link:hover,
-.ui-expand-link:focus-visible,
-.ui-expand-link.is-active {
-  width: var(--expand-open-width);
-  min-width: var(--expand-open-width);
-}
-
-.ui-expand-link:hover,
 .ui-expand-link:focus-visible {
+  transform: translateY(-1px) translateZ(0);
   color: var(--color-text);
   border-color: var(--color-border-2);
   background: var(--color-surface-3);
@@ -648,7 +689,7 @@ input[type="number"] {
 .ui-expand-link.is-active .ui-expand-icon {
   width: 1.08rem;
   height: 1.08rem;
-  transform: scale(1.06);
+  transform: scale(1.04);
   filter: drop-shadow(0 0 0.15px currentColor);
 }
 
@@ -760,61 +801,54 @@ input[type="number"] {
 }
 
 .catalog-flip-stage {
-  perspective: 1800px;
-  perspective-origin: 50% 40%;
+  isolation: isolate;
 }
 
 .catalog-flip-grid {
-  transform-style: flat;
+  transform: translateZ(0);
 }
 
 .catalog-flip-card {
-  transform-origin: center center;
-  transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  contain: layout style;
+  contain: layout paint style;
   content-visibility: auto;
   contain-intrinsic-size: 420px;
   will-change: transform, opacity;
 }
 
 .catalog-flip-stage.is-entering .catalog-flip-card {
-  animation: catalog-card-flip-in 680ms var(--ease-spring) both;
+  animation: catalog-card-enter var(--motion-normal) var(--ease-ios-soft) both;
   animation-delay: calc(var(--i, 0) * var(--catalog-stagger-step));
 }
 
 .catalog-flip-stage.is-exiting .catalog-flip-card {
-  animation: catalog-card-flip-out 240ms var(--ease-in-fast) both;
+  animation: catalog-card-exit var(--motion-fast) var(--ease-ios) both;
   animation-delay: calc(var(--i, 0) * var(--catalog-exit-step));
 }
 
-@keyframes catalog-card-flip-in {
+@keyframes catalog-card-enter {
   0% {
     opacity: 0;
-    transform: rotateY(-72deg) scale(0.93) translateY(12px);
-  }
-
-  58% {
-    opacity: 1;
-    transform: rotateY(8deg) scale(1.01) translateY(-2px);
+    transform: translate3d(0, 10px, 0) scale(0.988);
   }
 
   100% {
     opacity: 1;
-    transform: rotateY(0deg) scale(1) translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
-@keyframes catalog-card-flip-out {
+@keyframes catalog-card-exit {
   0% {
     opacity: 1;
-    transform: rotateY(0deg) scale(1) translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 
   100% {
     opacity: 0;
-    transform: rotateY(68deg) scale(0.94) translateY(10px);
+    transform: translate3d(0, 8px, 0) scale(0.988);
   }
 }
 
@@ -826,38 +860,31 @@ input[type="number"] {
 }
 
 .compare-picker-flip-stage {
-  perspective: 1400px;
-  perspective-origin: 50% 30%;
+  isolation: isolate;
 }
 
 .compare-picker-flip-card {
-  transform-origin: center center;
-  transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  contain: layout style;
+  contain: layout paint style;
   will-change: transform, opacity;
 }
 
 .compare-picker-flip-stage.is-entering .compare-picker-flip-card {
-  animation: compare-picker-card-flip-vertical 640ms var(--ease-spring) both;
+  animation: compare-picker-card-enter var(--motion-normal) var(--ease-ios-soft) both;
   animation-delay: calc(var(--i, 0) * var(--compare-stagger-step));
 }
 
-@keyframes compare-picker-card-flip-vertical {
+@keyframes compare-picker-card-enter {
   0% {
     opacity: 0;
-    transform: rotateX(-64deg) scale(0.95) translateY(12px);
-  }
-
-  60% {
-    opacity: 1;
-    transform: rotateX(8deg) scale(1.01) translateY(-2px);
+    transform: translate3d(0, 10px, 0) scale(0.99);
   }
 
   100% {
     opacity: 1;
-    transform: rotateX(0deg) scale(1) translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 

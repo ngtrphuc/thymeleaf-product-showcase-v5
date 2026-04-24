@@ -323,7 +323,7 @@ export function StorefrontChatBubble() {
       {open ? (
         <section
           ref={chatPanelRef}
-          className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.4rem] border border-white/12 bg-[radial-gradient(120%_120%_at_100%_0%,rgba(255,255,255,0.14),rgba(255,255,255,0.02)_52%,rgba(0,0,0,0.95)_100%)] shadow-[0_24px_56px_rgba(0,0,0,0.52)] backdrop-blur-2xl sm:bottom-6 sm:right-6"
+          className="fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.4rem] border border-white/12 bg-[radial-gradient(120%_120%_at_100%_0%,rgba(255,255,255,0.14),rgba(255,255,255,0.02)_52%,rgba(0,0,0,0.95)_100%)] shadow-[0_20px_44px_rgba(0,0,0,0.48)] backdrop-blur-md sm:bottom-6 sm:right-6"
         >
           <header className="flex items-center justify-between border-b border-white/10 bg-black/25 px-4 py-3">
             <div>
@@ -426,7 +426,7 @@ export function StorefrontChatBubble() {
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             aria-label="Scroll to top"
             title="Scroll to top"
-            className="fixed bottom-3 right-5 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-[var(--color-surface-soft)] text-[var(--color-text)] shadow-[0_14px_30px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white hover:text-black sm:bottom-3 sm:right-6"
+            className="fixed bottom-3 right-5 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-[var(--color-surface-soft)] text-[var(--color-text)] shadow-[0_14px_30px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/10 hover:bg-white hover:text-black sm:bottom-3 sm:right-6"
           >
             <ArrowUp className="h-4 w-4" />
           </button>
@@ -439,7 +439,7 @@ export function StorefrontChatBubble() {
           onClick={() => void openChat()}
           aria-label="Open chat"
           title="Open chat"
-          className={`fixed right-5 z-40 inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-white/16 bg-[var(--color-surface-soft)] px-4 text-[var(--color-text)] shadow-[0_18px_40px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color,box-shadow] duration-200 hover:-translate-y-1 hover:border-white/10 hover:bg-white hover:text-black hover:shadow-[0_20px_44px_rgba(0,0,0,0.52)] sm:right-6 ${
+          className={`fixed right-5 z-40 inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-white/16 bg-[var(--color-surface-soft)] px-4 text-[var(--color-text)] shadow-[0_18px_40px_rgba(0,0,0,0.45)] transition-[transform,background-color,color,border-color,opacity] duration-200 hover:-translate-y-1 hover:border-white/10 hover:bg-white hover:text-black sm:right-6 ${
             showScrollTop ? "bottom-16 sm:bottom-16" : "bottom-5 sm:bottom-6"
           } ${
             hasUnreadPulse ? "animate-pulse" : ""

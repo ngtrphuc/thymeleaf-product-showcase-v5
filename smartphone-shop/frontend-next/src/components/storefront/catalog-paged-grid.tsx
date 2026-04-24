@@ -22,7 +22,7 @@ type CatalogPagedGridProps = {
   paginationItems: PaginationItem[];
 };
 
-const EXIT_DURATION_MS = 240;
+const EXIT_DURATION_MS = 180;
 
 export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGridProps) {
   const router = useRouter();
@@ -48,7 +48,7 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
       return;
     }
 
-    const timerId = window.setTimeout(() => setPhase("idle"), 760);
+    const timerId = window.setTimeout(() => setPhase("idle"), 360);
     return () => window.clearTimeout(timerId);
   }, [isReducedMotion, phase]);
 
@@ -68,7 +68,7 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
 
     if (isReducedMotion) {
       event.preventDefault();
-      startTransition(() => router.push(item.href));
+      startTransition(() => router.push(item.href, { scroll: false }));
       return;
     }
 
@@ -77,7 +77,7 @@ export function CatalogPagedGrid({ products, paginationItems }: CatalogPagedGrid
     setPhase("exiting");
 
     navigationTimerRef.current = window.setTimeout(() => {
-      startTransition(() => router.push(item.href));
+      startTransition(() => router.push(item.href, { scroll: false }));
     }, EXIT_DURATION_MS);
   }
 
