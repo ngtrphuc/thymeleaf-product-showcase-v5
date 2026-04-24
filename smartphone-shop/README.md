@@ -17,6 +17,7 @@ inventory at file level.
 - [Local Development](#local-development)
 - [Environment Configuration](#environment-configuration)
 - [Refactor Progress](#refactor-progress)
+- [Recent UI Updates](#recent-ui-updates)
 - [Testing and Quality](#testing-and-quality)
 - [Repository Structure (Detailed)](#repository-structure-detailed)
 - [Contributor Notes](#contributor-notes)
@@ -43,6 +44,7 @@ Smartphone Shop models a production-oriented commerce workflow:
 - Order history and cancellation (business-rule based).
 - Wishlist and compare.
 - Customer support chat.
+- Storefront footer with role-aware quick links and social login shortcuts.
 
 ### Admin Features
 
@@ -237,6 +239,28 @@ Status: retained for asset compatibility.
 
 - `frontend/static` remains as a legacy asset source.
 - Runtime emphasis is on `frontend-next` for active UI.
+
+## Recent UI Updates
+
+Latest storefront UI refinements in `frontend-next`:
+
+- Motion system refresh for smoother page and card transitions using
+  transform/opacity-first animations.
+- App Router page-level transitions via route templates for
+  `(storefront)` and `admin`.
+- Vertical pagination rail for product catalog on desktop:
+  - sticky positioning (summary-like behavior, not floating drift),
+  - up/down arrow navigation,
+  - active page stays stable on hover,
+  - non-active buttons use invert + pop hover states.
+- Footer redesign:
+  - English copy and updated hotline format: `+81 XXXX XXXX`,
+  - role-aware quick links:
+    - guest: product + compare links,
+    - authenticated customer: adds cart + orders,
+    - authenticated admin: admin panel link (no customer cart/orders),
+  - SNS icon buttons (Facebook, Instagram, X, LINE, TikTok, YouTube)
+    with hover tooltip labels and external login links.
 
 ### Observability and Operations
 
