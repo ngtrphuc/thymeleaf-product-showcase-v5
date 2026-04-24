@@ -801,15 +801,18 @@ input[type="number"] {
 }
 
 .catalog-flip-stage {
+  perspective: 1400px;
+  perspective-origin: 50% 38%;
   isolation: isolate;
 }
 
 .catalog-flip-grid {
-  transform: translateZ(0);
+  transform-style: preserve-3d;
 }
 
 .catalog-flip-card {
-  transform: translate3d(0, 0, 0);
+  transform-origin: center center;
+  transform: translate3d(0, 0, 0) rotateY(0deg);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   contain: layout paint style;
@@ -831,24 +834,29 @@ input[type="number"] {
 @keyframes catalog-card-enter {
   0% {
     opacity: 0;
-    transform: translate3d(0, 10px, 0) scale(0.988);
+    transform: translate3d(0, 11px, 0) rotateY(-22deg) scale(0.986);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translate3d(0, -1px, 0) rotateY(3deg) scale(1.002);
   }
 
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
   }
 }
 
 @keyframes catalog-card-exit {
   0% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
   }
 
   100% {
     opacity: 0;
-    transform: translate3d(0, 8px, 0) scale(0.988);
+    transform: translate3d(0, 7px, 0) rotateY(14deg) scale(0.992);
   }
 }
 
