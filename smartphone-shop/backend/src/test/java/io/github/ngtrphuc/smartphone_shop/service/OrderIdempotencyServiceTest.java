@@ -91,7 +91,7 @@ class OrderIdempotencyServiceTest {
         key.setIdempotencyKey("checkout-key");
         key.setRequestFingerprint("fingerprint-1");
         key.setOrderId(null);
-        key.setCreatedAt(LocalDateTime.now().minusMinutes(10));
+        key.setCreatedAt(LocalDateTime.now().minusMinutes(20));
 
         when(orderIdempotencyKeyRepository.findByUserEmailAndIdempotencyKey("user@example.com", "checkout-key"))
                 .thenReturn(Optional.of(key));

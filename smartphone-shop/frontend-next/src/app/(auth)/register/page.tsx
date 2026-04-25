@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, authRegister } from "@/lib/api";
+import { resolveSafeInternalPath } from "@/lib/navigation";
 import { PasswordField } from "@/components/auth/password-field";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
@@ -12,9 +13,8 @@ function getAuthRedirectParams(): { nextPath: string; reauthFlow: boolean } {
     return { nextPath: "/products", reauthFlow: false };
   }
   const search = new URLSearchParams(window.location.search);
-  const next = search.get("next");
   return {
-    nextPath: next && next.startsWith("/") ? next : "/products",
+    nextPath: resolveSafeInternalPath(search.get("next")),
     reauthFlow: search.get("reauth") === "1",
   };
 }

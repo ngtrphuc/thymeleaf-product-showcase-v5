@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { CSSProperties, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   addCartItem,
   ApiError,
@@ -21,7 +21,7 @@ import { FilterDropdown, type FilterDropdownOption } from "@/components/storefro
 import { formatPriceVnd } from "@/lib/format";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
-const COMPARE_SLOT_STORAGE_KEY = "storefront-compare-slot-order";
+const COMPARE_SLOT_SESSION_KEY = "storefront-compare-slot-order";
 const PICKER_PAGE_SIZE = 6;
 
 type CompareRow = {
@@ -51,7 +51,7 @@ function readStoredSlotIds(maxCompare: number): Array<number | null> {
   }
 
   try {
-    const raw = window.localStorage.getItem(COMPARE_SLOT_STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(COMPARE_SLOT_SESSION_KEY);
     if (!raw) {
       return createEmptySlotIds(maxCompare);
     }
@@ -66,7 +66,7 @@ function writeStoredSlotIds(slotIds: Array<number | null>) {
     return;
   }
   try {
-    window.localStorage.setItem(COMPARE_SLOT_STORAGE_KEY, JSON.stringify(slotIds));
+    window.sessionStorage.setItem(COMPARE_SLOT_SESSION_KEY, JSON.stringify(slotIds));
   } catch {
     // Ignore storage write errors (private mode, storage quota, etc.).
   }
@@ -159,6 +159,7 @@ export default function ComparePage() {
   const [pickerError, setPickerError] = useState<string | null>(null);
   const [pickerData, setPickerData] = useState<CatalogPageResponse | null>(null);
   const [pickerMotionPhase, setPickerMotionPhase] = useState<"idle" | "entering">("idle");
+  const [pickerMotionDirection, setPickerMotionDirection] = useState<"forward" | "backward">("forward");
   const [pickerReducedMotion, setPickerReducedMotion] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
@@ -297,12 +298,14 @@ export default function ComparePage() {
 
   async function onSearchPicker(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setPickerMotionDirection("forward");
     await loadPickerProducts({ page: 0 });
   }
 
   async function onClearPickerFilters() {
     setPickerKeyword("");
     setPickerBrand("");
+    setPickerMotionDirection("forward");
     await loadPickerProducts({
       keyword: "",
       brand: "",
@@ -311,6 +314,7 @@ export default function ComparePage() {
   }
 
   async function onChangePickerPage(nextPage: number) {
+    setPickerMotionDirection(nextPage >= pickerPage ? "forward" : "backward");
     await loadPickerProducts({ page: nextPage });
   }
 
@@ -372,7 +376,7 @@ export default function ComparePage() {
     setPickerMotionPhase("entering");
     const timerId = window.setTimeout(() => {
       setPickerMotionPhase("idle");
-    }, 240);
+    }, 360);
 
     return () => window.clearTimeout(timerId);
   }, [isPickerVisible, pickerAnimationKey, pickerData, pickerReducedMotion]);
@@ -449,19 +453,18 @@ export default function ComparePage() {
               </p>
               <p className="text-right">
                 Page <strong>{pickerData.currentPage + 1}</strong> / <strong>{Math.max(1, pickerData.totalPages)}</strong>
-                {pickerLoading ? <span className="ml-2 text-[var(--color-text-muted)]">Updating...</span> : null}
               </p>
             </div>
 
             <div
               className={
                 pickerMotionPhase === "entering"
-                  ? "compare-picker-flip-stage is-entering mt-3 flex-1 overflow-y-auto pr-1"
+                  ? `compare-picker-flip-stage is-entering is-${pickerMotionDirection} mt-3 flex-1 overflow-y-auto pr-1`
                   : "compare-picker-flip-stage mt-3 flex-1 overflow-y-auto pr-1"
               }
             >
               <div className="space-y-2">
-                {pickerData.products.map((product) => {
+                {pickerData.products.map((product, productIndex) => {
                   const inCompare = !!product.id && (compare?.ids ?? []).includes(product.id);
                   const sameAsTarget = !!product.id && !!targetItem?.id && targetItem.id === product.id;
                   const selectable = !!product.id && (!inCompare || sameAsTarget);
@@ -470,6 +473,7 @@ export default function ComparePage() {
                     <article
                       key={product.id ?? `${product.name}-${product.brand}`}
                       className="compare-picker-flip-card rounded-xl border border-[var(--color-border)] bg-white p-2.5"
+                      style={{ "--i": productIndex } as CSSProperties}
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -588,10 +592,18 @@ export default function ComparePage() {
       {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {slots.map((item, index) =>
-          item ? (
-            <article key={item.id ?? `${item.name}-${index}`} className="glass-panel rounded-3xl p-4">
+      <div className="grid items-start gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {slots.map((item, index) => {
+          const pickerExpanded = isPickerVisible && pickerTargetIndex === index;
+
+          return item ? (
+            <article
+              key={item.id ?? `${item.name}-${index}`}
+              className={[
+                "glass-panel rounded-3xl p-4 overflow-hidden transition-[height] duration-[2000ms] ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+                pickerExpanded ? "h-[760px]" : "h-[420px]",
+              ].join(" ")}
+            >
               <div className="relative">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-xs uppercase tracking-[0.12em] text-slate-500">{`Product ${index + 1}`}</p>
@@ -672,7 +684,10 @@ export default function ComparePage() {
           ) : (
             <article
               key={`slot-${index}`}
-              className="glass-panel relative flex min-h-[420px] flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--color-border-2)] p-4 text-center"
+              className={[
+                "glass-panel relative flex flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--color-border-2)] p-4 text-center overflow-hidden transition-[height] duration-[2000ms] ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+                pickerExpanded ? "h-[760px]" : "h-[420px]",
+              ].join(" ")}
             >
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-border-2)] bg-[var(--color-surface-soft)]">
                 <GriddyIcon name="package" />
@@ -691,8 +706,8 @@ export default function ComparePage() {
               </button>
               {renderPickerPanel(index)}
             </article>
-          ),
-        )}
+          );
+        })}
       </div>
 
       {items.length > 0 ? (

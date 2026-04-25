@@ -68,11 +68,11 @@ export function FilterDropdown({
 
         {open && !disabled ? (
           <div className="ui-dropdown-panel absolute left-0 right-0 top-[calc(100%+0.45rem)] z-40 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[0_8px_18px_rgba(0,0,0,0.32)]">
-            <ul role="listbox" className={`${listHeightClass} space-y-1 overflow-y-auto`}>
+            <ul role="listbox" className={`ui-dropdown-options-list ${listHeightClass} space-y-1.5 overflow-y-auto px-2 py-1.5`}>
               {options.map((option) => {
                 const active = option.value === value;
                 return (
-                  <li key={`${label ?? "filter"}-${option.value || "all"}`}>
+                  <li key={`${label ?? "filter"}-${option.value || "all"}`} className="relative overflow-visible">
                     <button
                       type="button"
                       onClick={() => {
@@ -80,10 +80,8 @@ export function FilterDropdown({
                         setOpen(false);
                       }}
                       className={[
-                        "w-full rounded-lg px-3 py-2 text-left text-sm transition-[background-color,color] duration-150",
-                        active
-                          ? "bg-white/10 text-white"
-                          : "text-[var(--color-text-muted)] hover:bg-white hover:text-black",
+                        "ui-dropdown-option w-full rounded-lg px-3 py-2 text-left text-sm",
+                        active ? "is-active" : "",
                       ].join(" ")}
                     >
                       {option.label}

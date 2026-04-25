@@ -2,12 +2,14 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
@@ -42,6 +44,11 @@ public class ChatApiController {
     @GetMapping("/unread-count")
     public long unreadCount(Authentication authentication) {
         return chatService.countUnreadByUser(authentication.getName());
+    }
+
+    @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream(Authentication authentication) {
+        return chatService.subscribeUser(authentication.getName());
     }
 
     @PostMapping("/read")

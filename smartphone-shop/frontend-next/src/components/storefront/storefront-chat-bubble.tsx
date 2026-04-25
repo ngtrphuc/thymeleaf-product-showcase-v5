@@ -9,6 +9,7 @@ import {
   fetchChatHistory,
   fetchChatUnreadCount,
   markChatRead,
+  openChatEventStream,
   sendChatMessage,
   type AuthMeResponse,
   type ChatMessageResponse,
@@ -28,6 +29,34 @@ function formatChatClock(value: string): string {
 
 function isAdminRole(role: string | null | undefined): boolean {
   return role === "ROLE_ADMIN" || role === "ADMIN";
+}
+
+function parseChatEvent(data: string): ChatMessageResponse | null {
+  try {
+    const parsed = JSON.parse(data) as Partial<ChatMessageResponse>;
+    if (typeof parsed.content !== "string" || typeof parsed.senderRole !== "string") {
+      return null;
+    }
+    return parsed as ChatMessageResponse;
+  } catch {
+    return null;
+  }
+}
+
+function upsertChatMessage(
+  messages: ChatMessageResponse[],
+  incoming: ChatMessageResponse,
+): ChatMessageResponse[] {
+  if (incoming.id == null) {
+    return [...messages, incoming].slice(-50);
+  }
+  const existingIndex = messages.findIndex((message) => message.id === incoming.id);
+  if (existingIndex === -1) {
+    return [...messages, incoming].slice(-50);
+  }
+  const next = [...messages];
+  next[existingIndex] = incoming;
+  return next;
 }
 
 export function StorefrontChatBubble() {
@@ -122,6 +151,17 @@ export function StorefrontChatBubble() {
     pathname !== "/chat" &&
     !pathname.startsWith("/chat/");
 
+  const triggerUnreadPulse = useCallback(() => {
+    setHasUnreadPulse(true);
+    if (pulseTimerRef.current !== null) {
+      window.clearTimeout(pulseTimerRef.current);
+    }
+    pulseTimerRef.current = window.setTimeout(() => {
+      setHasUnreadPulse(false);
+      pulseTimerRef.current = null;
+    }, 2200);
+  }, []);
+
   useEffect(() => {
     if (!shouldShow || !pageVisible) {
       return;
@@ -148,14 +188,7 @@ export function StorefrontChatBubble() {
             return;
           }
           if (nextUnreadCount > unreadCountRef.current) {
-            setHasUnreadPulse(true);
-            if (pulseTimerRef.current !== null) {
-              window.clearTimeout(pulseTimerRef.current);
-            }
-            pulseTimerRef.current = window.setTimeout(() => {
-              setHasUnreadPulse(false);
-              pulseTimerRef.current = null;
-            }, 2200);
+            triggerUnreadPulse();
           }
           unreadCountRef.current = nextUnreadCount;
           setUnreadCount(nextUnreadCount);
@@ -173,15 +206,35 @@ export function StorefrontChatBubble() {
     }
 
     void syncChat();
-    const timerId = window.setInterval(() => {
-      void syncChat();
-    }, 10000);
+    const eventSource = openChatEventStream();
+    eventSource.addEventListener("message", (event) => {
+      if (!alive) {
+        return;
+      }
+      const incoming = parseChatEvent(event.data);
+      if (!incoming) {
+        return;
+      }
+
+      if (open) {
+        setMessages((current) => upsertChatMessage(current, incoming));
+        unreadCountRef.current = 0;
+        setUnreadCount(0);
+        void markChatRead().catch(() => undefined);
+        return;
+      }
+
+      const nextUnreadCount = unreadCountRef.current + 1;
+      unreadCountRef.current = nextUnreadCount;
+      setUnreadCount(nextUnreadCount);
+      triggerUnreadPulse();
+    });
 
     return () => {
       alive = false;
-      window.clearInterval(timerId);
+      eventSource.close();
     };
-  }, [open, pageVisible, shouldShow]);
+  }, [open, pageVisible, shouldShow, triggerUnreadPulse]);
 
   useEffect(() => {
     if (!shouldShow || !open) {
@@ -375,7 +428,7 @@ export function StorefrontChatBubble() {
                 <div
                   ref={messagesViewportRef}
                   onScroll={syncScrollModeFromViewport}
-                  className="max-h-[20rem] min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl border border-white/10 bg-black/30 p-3.5"
+                  className="chat-grid-paper max-h-[20rem] min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl border border-white/10 p-3.5"
                 >
                   {messages.map((message) => {
                     const isUser = message.senderRole === "USER";

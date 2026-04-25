@@ -135,8 +135,6 @@ export function CatalogPagedGrid({
   function renderPaginationLink(item: PaginationItem, edge: boolean) {
     const isDisabled = item.disabled || pendingHref !== null;
     const isActivePage = !edge && Boolean(item.active);
-    const nextDirection = item.active ? direction : resolveDirection(item);
-    const resolvedHref = item.active ? item.href : hrefWithDirection(item.href, nextDirection);
     const className = edge
       ? `ui-btn pagination-rail-edge inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] text-sm transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ${
           isDisabled
@@ -152,7 +150,7 @@ export function CatalogPagedGrid({
     return (
       <Link
         key={`${item.label}-${item.href}`}
-        href={resolvedHref}
+        href={item.href}
         onClick={(event) => handleNavigate(event, item)}
         aria-current={item.active ? "page" : undefined}
         aria-disabled={item.disabled || pendingHref !== null}

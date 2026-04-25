@@ -65,7 +65,7 @@ class CartServiceTest {
 
         cartService.mergeSessionCartToDb(session, "user@example.com");
 
-        verify(cartItemRepository).save(existing);
+        verify(cartItemRepository).saveAll(anyIterable());
         assertEquals(Long.valueOf(1L), existing.getProductId());
         assertEquals(3, existing.getQuantity());
         assertNull(session.getAttribute("cart"));

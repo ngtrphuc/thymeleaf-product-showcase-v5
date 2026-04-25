@@ -19,6 +19,7 @@ public class AdminAccountInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(AdminAccountInitializer.class);
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    private static final int MIN_ADMIN_PASSWORD_LENGTH = 12;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -51,6 +52,10 @@ public class AdminAccountInitializer implements CommandLineRunner {
             log.warn("Skipping admin bootstrap because '{}' is not a valid email.", adminEmail);
             return;
         }
+        if (!isStrongAdminPassword(adminPassword)) {
+            log.warn("Skipping admin bootstrap because app.admin.password does not meet complexity requirements.");
+            return;
+        }
 
         User adminUser = userRepository.findByEmailIgnoreCase(adminEmail).orElseGet(User::new);
         boolean isNewUser = adminUser.getId() == null;
@@ -76,5 +81,28 @@ public class AdminAccountInitializer implements CommandLineRunner {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean isStrongAdminPassword(String password) {
+        if (password == null || password.length() < MIN_ADMIN_PASSWORD_LENGTH) {
+            return false;
+        }
+        boolean hasLower = false;
+        boolean hasUpper = false;
+        boolean hasDigit = false;
+        boolean hasSymbol = false;
+        for (int i = 0; i < password.length(); i++) {
+            char value = password.charAt(i);
+            if (Character.isLowerCase(value)) {
+                hasLower = true;
+            } else if (Character.isUpperCase(value)) {
+                hasUpper = true;
+            } else if (Character.isDigit(value)) {
+                hasDigit = true;
+            } else {
+                hasSymbol = true;
+            }
+        }
+        return hasLower && hasUpper && hasDigit && hasSymbol;
     }
 }

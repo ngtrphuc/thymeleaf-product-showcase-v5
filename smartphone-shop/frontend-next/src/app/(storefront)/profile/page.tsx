@@ -237,7 +237,7 @@ export default function ProfilePage() {
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black"
+          className="profile-save-add-btn inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black"
         >
           <GriddyIcon name="check" />
           {saving ? "Saving..." : "Save Profile"}
@@ -318,7 +318,7 @@ export default function ProfilePage() {
             type="button"
             disabled={saving}
             onClick={() => void addPayment()}
-            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black"
+            className="profile-save-add-btn mt-3 inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black"
           >
             <GriddyIcon name="credit-card" />
             Add Method

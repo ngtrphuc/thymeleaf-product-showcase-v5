@@ -4,12 +4,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.api.dto.ChatMessageResponse;
@@ -65,6 +67,11 @@ public class AdminChatApiController {
     @GetMapping("/chat/unread-count")
     public long unreadCount() {
         return chatService.countAllUnreadByAdmin();
+    }
+
+    @GetMapping(path = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter stream() {
+        return chatService.subscribeAdmin();
     }
 
     public record AdminConversationsResponse(List<String> emails, Map<String, Long> unreadCounts) {

@@ -14,7 +14,7 @@ export function AuthMotionIcon({ variant, className }: AuthMotionIconProps) {
         />
         <g className="motion-login-arrow">
           <path
-            d="M9.53 7.215l4.145 4.145c.485.49.485 1.285 0 1.77L9.53 17.275l-1.06-1.06L11.685 13H3v-1.5h8.695L8.47 8.275l1.06-1.06Z"
+            d="M6.53 7.215l4.145 4.145c.485.49.485 1.285 0 1.77L6.53 17.275l-1.06-1.06L8.685 13H0v-1.5h8.695L5.47 8.275l1.06-1.06Z"
             fill="currentColor"
           />
         </g>

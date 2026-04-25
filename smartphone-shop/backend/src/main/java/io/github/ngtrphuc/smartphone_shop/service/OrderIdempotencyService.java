@@ -24,7 +24,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.OrderRepository;
 public class OrderIdempotencyService {
 
     private static final int MAX_KEY_LENGTH = 120;
-    private static final Duration STALE_PLACEHOLDER_TIMEOUT = Duration.ofMinutes(5);
+    private static final Duration STALE_PLACEHOLDER_TIMEOUT = Duration.ofMinutes(15);
 
     private final OrderIdempotencyKeyRepository orderIdempotencyKeyRepository;
     private final OrderRepository orderRepository;

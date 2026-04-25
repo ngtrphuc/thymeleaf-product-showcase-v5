@@ -10,7 +10,7 @@ import {
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
-import { Dock, DockIcon, DockItem, DockLabel } from "@/components/ui/dock";
+import { Dock, DockIcon, DockItem } from "@/components/ui/dock";
 import { AuthMotionIcon } from "@/components/ui/auth-motion-icon";
 import { ApiError, authLogout, fetchAuthMeCached, type AuthMeResponse } from "@/lib/api";
 
@@ -170,7 +170,7 @@ export function StorefrontHeaderDockNav() {
   }
 
   return (
-    <Dock className="h-auto">
+    <Dock>
       {dockItems.map((item) => {
         const Icon = item.icon;
         const itemActive = isActive(item);
@@ -183,16 +183,15 @@ export function StorefrontHeaderDockNav() {
             onClick={() => void onNavigate(item)}
             className={
               item.key === "login"
-                ? "dock-item-login hover:!translate-y-0 hover:!scale-100 focus-visible:!translate-y-0 focus-visible:!scale-100"
+                ? "dock-item-login"
                 : item.key === "logout"
-                  ? "dock-item-logout hover:!translate-y-0 hover:!scale-100 focus-visible:!translate-y-0 focus-visible:!scale-100"
+                  ? "dock-item-logout"
                   : ""
             }
           >
             <DockIcon>
               <Icon className={itemActive ? "h-[1.06rem] w-[1.06rem]" : "h-4 w-4"} strokeWidth={itemActive ? 2.45 : 2} />
             </DockIcon>
-            {!itemActive ? <DockLabel>{item.label}</DockLabel> : null}
           </DockItem>
         );
       })}

@@ -131,7 +131,7 @@ test("customer login preserves next path for protected checkout route", async ({
   await expect(page.getByRole("heading", { name: "Checkout" })).toBeVisible();
 });
 
-test("admin login redirects to admin dashboard", async ({ context, page }) => {
+test("admin login redirects to homepage", async ({ context, page }) => {
   await page.route("http://localhost:8080/api/v1/**", async (route) => {
     const request = route.request();
     const method = request.method();
@@ -159,23 +159,6 @@ test("admin login redirects to admin dashboard", async ({ context, page }) => {
       return;
     }
 
-    if (path === "/api/v1/admin/dashboard" && method === "GET") {
-      await route.fulfill({
-        status: 200,
-        headers: { ...corsHeaders, "content-type": "application/json" },
-        body: JSON.stringify({
-          totalProducts: 10,
-          totalItemsSold: 20,
-          totalOrders: 5,
-          totalRevenue: 123456,
-          currentPage: 0,
-          totalPages: 1,
-          recentOrders: [],
-        }),
-      });
-      return;
-    }
-
     await route.fulfill({
       status: 404,
       headers: { ...corsHeaders, "content-type": "application/json" },
@@ -188,6 +171,5 @@ test("admin login redirects to admin dashboard", async ({ context, page }) => {
   await page.locator('input[name="password"]').fill("AdminPass123!");
   await page.getByRole("button", { name: "Sign In" }).click();
 
-  await expect(page).toHaveURL(/\/admin/);
-  await expect(page.getByRole("heading", { name: "Admin Dashboard" })).toBeVisible();
+  await expect(page).toHaveURL(/\/products/);
 });

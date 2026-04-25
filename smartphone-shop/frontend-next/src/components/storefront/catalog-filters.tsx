@@ -41,34 +41,28 @@ const STORAGE_OPTIONS: Option[] = [
 const PRICE_RANGE_OPTIONS: Option[] = [
   { label: "Any price", value: "" },
   { label: "Under 150,000", value: "under150" },
-  { label: "150,000 - 179,999", value: "150to179" },
-  { label: "180,000 - 209,999", value: "180to209" },
-  { label: "210,000 - 239,999", value: "210to239" },
-  { label: "240,000 - 269,999", value: "240to269" },
-  { label: "270,000 - 299,999", value: "270to299" },
+  { label: "150,000 - 199,999", value: "150to199" },
+  { label: "200,000 - 249,999", value: "200to249" },
+  { label: "250,000 - 299,999", value: "250to299" },
   { label: "Over 300,000", value: "over300" },
 ];
 
 const BATTERY_RANGE_OPTIONS: Option[] = [
   { label: "Any battery", value: "" },
-  { label: "Under 3,500 mAh", value: "under3500" },
-  { label: "3,500 - 3,999 mAh", value: "3500to3999" },
-  { label: "4,000 - 4,499 mAh", value: "4000to4499" },
-  { label: "4,500 - 4,999 mAh", value: "4500to4999" },
-  { label: "5,000 - 5,499 mAh", value: "5000to5499" },
-  { label: "5,500 - 5,999 mAh", value: "5500to5999" },
+  { label: "Under 4,000 mAh", value: "under4000" },
+  { label: "4,000 - 4,999 mAh", value: "4000to4999" },
+  { label: "5,000 - 5,999 mAh", value: "5000to5999" },
   { label: "6,000 - 6,999 mAh", value: "6000to6999" },
   { label: "Over 7,000 mAh", value: "over7000" },
 ];
 
 const SCREEN_SIZE_OPTIONS: Option[] = [
   { label: "Any screen size", value: "" },
-  { label: "6.1 - 6.3 inch", value: "6.1to6.3" },
-  { label: "6.4 - 6.6 inch", value: "6.4to6.6" },
-  { label: "6.7 - 6.9 inch", value: "6.7to6.9" },
-  { label: "7.0+ inch", value: "over7.0" },
-  { label: "7.0 - 7.9 inch", value: "7.0to7.9" },
-  { label: "8.0+ inch", value: "8.0plus" },
+  { label: "Under 6.0 inch", value: "under6.0" },
+  { label: "6.0 - 6.4 inch", value: "6.0to6.4" },
+  { label: "6.5 - 6.9 inch", value: "6.5to6.9" },
+  { label: "7.0 - 7.4 inch", value: "7.0to7.4" },
+  { label: "Over 7.5 inch", value: "over7.5" },
 ];
 
 function filterValue(params: URLSearchParams, key: string, value: string) {

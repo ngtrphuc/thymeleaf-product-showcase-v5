@@ -111,6 +111,7 @@ public class CartService {
             }
         }
 
+        List<CartItemEntity> pendingSaves = new ArrayList<>();
         for (CartItem item : sessionCart) {
             Long itemId = item.getId();
             if (itemId == null) {
@@ -132,16 +133,19 @@ public class CartService {
                 int mergedQty = Math.min(existing.getQuantity() + requestedQty, maxStock);
                 if (mergedQty != existing.getQuantity()) {
                     existing.setQuantity(mergedQty);
-                    cartItemRepository.save(existing);
+                    pendingSaves.add(existing);
                 }
             } else {
                 int initialQty = Math.min(requestedQty, maxStock);
                 if (initialQty > 0) {
                     CartItemEntity created = new CartItemEntity(email, itemId, initialQty);
-                    cartItemRepository.save(created);
+                    pendingSaves.add(created);
                     existingByProductId.put(itemId, created);
                 }
             }
+        }
+        if (!pendingSaves.isEmpty()) {
+            cartItemRepository.saveAll(pendingSaves);
         }
         if (session != null) {
             session.removeAttribute("cart");

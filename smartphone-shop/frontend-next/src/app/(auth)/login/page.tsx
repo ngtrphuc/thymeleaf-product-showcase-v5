@@ -5,11 +5,19 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, authLogin } from "@/lib/api";
+import { resolveSafeInternalPath } from "@/lib/navigation";
 import { PasswordField } from "@/components/auth/password-field";
 import { AuthMotionIcon } from "@/components/ui/auth-motion-icon";
 
 function isAdminRole(role: string | null | undefined): boolean {
   return role === "ROLE_ADMIN" || role === "ADMIN";
+}
+
+function resolveLoginDestination(role: string | null | undefined, nextPath: string): string {
+  if (isAdminRole(role)) {
+    return nextPath;
+  }
+  return nextPath.startsWith("/admin") ? "/products" : nextPath;
 }
 
 export default function LoginPage() {
@@ -23,10 +31,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const search = new URLSearchParams(window.location.search);
-    const next = search.get("next");
-    if (next && next.startsWith("/")) {
-      setNextPath(next);
-    }
+    setNextPath(resolveSafeInternalPath(search.get("next")));
     setReauthFlow(search.get("reauth") === "1");
   }, []);
 
@@ -39,7 +44,7 @@ export default function LoginPage() {
 
     try {
       const auth = await authLogin(email, password);
-      const destination = isAdminRole(auth.role) ? "/products" : nextPath;
+      const destination = resolveLoginDestination(auth.role, nextPath);
       router.push(destination);
       router.refresh();
     } catch (err) {

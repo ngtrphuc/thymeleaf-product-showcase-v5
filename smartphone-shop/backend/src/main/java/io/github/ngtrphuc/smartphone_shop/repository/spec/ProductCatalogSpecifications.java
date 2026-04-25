@@ -175,6 +175,39 @@ public final class ProductCatalogSpecifications {
                     like(cb, sizeLower, "4%"),
                     like(cb, sizeLower, "5%"),
                     like(cb, sizeLower, "6.0%"));
+            case "under6.0" -> cb.or(
+                    like(cb, sizeLower, "0%"),
+                    like(cb, sizeLower, "1%"),
+                    like(cb, sizeLower, "2%"),
+                    like(cb, sizeLower, "3%"),
+                    like(cb, sizeLower, "4%"),
+                    like(cb, sizeLower, "5%"));
+            case "6.0to6.4" -> cb.or(
+                    like(cb, sizeLower, "6.0%"),
+                    like(cb, sizeLower, "6.1%"),
+                    like(cb, sizeLower, "6.2%"),
+                    like(cb, sizeLower, "6.3%"),
+                    like(cb, sizeLower, "6.4%"));
+            case "6.5to6.9" -> cb.or(
+                    like(cb, sizeLower, "6.5%"),
+                    like(cb, sizeLower, "6.6%"),
+                    like(cb, sizeLower, "6.7%"),
+                    like(cb, sizeLower, "6.8%"),
+                    like(cb, sizeLower, "6.9%"));
+            case "7.0to7.4" -> cb.or(
+                    like(cb, sizeLower, "7.0%"),
+                    like(cb, sizeLower, "7.1%"),
+                    like(cb, sizeLower, "7.2%"),
+                    like(cb, sizeLower, "7.3%"),
+                    like(cb, sizeLower, "7.4%"));
+            case "over7.5" -> cb.or(
+                    like(cb, sizeLower, "7.5%"),
+                    like(cb, sizeLower, "7.6%"),
+                    like(cb, sizeLower, "7.7%"),
+                    like(cb, sizeLower, "7.8%"),
+                    like(cb, sizeLower, "7.9%"),
+                    like(cb, sizeLower, "8%"),
+                    like(cb, sizeLower, "9%"));
             case "6.1to6.4" -> cb.or(
                     like(cb, sizeLower, "6.1%"),
                     like(cb, sizeLower, "6.2%"),
@@ -219,12 +252,18 @@ public final class ProductCatalogSpecifications {
                     cb.greaterThanOrEqualTo(batteryValue, paddedNumber(3500)),
                     cb.lessThanOrEqualTo(batteryValue, paddedNumber(3999)));
             case "under4000" -> cb.lessThan(batteryValue, paddedNumber(4000));
+            case "4000to4999" -> cb.and(
+                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4000)),
+                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(4999)));
             case "4000to4499" -> cb.and(
                     cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4000)),
                     cb.lessThanOrEqualTo(batteryValue, paddedNumber(4499)));
             case "4500to4999" -> cb.and(
                     cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4500)),
                     cb.lessThanOrEqualTo(batteryValue, paddedNumber(4999)));
+            case "5000to5999" -> cb.and(
+                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000)),
+                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(5999)));
             case "5000to5499" -> cb.and(
                     cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000)),
                     cb.lessThanOrEqualTo(batteryValue, paddedNumber(5499)));

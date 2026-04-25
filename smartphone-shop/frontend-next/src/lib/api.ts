@@ -668,6 +668,10 @@ export async function fetchChatUnreadCount(): Promise<number> {
   return requestJson<number>("/api/v1/chat/unread-count");
 }
 
+export function openChatEventStream(): EventSource {
+  return new EventSource(`${getBackendOrigin()}/api/v1/chat/stream`, { withCredentials: true });
+}
+
 export async function fetchAdminDashboard(page = 0): Promise<AdminDashboardResponse> {
   return requestJson<AdminDashboardResponse>(`/api/v1/admin/dashboard?page=${page}`);
 }
@@ -734,4 +738,8 @@ export async function markAdminConversationRead(userEmail: string): Promise<Oper
 
 export async function fetchAdminUnreadCount(): Promise<number> {
   return requestJson<number>("/api/v1/admin/chat/unread-count");
+}
+
+export function openAdminChatEventStream(): EventSource {
+  return new EventSource(`${getBackendOrigin()}/api/v1/admin/chat/stream`, { withCredentials: true });
 }
