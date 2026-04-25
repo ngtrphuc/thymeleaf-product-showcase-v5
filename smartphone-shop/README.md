@@ -86,7 +86,7 @@ flowchart LR
 ### Backend Stack
 
 - Java 21.
-- Spring Boot 3.5.13.
+- Spring Boot 3.5.14.
 - Spring Web, Validation, Security, Data JPA, Data Redis, WebSocket,
   and Actuator.
 - Flyway migrations.
@@ -237,7 +237,8 @@ Status: core user journeys completed and actively iterated.
 
 Status: retained for asset compatibility.
 
-- `frontend/static` remains as a legacy asset source.
+- `frontend/static` remains as a shared/legacy asset source for product,
+  payment, and icon assets consumed by the backend and Next.js asset proxy.
 - Runtime emphasis is on `frontend-next` for active UI.
 
 ## Recent UI Updates
@@ -513,7 +514,13 @@ smartphone-shop/
 ├── frontend-next/
 │   ├── public/
 │   │   ├── griddy/
-│   │   └── payments/
+│   │   ├── payments/
+│   │   ├── sns/
+│   │   ├── file.svg
+│   │   ├── globe.svg
+│   │   ├── next.svg
+│   │   ├── vercel.svg
+│   │   └── window.svg
 │   ├── src/
 │   │   ├── app/
 │   │   │   ├── (auth)/
@@ -548,7 +555,8 @@ smartphone-shop/
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── wishlist/
 │   │   │   │   │   └── page.tsx
-│   │   │   │   └── layout.tsx
+│   │   │   │   ├── layout.tsx
+│   │   │   │   └── template.tsx
 │   │   │   ├── admin/
 │   │   │   │   ├── chat/
 │   │   │   │   │   └── page.tsx
@@ -557,10 +565,12 @@ smartphone-shop/
 │   │   │   │   ├── products/
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── layout.tsx
-│   │   │   │   └── page.tsx
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── template.tsx
 │   │   │   ├── asset-proxy/
 │   │   │   │   └── [...path]/
 │   │   │   │       └── route.ts
+│   │   │   ├── favicon.ico
 │   │   │   ├── globals.css
 │   │   │   ├── layout.tsx
 │   │   │   └── page.tsx
@@ -584,8 +594,10 @@ smartphone-shop/
 │   │   │   │   ├── quick-product-actions.tsx
 │   │   │   │   ├── storefront-chat-bubble.tsx
 │   │   │   │   ├── storefront-compare-banner.tsx
+│   │   │   │   ├── storefront-footer.tsx
 │   │   │   │   └── storefront-header-dock-nav.tsx
 │   │   │   └── ui/
+│   │   │       ├── auth-motion-icon.tsx
 │   │   │       ├── dock.tsx
 │   │   │       ├── expanding-nav.tsx
 │   │   │       ├── griddy-icon.tsx
