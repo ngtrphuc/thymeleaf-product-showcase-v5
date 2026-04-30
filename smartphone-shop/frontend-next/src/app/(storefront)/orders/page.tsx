@@ -1,8 +1,7 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, cancelOrder, fetchOrders, type OrderResponse } from "@/lib/api";
+import { ApiError, cancelOrder, fetchOrders, type OrderPageResponse, type OrderResponse } from "@/lib/api";
 import { formatDateTime, formatPriceVnd } from "@/lib/format";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge";
@@ -17,18 +16,21 @@ function paymentPlanLabel(plan: string | null | undefined): string {
 }
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [orderPage, setOrderPage] = useState<OrderPageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busyOrderId, setBusyOrderId] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const pageSize = 10;
 
-  async function loadOrders() {
+  async function loadOrders(page = currentPage) {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchOrders();
-      setOrders(data);
+      const data = await fetchOrders(page, pageSize);
+      setOrderPage(data);
+      setCurrentPage(data.currentPage);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -41,7 +43,14 @@ export default function OrdersPage() {
   }
 
   useEffect(() => {
-    void loadOrders();
+    const timer = window.setTimeout(() => {
+      void loadOrders(0);
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+    };
+    // We intentionally load once on mount, page changes are explicit via controls.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function onCancel(orderId: number) {
@@ -51,7 +60,7 @@ export default function OrdersPage() {
     try {
       const result = await cancelOrder(orderId);
       setMessage(result.message);
-      await loadOrders();
+      await loadOrders(currentPage);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -62,6 +71,9 @@ export default function OrdersPage() {
       setBusyOrderId(null);
     }
   }
+
+  const orders: OrderResponse[] = orderPage?.orders ?? [];
+  const totalPages = orderPage?.totalPages ?? 0;
 
   if (loading) {
     return <div className="glass-panel rounded-3xl p-8 text-center">Loading orders...</div>;
@@ -172,7 +184,30 @@ export default function OrdersPage() {
           })}
         </div>
       )}
+
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className="ui-btn ui-btn-secondary px-3 py-1.5 text-sm"
+            disabled={currentPage <= 0 || loading}
+            onClick={() => void loadOrders(Math.max(0, currentPage - 1))}
+          >
+            Previous
+          </button>
+          <span className="text-sm text-[var(--color-text-muted)]">
+            Page {currentPage + 1} / {totalPages}
+          </span>
+          <button
+            type="button"
+            className="ui-btn ui-btn-secondary px-3 py-1.5 text-sm"
+            disabled={currentPage >= totalPages - 1 || loading}
+            onClick={() => void loadOrders(currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
-

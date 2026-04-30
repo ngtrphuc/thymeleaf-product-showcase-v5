@@ -1,4 +1,3 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -76,6 +75,13 @@ export default function CheckoutPage() {
     return null;
   }
 
+  function applyPaymentMethod(nextMethod: PaymentMethodType) {
+    setPaymentMethod(nextMethod);
+    if (nextMethod === "CASH_ON_DELIVERY") {
+      setPaymentPlan("FULL_PAYMENT");
+    }
+  }
+
   const loadCheckoutData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -98,7 +104,7 @@ export default function CheckoutPage() {
       if (defaultMethod) {
         const methodType = asPaymentMethodType(defaultMethod.type);
         if (methodType) {
-          setPaymentMethod(methodType);
+          applyPaymentMethod(methodType);
           setPaymentSelectionMode("SAVED");
           setSelectedSavedPaymentId(defaultMethod.id);
         }
@@ -115,16 +121,17 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    void loadCheckoutData();
+    const timer = window.setTimeout(() => {
+      void loadCheckoutData();
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [loadCheckoutData]);
 
   const isInstallmentDisabled = paymentMethod === "CASH_ON_DELIVERY";
 
-  useEffect(() => {
-    if (isInstallmentDisabled) {
-      setPaymentPlan("FULL_PAYMENT");
-    }
-  }, [isInstallmentDisabled]);
+
 
   const hasSavedShippingAddress = savedShippingAddress.trim().length > 0;
   const resolvedShippingAddress = (shippingAddressMode === "SAVED" ? savedShippingAddress : newShippingAddress).trim();
@@ -153,13 +160,15 @@ export default function CheckoutPage() {
       : undefined;
   const currentPaymentTypeLabel = PAYMENT_METHOD_OPTIONS.find((option) => option.value === paymentMethod)?.label ?? "Payment";
 
+  const isInstallmentSelected = paymentPlan === "INSTALLMENT" && !isInstallmentDisabled;
+  const effectivePaymentPlan: PaymentPlanType = isInstallmentSelected ? "INSTALLMENT" : "FULL_PAYMENT";
+
   const installmentMonthly = useMemo(() => {
-    if (!cart || paymentPlan !== "INSTALLMENT") {
+    if (!cart || !isInstallmentSelected) {
       return null;
     }
     return Math.round((cart.totalAmount || 0) / installmentMonths);
-  }, [cart, paymentPlan, installmentMonths]);
-  const isInstallmentSelected = paymentPlan === "INSTALLMENT";
+  }, [cart, isInstallmentSelected, installmentMonths]);
   const paymentPlanLabel = isInstallmentSelected ? "Installment Plan" : "One-Time Payment";
 
   const isSubmitDisabled =
@@ -176,7 +185,7 @@ export default function CheckoutPage() {
     }
     setPaymentSelectionMode("SAVED");
     setSelectedSavedPaymentId(method.id);
-    setPaymentMethod(methodType);
+    applyPaymentMethod(methodType);
   }
 
   function switchToOtherPayment() {
@@ -184,7 +193,7 @@ export default function CheckoutPage() {
     setSelectedSavedPaymentId(null);
     const exists = otherPaymentMethodOptions.some((option) => option.value === paymentMethod);
     if (!exists && otherPaymentMethodOptions.length > 0) {
-      setPaymentMethod(otherPaymentMethodOptions[0].value as PaymentMethodType);
+      applyPaymentMethod(otherPaymentMethodOptions[0].value as PaymentMethodType);
     }
   }
 
@@ -197,7 +206,7 @@ export default function CheckoutPage() {
     setSelectedSavedPaymentId(currentSelected.id);
     const methodType = asPaymentMethodType(currentSelected.type);
     if (methodType) {
-      setPaymentMethod(methodType);
+      applyPaymentMethod(methodType);
     }
   }
 
@@ -219,8 +228,8 @@ export default function CheckoutPage() {
         shippingAddress: resolvedShippingAddress,
         paymentMethod,
         paymentDetail: paymentMethod === "BANK_TRANSFER" ? paymentDetail.trim() : null,
-        paymentPlan,
-        installmentMonths: paymentPlan === "INSTALLMENT" ? installmentMonths : null,
+        paymentPlan: effectivePaymentPlan,
+        installmentMonths: effectivePaymentPlan === "INSTALLMENT" ? installmentMonths : null,
       }, idempotencyKey);
       setIdempotencyKey(createIdempotencyKey());
       const successParams = new URLSearchParams({
@@ -416,7 +425,7 @@ export default function CheckoutPage() {
                 onChange={(nextValue) => {
                   setPaymentSelectionMode("OTHER");
                   setSelectedSavedPaymentId(null);
-                  setPaymentMethod(nextValue as PaymentMethodType);
+                  applyPaymentMethod(nextValue as PaymentMethodType);
                 }}
               />
             )}
@@ -436,12 +445,12 @@ export default function CheckoutPage() {
             <FilterDropdown
               label="Payment Plan"
               options={PAYMENT_PLAN_OPTIONS}
-              value={paymentPlan}
+              value={effectivePaymentPlan}
               onChange={(nextValue) => setPaymentPlan(nextValue as PaymentPlanType)}
               disabled={isInstallmentDisabled}
             />
 
-            {paymentPlan === "INSTALLMENT" ? (
+            {isInstallmentSelected ? (
               <FilterDropdown
                 label="Installment Months"
                 options={INSTALLMENT_MONTH_OPTIONS}

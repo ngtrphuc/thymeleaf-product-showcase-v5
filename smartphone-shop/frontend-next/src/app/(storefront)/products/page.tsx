@@ -83,13 +83,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       <CatalogViewportSync currentPageSize={catalog.pageSize} />
 
       <header className="glass-panel rounded-3xl p-6 sm:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          Migration Track
-        </p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">Product Catalog</h1>
+        <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">Product Catalog</h1>
         <p className="mt-3 max-w-2xl text-sm text-[var(--color-text-muted)] sm:text-base">
-          This page reads directly from Spring Boot REST APIs and is now part of the
-          new Next.js storefront journey.
+          Browse our latest smartphones. Filter by brand, price, storage, battery, and screen size.
         </p>
       </header>
 

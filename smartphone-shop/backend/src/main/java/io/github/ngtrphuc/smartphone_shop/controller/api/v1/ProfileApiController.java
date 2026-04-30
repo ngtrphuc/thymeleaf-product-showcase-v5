@@ -1,6 +1,5 @@
 package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
-import java.util.regex.Pattern;
 import java.util.List;
 
 import org.springframework.security.core.Authentication;
@@ -12,31 +11,32 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import io.github.ngtrphuc.smartphone_shop.model.PaymentMethod;
 import io.github.ngtrphuc.smartphone_shop.model.User;
-import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 import io.github.ngtrphuc.smartphone_shop.service.CartService;
 import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 import io.github.ngtrphuc.smartphone_shop.service.PaymentMethodService;
+import io.github.ngtrphuc.smartphone_shop.service.ProfileService;
 
 @RestController
 @RequestMapping("/api/v1/profile")
 public class ProfileApiController {
 
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9+()\\-\\s]{6,30}$");
-
-    private final UserRepository userRepository;
+    private final ProfileService profileService;
     private final OrderService orderService;
     private final CartService cartService;
     private final PaymentMethodService paymentMethodService;
     private final ApiMapper apiMapper;
 
-    public ProfileApiController(UserRepository userRepository,
+    public ProfileApiController(ProfileService profileService,
             OrderService orderService,
             CartService cartService,
             PaymentMethodService paymentMethodService,
             ApiMapper apiMapper) {
-        this.userRepository = userRepository;
+        this.profileService = profileService;
         this.orderService = orderService;
         this.cartService = cartService;
         this.paymentMethodService = paymentMethodService;
@@ -49,32 +49,19 @@ public class ProfileApiController {
     }
 
     @PutMapping
-    public ProfileResponse update(@RequestBody UpdateProfileRequest request,
+    public ProfileResponse update(@Valid @RequestBody UpdateProfileRequest request,
             Authentication authentication) {
-        String normalizedFullName = normalizeRequiredField(
-                request.fullName(), "Full name cannot be empty.", "Full name is too long.", 100);
-        String normalizedPhoneNumber = normalizeOptionalField(
-                request.phoneNumber(), "Phone number is too long.", 30);
-        String normalizedAddress = normalizeOptionalField(
-                request.defaultAddress(), "Address is too long.", 200);
-
-        if (normalizedPhoneNumber != null && !PHONE_PATTERN.matcher(normalizedPhoneNumber).matches()) {
-            throw new IllegalArgumentException("Phone number format is invalid.");
-        }
-
-        User user = userRepository.findByEmailIgnoreCase(authentication.getName())
-                .orElseThrow(() -> new IllegalArgumentException("User not found."));
-        user.setFullName(normalizedFullName);
-        user.setPhoneNumber(normalizedPhoneNumber);
-        user.setDefaultAddress(normalizedAddress);
-        userRepository.save(user);
+        profileService.updateProfile(
+                authentication.getName(),
+                request.fullName(),
+                request.phoneNumber(),
+                request.defaultAddress());
         return currentProfile(authentication);
     }
 
     private ProfileResponse currentProfile(Authentication authentication) {
         String email = authentication.getName();
-        User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+        User user = profileService.findUserByEmail(email);
         long deliveredOrderCount = orderService.countDeliveredOrdersByUser(email);
         long pendingOrderCount = orderService.countPendingOrdersByUser(email);
         int cartItemCount = cartService.countUserCartItems(email);
@@ -87,29 +74,14 @@ public class ProfileApiController {
                 paymentMethods);
     }
 
-    private String normalizeRequiredField(String value, String emptyMessage, String tooLongMessage, int maxLength) {
-        String normalized = normalizeOptionalField(value, tooLongMessage, maxLength);
-        if (normalized == null) {
-            throw new IllegalArgumentException(emptyMessage);
-        }
-        return normalized;
-    }
-
-    private String normalizeOptionalField(String value, String tooLongMessage, int maxLength) {
-        if (value == null) {
-            return null;
-        }
-        String normalized = value.trim().replaceAll("\\s+", " ");
-        if (normalized.isBlank()) {
-            return null;
-        }
-        if (normalized.length() > maxLength) {
-            throw new IllegalArgumentException(tooLongMessage);
-        }
-        return normalized;
-    }
-
-    private record UpdateProfileRequest(String fullName, String phoneNumber, String defaultAddress) {
+    private record UpdateProfileRequest(
+            @NotBlank(message = "Full name cannot be empty.")
+            @Size(max = 100, message = "Full name is too long.")
+            String fullName,
+            @Size(max = 30, message = "Phone number is too long.")
+            String phoneNumber,
+            @Size(max = 200, message = "Address is too long.")
+            String defaultAddress) {
     }
 }
 

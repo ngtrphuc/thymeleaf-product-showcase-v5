@@ -23,7 +23,7 @@ type CatalogPagedGridProps = {
   initialDirection?: NavigationDirection;
 };
 
-const EXIT_DURATION_MS = 240;
+const EXIT_DURATION_MS = 300;
 
 type NavigationDirection = "forward" | "backward";
 
@@ -62,7 +62,7 @@ export function CatalogPagedGrid({
       return;
     }
 
-    const timerId = window.setTimeout(() => setPhase("idle"), 420);
+    const timerId = window.setTimeout(() => setPhase("idle"), 440);
     return () => window.clearTimeout(timerId);
   }, [isReducedMotion, phase]);
 

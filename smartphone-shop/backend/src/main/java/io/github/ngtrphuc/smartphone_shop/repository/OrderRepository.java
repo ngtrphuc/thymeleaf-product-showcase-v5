@@ -16,7 +16,9 @@ import jakarta.persistence.LockModeType;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items WHERE o.userEmail = :email ORDER BY o.createdAt DESC, o.id DESC")
-    List<Order> findByUserEmailOrderByCreatedAtDesc(@Param("email") String email);
+    List<Order> findByUserEmailOrderByCreatedAtDesc(@Param("email") String email, Pageable pageable);
+
+    long countByUserEmail(String email);
 
     @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items ORDER BY o.createdAt DESC, o.id DESC")
     List<Order> findAllByOrderByCreatedAtDesc();

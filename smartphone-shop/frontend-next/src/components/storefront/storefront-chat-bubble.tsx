@@ -435,7 +435,7 @@ export function StorefrontChatBubble() {
                     const sideClass = isUser ? "justify-end" : "justify-start";
                     const toneClass = isUser
                       ? "bg-[var(--color-primary)] text-black shadow-[0_6px_14px_rgba(255,255,255,0.16)]"
-                      : "border border-white/12 bg-white/6 text-[var(--color-text)]";
+                      : "border border-white/12 bg-black text-[var(--color-text)] shadow-[0_8px_18px_rgba(0,0,0,0.45)]";
                     const metaClass = isUser ? "text-white/68" : "text-[var(--color-text-muted)]";
                     return (
                       <div key={message.id} className={`flex ${sideClass}`}>

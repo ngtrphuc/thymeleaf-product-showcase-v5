@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.github.ngtrphuc.smartphone_shop.common.support.CacheKeys;
+import io.github.ngtrphuc.smartphone_shop.common.support.ValidationConstants;
 import io.github.ngtrphuc.smartphone_shop.common.exception.OrderValidationException;
 import io.github.ngtrphuc.smartphone_shop.common.exception.UnauthorizedActionException;
 import io.github.ngtrphuc.smartphone_shop.event.OrderCreatedEvent;
@@ -44,7 +45,7 @@ public class OrderService {
             "FULL_PAYMENT", "INSTALLMENT");
     private static final int DEFAULT_INSTALLMENT_MONTHS = 24;
     private static final Set<Integer> ALLOWED_INSTALLMENT_MONTHS = Set.of(6, 12, DEFAULT_INSTALLMENT_MONTHS);
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9+()\\-\\s]{6,30}$");
+    private static final Pattern PHONE_PATTERN = ValidationConstants.PHONE_PATTERN;
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
@@ -146,8 +147,21 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public List<Order> getOrdersByUser(String email, int page, int pageSize) {
+        int safePage = Math.max(0, page);
+        int safeLimit = Math.max(1, Math.min(pageSize, 50));
+        return orderRepository.findByUserEmailOrderByCreatedAtDesc(email, PageRequest.of(safePage, safeLimit));
+    }
+
+    @Deprecated(since = "5.1", forRemoval = true)
+    @Transactional(readOnly = true)
     public List<Order> getOrdersByUser(String email) {
-        return orderRepository.findByUserEmailOrderByCreatedAtDesc(email);
+        return getOrdersByUser(email, 0, 50);
+    }
+
+    @Transactional(readOnly = true)
+    public long countOrdersByUser(String email) {
+        return orderRepository.countByUserEmail(email);
     }
 
     @Transactional(readOnly = true)

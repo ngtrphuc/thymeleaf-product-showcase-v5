@@ -51,6 +51,28 @@ class OrderApiControllerTest {
 
     @Test
     @WithMockUser(username = "user@example.com", roles = "USER")
+    void place_shouldReturnValidationFailed_whenCustomerNameBlank() throws Exception {
+        mockMvc.perform(post("/api/v1/orders")
+                .header("Idempotency-Key", "checkout-key-invalid")
+                .contentType("application/json")
+                .content("""
+                        {
+                          "customerName": "   ",
+                          "phoneNumber": "0901234567",
+                          "shippingAddress": "Tokyo",
+                          "paymentMethod": "CASH_ON_DELIVERY",
+                          "paymentPlan": "FULL_PAYMENT"
+                        }
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.message").value("Customer name is required."));
+
+        verify(orderIdempotencyService, never()).executeCheckout(any(), any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "user@example.com", roles = "USER")
     void place_shouldCreateOrder_whenRequestIsValid() throws Exception {
         CartItem cartItem = new CartItem(1L, "Phone A", 100.0, 1);
         when(cartService.getUserCart("user@example.com")).thenReturn(List.of(cartItem));

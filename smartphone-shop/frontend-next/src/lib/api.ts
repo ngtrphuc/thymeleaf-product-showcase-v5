@@ -127,6 +127,14 @@ export type OrderResponse = {
   items: OrderItemResponse[];
 };
 
+export type OrderPageResponse = {
+  orders: OrderResponse[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  pageSize: number;
+};
+
 export type WishlistItemResponse = {
   productId: number;
   name: string;
@@ -542,8 +550,8 @@ export async function placeOrder(payload: PlaceOrderPayload, idempotencyKey: str
   });
 }
 
-export async function fetchOrders(): Promise<OrderResponse[]> {
-  return requestJson<OrderResponse[]>("/api/v1/orders");
+export async function fetchOrders(page = 0, pageSize = 10): Promise<OrderPageResponse> {
+  return requestJson<OrderPageResponse>(`/api/v1/orders?page=${page}&pageSize=${pageSize}`);
 }
 
 export async function cancelOrder(orderId: number): Promise<OperationStatusResponse> {

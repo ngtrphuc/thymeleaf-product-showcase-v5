@@ -33,9 +33,9 @@ export function ProductCard({ product, motionReduced = false }: ProductCardProps
             <Image
               src={toAssetUrl(product.imageUrl)}
               alt={product.name}
-              width={640}
-              height={640}
-              sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+              width={400}
+              height={400}
+              sizes="(max-width: 768px) 45vw, (max-width: 1280px) 30vw, 22vw"
               className={mediaClassName}
             />
           </Link>
@@ -43,12 +43,13 @@ export function ProductCard({ product, motionReduced = false }: ProductCardProps
           <Image
             src={toAssetUrl(product.imageUrl)}
             alt={product.name}
-            width={640}
-            height={640}
-            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+            width={400}
+            height={400}
+            sizes="(max-width: 768px) 45vw, (max-width: 1280px) 30vw, 22vw"
             className={mediaClassName}
           />
         )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
         <div className="absolute left-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700">
           {product.brand}
         </div>

@@ -32,7 +32,30 @@ export default function AdminDashboardPage() {
   }, []);
 
   if (loading) {
-    return <div className="glass-panel rounded-3xl p-8 text-center">Loading dashboard...</div>;
+    return (
+      <div className="space-y-6">
+        <header className="glass-panel rounded-3xl p-6">
+          <div className="ui-skeleton h-8 w-44 rounded-lg" />
+          <div className="ui-skeleton mt-3 h-4 w-72 rounded-lg" />
+        </header>
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="glass-panel rounded-2xl p-4">
+              <div className="ui-skeleton h-3 w-20 rounded" />
+              <div className="ui-skeleton mt-3 h-8 w-24 rounded-lg" />
+            </div>
+          ))}
+        </section>
+        <section className="glass-panel rounded-3xl p-6">
+          <div className="ui-skeleton h-6 w-32 rounded-lg" />
+          <div className="mt-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="ui-skeleton h-12 rounded-xl" />
+            ))}
+          </div>
+        </section>
+      </div>
+    );
   }
 
   if (!data) {
@@ -89,7 +112,7 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                   <p className="mt-1 text-sm text-slate-600">
-                    {order.customerName} - {formatDateTime(order.createdAt)}
+                    {order.customerName} | {formatDateTime(order.createdAt)}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-900">{formatPriceVnd(order.totalAmount)}</p>
                 </article>

@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const orderCode = useMemo(() => {
     const code = searchParams.get("code")?.trim() ?? "";
@@ -48,3 +48,19 @@ export default function CheckoutSuccessPage() {
   );
 }
 
+function CheckoutSuccessFallback() {
+  return (
+    <div className="glass-panel rounded-3xl p-8 text-center">
+      <div className="mx-auto h-6 w-40 rounded-lg ui-skeleton" />
+      <div className="mx-auto mt-3 h-4 w-64 rounded-lg ui-skeleton" />
+    </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<CheckoutSuccessFallback />}>
+      <CheckoutSuccessContent />
+    </Suspense>
+  );
+}
