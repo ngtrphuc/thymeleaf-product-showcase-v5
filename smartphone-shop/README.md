@@ -18,6 +18,7 @@ inventory at file level.
 - [Environment Configuration](#environment-configuration)
 - [Refactor Progress](#refactor-progress)
 - [Recent UI Updates](#recent-ui-updates)
+- [Recent Backend/API Updates](#recent-backendapi-updates)
 - [Testing and Quality](#testing-and-quality)
 - [Repository Structure (Detailed)](#repository-structure-detailed)
 - [Contributor Notes](#contributor-notes)
@@ -124,11 +125,19 @@ flowchart LR
 - Auth.
 - Catalog and product detail.
 - Cart.
-- Checkout and orders.
+- Checkout and orders (customer order history is paginated).
 - Profile and payment methods.
 - Wishlist.
 - Compare.
 - Chat (REST + SSE).
+
+#### Notable Customer API Contracts
+
+- `GET /api/v1/orders?page={page}&pageSize={pageSize}`
+  returns a page envelope:
+  `orders`, `currentPage`, `totalPages`, `totalElements`, `pageSize`.
+- `POST /api/v1/orders` validates payload at API boundary
+  (`@Valid`) before service execution.
 
 ### Admin APIs (`/api/v1/admin/**`)
 
@@ -247,6 +256,9 @@ Latest storefront UI refinements in `frontend-next`:
 
 - Motion system refresh for smoother page and card transitions using
   transform/opacity-first animations.
+- Motion timing/easing calibration for smoother perceived movement:
+  softer card flips, reduced abrupt hover lifts, and synchronized
+  JS/CSS transition windows for catalog pagination.
 - App Router page-level transitions via route templates for
   `(storefront)` and `admin`.
 - Vertical pagination rail for product catalog on desktop:
@@ -269,6 +281,17 @@ Status: production-like local baseline available.
 
 - Prometheus, Grafana, and Alertmanager profile in Docker Compose.
 - Jaeger tracing path enabled via OTLP.
+
+## Recent Backend/API Updates
+
+- `OrderApiController` now keeps transaction ownership in service layer
+  (controller-level `@Transactional` removed from checkout endpoint).
+- API-level request validation added for checkout and profile update payloads.
+- `ApiExceptionHandler` now handles `MethodArgumentNotValidException`
+  with standardized `VALIDATION_FAILED` responses.
+- Profile business logic extracted to dedicated `ProfileService`.
+- Shared validation utility added:
+  `common/support/ValidationConstants.java`.
 
 ## Testing and Quality
 
@@ -356,7 +379,8 @@ smartphone-shop/
 │       │   │                   │   └── support/
 │       │   │                   │       ├── AssetUrlResolver.java
 │       │   │                   │       ├── CacheKeys.java
-│       │   │                   │       └── StorefrontSupport.java
+│       │   │                   │       ├── StorefrontSupport.java
+│       │   │                   │       └── ValidationConstants.java
 │       │   │                   ├── config/
 │       │   │                   │   ├── AdminAccountInitializer.java
 │       │   │                   │   ├── AsyncExecutionConfig.java
@@ -434,6 +458,7 @@ smartphone-shop/
 │       │   │                   │   ├── OrderService.java
 │       │   │                   │   ├── OrderWorkflowProcessor.java
 │       │   │                   │   ├── PaymentMethodService.java
+│       │   │                   │   ├── ProfileService.java
 │       │   │                   │   ├── ProductSearchService.java
 │       │   │                   │   ├── SimulatedPaymentGateway.java
 │       │   │                   │   └── WishlistService.java
