@@ -38,10 +38,12 @@ Smartphone Shop models a production-oriented commerce workflow:
 ### Storefront Features
 
 - Authentication with JWT in httpOnly cookies.
+- Email verification flow with token-based confirmation and resend support.
 - Product catalog with search, filter, sorting, and pagination.
 - Product detail pages with quick actions.
 - Cart and checkout flow.
 - Profile and payment methods.
+- Address book management (multi-address with default selection).
 - Order history and cancellation (business-rule based).
 - Wishlist and compare.
 - Customer support chat.
@@ -57,6 +59,7 @@ Smartphone Shop models a production-oriented commerce workflow:
 ### Cross-Cutting Features
 
 - Login and API rate limiting.
+- Enum-based user roles and account status guardrails.
 - Checkout idempotency.
 - Caching for catalog/detail with user-specific overlays.
 - Optional Meilisearch with database fallback.
@@ -127,6 +130,7 @@ flowchart LR
 - Cart.
 - Checkout and orders (customer order history is paginated).
 - Profile and payment methods.
+- Address book.
 - Wishlist.
 - Compare.
 - Chat (REST + SSE).
@@ -138,6 +142,11 @@ flowchart LR
   `orders`, `currentPage`, `totalPages`, `totalElements`, `pageSize`.
 - `POST /api/v1/orders` validates payload at API boundary
   (`@Valid`) before service execution.
+- `POST /api/v1/auth/verify-email?token={token}` verifies email ownership.
+- `POST /api/v1/auth/resend-verification` resends verification email for
+  authenticated users.
+- `PUT /api/v1/addresses/{id}/default` atomically clears old default and sets
+  new default address.
 
 ### Admin APIs (`/api/v1/admin/**`)
 
@@ -212,6 +221,7 @@ npm run dev
 
 - `JWT_SECRET`, `JWT_ACCESS_TOKEN_MINUTES`.
 - `APP_CORS_ALLOWED_ORIGINS`.
+- `APP_REQUIRE_EMAIL_VERIFICATION`, `APP_AUTH_VERIFICATION_LINK_BASE_URL`.
 - `APP_SEARCH_MEILI_ENABLED`, `APP_SEARCH_MEILI_HOST`,
   `APP_SEARCH_MEILI_API_KEY`.
 - `DATASOURCE_URL`, `DATASOURCE_USER`, `DATASOURCE_PASSWORD`.
@@ -284,6 +294,18 @@ Status: production-like local baseline available.
 
 ## Recent Backend/API Updates
 
+- Commercial product model rollout:
+  - category/brand entities,
+  - product variants + SKU support,
+  - multi-image and dynamic product specs.
+- User model upgrade:
+  - `UserRole` enum and `AccountStatus`,
+  - email verification fields and token workflow,
+  - address book module with default-address management.
+- New customer address APIs:
+  - list/create/update/delete/set-default under `/api/v1/addresses`.
+- Auth APIs extended:
+  - verify email and resend verification endpoints.
 - `OrderApiController` now keeps transaction ownership in service layer
   (controller-level `@Transactional` removed from checkout endpoint).
 - API-level request validation added for checkout and profile update payloads.
@@ -350,6 +372,7 @@ smartphone-shop/
 │       │   │               └── smartphone_shop/
 │       │   │                   ├── api/
 │       │   │                   │   ├── dto/
+│       │   │                   │   │   ├── AddressResponse.java
 │       │   │                   │   │   ├── AuthMeResponse.java
 │       │   │                   │   │   ├── AuthTokenResponse.java
 │       │   │                   │   │   ├── CartItemResponse.java
@@ -363,7 +386,10 @@ smartphone-shop/
 │       │   │                   │   │   ├── OrderResponse.java
 │       │   │                   │   │   ├── PaymentMethodResponse.java
 │       │   │                   │   │   ├── ProductDetailResponse.java
+│       │   │                   │   │   ├── ProductImageResponse.java
+│       │   │                   │   │   ├── ProductSpecResponse.java
 │       │   │                   │   │   ├── ProductSummary.java
+│       │   │                   │   │   ├── ProductVariantResponse.java
 │       │   │                   │   │   ├── ProfileResponse.java
 │       │   │                   │   │   ├── WishlistItemResponse.java
 │       │   │                   │   │   └── WishlistResponse.java
@@ -394,6 +420,7 @@ smartphone-shop/
 │       │   │                   ├── controller/
 │       │   │                   │   ├── api/
 │       │   │                   │   │   └── v1/
+│       │   │                   │   │       ├── AddressApiController.java
 │       │   │                   │   │       ├── AdminChatApiController.java
 │       │   │                   │   │       ├── AdminDashboardApiController.java
 │       │   │                   │   │       ├── AdminOrderApiController.java
@@ -415,28 +442,44 @@ smartphone-shop/
 │       │   │                   │   └── websocket/
 │       │   │                   │       └── ChatWebSocketNotifier.java
 │       │   │                   ├── model/
+│       │   │                   │   ├── AccountStatus.java
+│       │   │                   │   ├── Address.java
+│       │   │                   │   ├── Brand.java
 │       │   │                   │   ├── CartItem.java
 │       │   │                   │   ├── CartItemEntity.java
+│       │   │                   │   ├── Category.java
 │       │   │                   │   ├── ChatMessage.java
 │       │   │                   │   ├── CompareItemEntity.java
+│       │   │                   │   ├── EmailVerificationToken.java
 │       │   │                   │   ├── Order.java
 │       │   │                   │   ├── OrderIdempotencyKey.java
 │       │   │                   │   ├── OrderItem.java
 │       │   │                   │   ├── PaymentMethod.java
 │       │   │                   │   ├── Product.java
+│       │   │                   │   ├── ProductImage.java
+│       │   │                   │   ├── ProductSpec.java
+│       │   │                   │   ├── ProductVariant.java
 │       │   │                   │   ├── User.java
+│       │   │                   │   ├── UserRole.java
 │       │   │                   │   ├── WishlistItem.java
 │       │   │                   │   └── WishlistItemEntity.java
 │       │   │                   ├── repository/
 │       │   │                   │   ├── spec/
 │       │   │                   │   │   └── ProductCatalogSpecifications.java
+│       │   │                   │   ├── AddressRepository.java
+│       │   │                   │   ├── BrandRepository.java
 │       │   │                   │   ├── CartItemRepository.java
+│       │   │                   │   ├── CategoryRepository.java
 │       │   │                   │   ├── ChatMessageRepository.java
 │       │   │                   │   ├── CompareItemRepository.java
+│       │   │                   │   ├── EmailVerificationTokenRepository.java
 │       │   │                   │   ├── OrderIdempotencyKeyRepository.java
 │       │   │                   │   ├── OrderRepository.java
 │       │   │                   │   ├── PaymentMethodRepository.java
+│       │   │                   │   ├── ProductImageRepository.java
 │       │   │                   │   ├── ProductRepository.java
+│       │   │                   │   ├── ProductSpecRepository.java
+│       │   │                   │   ├── ProductVariantRepository.java
 │       │   │                   │   ├── UserRepository.java
 │       │   │                   │   └── WishlistItemRepository.java
 │       │   │                   ├── security/
@@ -448,16 +491,21 @@ smartphone-shop/
 │       │   │                   │   ├── JwtTokenProvider.java
 │       │   │                   │   └── LoginRateLimitFilter.java
 │       │   │                   ├── service/
+│       │   │                   │   ├── AddressService.java
 │       │   │                   │   ├── AuthService.java
 │       │   │                   │   ├── CartService.java
 │       │   │                   │   ├── ChatService.java
 │       │   │                   │   ├── ChatSseRegistry.java
 │       │   │                   │   ├── CompareService.java
 │       │   │                   │   ├── CustomUserDetailsService.java
+│       │   │                   │   ├── EmailSender.java
+│       │   │                   │   ├── EmailVerificationService.java
+│       │   │                   │   ├── LogOnlyEmailSender.java
 │       │   │                   │   ├── OrderIdempotencyService.java
 │       │   │                   │   ├── OrderService.java
 │       │   │                   │   ├── OrderWorkflowProcessor.java
 │       │   │                   │   ├── PaymentMethodService.java
+│       │   │                   │   ├── ProductCommerceService.java
 │       │   │                   │   ├── ProfileService.java
 │       │   │                   │   ├── ProductSearchService.java
 │       │   │                   │   ├── SimulatedPaymentGateway.java
@@ -472,7 +520,10 @@ smartphone-shop/
 │       │       │       ├── V1__baseline_schema.sql
 │       │       │       ├── V2__performance_indexes.sql
 │       │       │       ├── V3__idempotency_and_recommendation_indexes.sql
-│       │       │       └── V4__stale_placeholder_cleanup.sql
+│       │       │       ├── V4__stale_placeholder_cleanup.sql
+│       │       │       ├── V5__commercial_product_model.sql
+│       │       │       ├── V6__user_role_and_address_book.sql
+│       │       │       └── V7__email_verification.sql
 │       │       ├── application.properties
 │       │       ├── application-dev.properties
 │       │       └── application-prod.properties
