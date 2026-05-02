@@ -29,17 +29,22 @@ class AuthServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private EmailVerificationService emailVerificationService;
+
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder);
+        authService = new AuthService(userRepository, passwordEncoder, emailVerificationService);
     }
 
     @Test
     void register_shouldNormalizeEmailBeforeSaving() {
         when(userRepository.existsByEmailIgnoreCase("user@example.com")).thenReturn(false);
         when(passwordEncoder.encode("secret123")).thenReturn("encoded-secret");
+        when(userRepository.save(MockitoNullSafety.anyNonNull(User.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         boolean registered = authService.register("  User@Example.com  ", "  Nguyen   Phuc  ", "secret123");
 
@@ -47,6 +52,7 @@ class AuthServiceTest {
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(MockitoNullSafety.captureNonNull(userCaptor));
         User savedUser = MockitoNullSafety.capturedValue(userCaptor);
+        verify(emailVerificationService).sendVerification(savedUser);
 
         assertEquals("user@example.com", savedUser.getEmail());
         assertEquals("Nguyen Phuc", savedUser.getFullName());

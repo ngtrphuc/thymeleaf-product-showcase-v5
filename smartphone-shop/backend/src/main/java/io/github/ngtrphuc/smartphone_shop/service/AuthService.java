@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.model.User;
+import io.github.ngtrphuc.smartphone_shop.model.UserRole;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 
 @Service
@@ -21,10 +22,14 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Transactional
@@ -59,9 +64,10 @@ public class AuthService {
         user.setEmail(normalizedEmail);
         user.setFullName(normalizedFullName);
         user.setPassword(passwordEncoder.encode(normalizedPassword));
-        user.setRole("ROLE_USER");
+        user.setRole(UserRole.ROLE_USER);
         try {
-            userRepository.save(user);
+            User savedUser = userRepository.save(user);
+            emailVerificationService.sendVerification(savedUser);
             return true;
         } catch (DataIntegrityViolationException ex) {
             return false;

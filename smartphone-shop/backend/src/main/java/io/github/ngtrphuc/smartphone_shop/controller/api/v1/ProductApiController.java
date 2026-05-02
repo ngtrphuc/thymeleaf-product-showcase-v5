@@ -1,10 +1,10 @@
 package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -15,21 +15,27 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
-import io.github.ngtrphuc.smartphone_shop.model.Product;
+import io.github.ngtrphuc.smartphone_shop.api.dto.CatalogPageResponse;
+import io.github.ngtrphuc.smartphone_shop.api.dto.ProductDetailResponse;
+import io.github.ngtrphuc.smartphone_shop.api.dto.ProductImageResponse;
+import io.github.ngtrphuc.smartphone_shop.api.dto.ProductSpecResponse;
+import io.github.ngtrphuc.smartphone_shop.api.dto.ProductSummary;
+import io.github.ngtrphuc.smartphone_shop.api.dto.ProductVariantResponse;
 import io.github.ngtrphuc.smartphone_shop.common.support.CacheKeys;
+import io.github.ngtrphuc.smartphone_shop.model.Product;
+import io.github.ngtrphuc.smartphone_shop.model.ProductVariant;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.spec.ProductCatalogSpecifications;
-import io.github.ngtrphuc.smartphone_shop.common.support.StorefrontSupport;
+import io.github.ngtrphuc.smartphone_shop.service.ProductCommerceService;
 import io.github.ngtrphuc.smartphone_shop.service.ProductSearchService;
 import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
 
@@ -47,16 +53,31 @@ public class ProductApiController {
     private final WishlistService wishlistService;
     private final ApiMapper apiMapper;
     private final CacheManager cacheManager;
+    private final ProductCommerceService productCommerceService;
     private ProductSearchService productSearchService;
 
+    @Autowired
     public ProductApiController(ProductRepository productRepository,
             WishlistService wishlistService,
             ApiMapper apiMapper,
-            CacheManager cacheManager) {
+            CacheManager cacheManager,
+            ProductCommerceService productCommerceService) {
         this.productRepository = productRepository;
         this.wishlistService = wishlistService;
         this.apiMapper = apiMapper;
         this.cacheManager = cacheManager;
+        this.productCommerceService = productCommerceService;
+    }
+
+    /**
+     * Backward-compatible constructor for existing tests.
+     */
+    public ProductApiController(ProductRepository productRepository,
+            WishlistService wishlistService,
+            ApiMapper apiMapper,
+            CacheManager cacheManager) {
+        this(productRepository, wishlistService, apiMapper, cacheManager,
+                new ProductCommerceService(null, null, null, null, null));
     }
 
     @Autowired(required = false)
@@ -119,17 +140,26 @@ public class ProductApiController {
     }
 
     @GetMapping("/{id}")
-    public ProductDetailResponse product(@PathVariable(name = "id") long id, Authentication authentication) {
+    public ProductDetailResponse product(
+            @PathVariable(name = "id") long id,
+            @RequestParam(name = "variantId", required = false) Long variantId,
+            Authentication authentication) {
         String detailKey = Objects.requireNonNull(CacheKeys.productDetail(id));
         ProductDetailResponse publicResponse = getOrLoadCache(
                 PRODUCT_DETAIL_PUBLIC_CACHE,
                 detailKey,
-                () -> buildProductDetailPublicResponse(id));
+                () -> buildProductDetailPublicResponse(id, null));
+
+        ProductDetailResponse resolvedResponse = publicResponse;
+        if (variantId != null) {
+            resolvedResponse = buildProductDetailPublicResponse(id, variantId);
+        }
+
         Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
         if (wishlistedProductIds.isEmpty()) {
-            return publicResponse;
+            return resolvedResponse;
         }
-        return applyWishlistToProductDetail(publicResponse, wishlistedProductIds);
+        return applyWishlistToProductDetail(resolvedResponse, wishlistedProductIds);
     }
 
     private CatalogPageResponse buildCatalogPublicResponse(
@@ -211,8 +241,8 @@ public class ProductApiController {
                 && "relevance".equals(normalizedSort);
         Sort requestedSort = switch (normalizedSort) {
             case "name_desc" -> Sort.by(Sort.Order.desc("name").ignoreCase());
-            case "price_asc" -> Sort.by("price").ascending();
-            case "price_desc" -> Sort.by("price").descending();
+            case "price_asc" -> Sort.by("basePrice").ascending();
+            case "price_desc" -> Sort.by("basePrice").descending();
             default -> Sort.by(Sort.Order.asc("name").ignoreCase());
         };
         List<Product> products;
@@ -293,16 +323,74 @@ public class ProductApiController {
                 activeFilterCount > 0);
     }
 
-    private ProductDetailResponse buildProductDetailPublicResponse(long id) {
-        Product product = productRepository.findById(id)
+    private ProductDetailResponse buildProductDetailPublicResponse(long id, Long requestedVariantId) {
+        Product product = productRepository.findWithRefsById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
+        ProductVariant selectedVariant = productCommerceService.resolveVariantOrDefault(product, requestedVariantId);
+        ProductSummary summary = apiMapper.toProductSummary(product, false);
+
+        if (selectedVariant != null && summary != null) {
+            summary = new ProductSummary(
+                    summary.id(),
+                    summary.name(),
+                    summary.brand(),
+                    selectedVariant.effectivePrice(),
+                    summary.imageUrl(),
+                    selectedVariant.getStock(),
+                    selectedVariant.getStock() != null && selectedVariant.getStock() > 0,
+                    selectedVariant.getStock() != null && selectedVariant.getStock() > 0 && selectedVariant.getStock() <= 3,
+                    selectedVariant.getStock() == null || selectedVariant.getStock() <= 0
+                            ? "Out of stock"
+                            : (selectedVariant.getStock() <= 3
+                                    ? "Only " + selectedVariant.getStock() + " left"
+                                    : "In stock"),
+                    selectedVariant.effectivePrice() != null && selectedVariant.effectivePrice() > 0
+                            ? Math.round(selectedVariant.effectivePrice() / 24.0)
+                            : 0L,
+                    selectedVariant.getStorage() != null ? selectedVariant.getStorage() : summary.storage(),
+                    selectedVariant.getRam() != null ? selectedVariant.getRam() : summary.ram(),
+                    summary.size(),
+                    summary.os(),
+                    summary.chipset(),
+                    summary.speed(),
+                    summary.resolution(),
+                    summary.battery(),
+                    summary.charging(),
+                    summary.description(),
+                    summary.wishlisted(),
+                    summary.categoryId(),
+                    summary.categoryName(),
+                    summary.slug(),
+                    summary.skuPrefix(),
+                    selectedVariant.getId(),
+                    selectedVariant.label());
+        }
+
         List<ProductSummary> recommendedProducts = resolveRecommendedProducts(product).stream()
                 .map(recommended -> apiMapper.toProductSummary(recommended, false))
                 .toList();
+
+        List<ProductVariantResponse> variants = productCommerceService.loadVariants(product.getId()).stream()
+                .map(variant -> apiMapper.toProductVariantResponse(product, variant,
+                        selectedVariant != null ? selectedVariant.getId() : null))
+                .toList();
+
+        List<ProductImageResponse> images = productCommerceService.loadImages(product.getId()).stream()
+                .map(apiMapper::toProductImageResponse)
+                .toList();
+
+        List<ProductSpecResponse> specs = productCommerceService.loadSpecs(product.getId()).stream()
+                .map(apiMapper::toProductSpecResponse)
+                .toList();
+
         return new ProductDetailResponse(
-                apiMapper.toProductSummary(product, false),
+                summary,
                 recommendedProducts,
-                false);
+                false,
+                variants,
+                images,
+                specs,
+                selectedVariant != null ? selectedVariant.getId() : null);
     }
 
     private List<Product> resolveRecommendedProducts(Product currentProduct) {
@@ -315,7 +403,7 @@ public class ProductApiController {
         if (!coPurchaseIds.isEmpty()) {
             return orderProductsByIds(coPurchaseIds);
         }
-        double targetPrice = currentProduct.getPrice() == null ? 0.0 : currentProduct.getPrice();
+        double targetPrice = currentProduct.getEffectivePrice() == null ? 0.0 : currentProduct.getEffectivePrice();
         return productRepository.findRecommendedProducts(
                 currentProduct.getId(),
                 targetPrice,
@@ -379,11 +467,33 @@ public class ProductApiController {
     }
 
     private List<String> loadAvailableBrands() {
+        List<String> names = productRepository.findAllBrandNamesOrdered();
+        if (names != null && !names.isEmpty()) {
+            return names;
+        }
         return productRepository.findAllNamesOrdered().stream()
-                .map(StorefrontSupport::extractBrand)
+                .map(this::inferBrandNameFallback)
                 .distinct()
                 .sorted(String.CASE_INSENSITIVE_ORDER)
                 .toList();
+    }
+
+    private String inferBrandNameFallback(String name) {
+        String slug = productCommerceService.inferBrandSlug(name);
+        return switch (slug) {
+            case "apple" -> "Apple";
+            case "samsung" -> "Samsung";
+            case "google" -> "Google";
+            case "oppo" -> "OPPO";
+            case "vivo" -> "Vivo";
+            case "xiaomi" -> "Xiaomi";
+            case "sony" -> "Sony";
+            case "asus" -> "ASUS";
+            case "zte" -> "ZTE";
+            case "huawei" -> "Huawei";
+            case "honor" -> "Honor";
+            default -> "Other";
+        };
     }
 
     private Set<Long> resolveWishlistedProductIds(Authentication authentication) {
@@ -416,7 +526,14 @@ public class ProductApiController {
                 .map(item -> applyWishlistFlag(item, wishlistedProductIds))
                 .toList();
         boolean wishlisted = product != null && product.id() != null && wishlistedProductIds.contains(product.id());
-        return new ProductDetailResponse(product, recommendedProducts, wishlisted);
+        return new ProductDetailResponse(
+                product,
+                recommendedProducts,
+                wishlisted,
+                source.variants(),
+                source.images(),
+                source.specs(),
+                source.selectedVariantId());
     }
 
     private ProductSummary applyWishlistFlag(ProductSummary product, Set<Long> wishlistedProductIds) {
@@ -448,7 +565,13 @@ public class ProductApiController {
                 product.battery(),
                 product.charging(),
                 product.description(),
-                wishlisted);
+                wishlisted,
+                product.categoryId(),
+                product.categoryName(),
+                product.slug(),
+                product.skuPrefix(),
+                product.defaultVariantId(),
+                product.defaultVariantLabel());
     }
 
     private <T> T getOrLoadCache(@NonNull String cacheName, @NonNull String key, @NonNull Supplier<T> valueLoader) {
@@ -501,5 +624,3 @@ public class ProductApiController {
         return value == null || value.isBlank() ? null : value;
     }
 }
-
-

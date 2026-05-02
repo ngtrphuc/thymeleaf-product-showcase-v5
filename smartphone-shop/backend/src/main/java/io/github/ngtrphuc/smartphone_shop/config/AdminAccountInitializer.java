@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import io.github.ngtrphuc.smartphone_shop.model.User;
+import io.github.ngtrphuc.smartphone_shop.model.UserRole;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 
 @Component
@@ -62,13 +63,14 @@ public class AdminAccountInitializer implements CommandLineRunner {
         boolean passwordChanged = isNewUser
                 || adminUser.getPassword() == null
                 || !passwordEncoder.matches(adminPassword, adminUser.getPassword());
-        boolean roleChanged = !"ROLE_ADMIN".equals(adminUser.getRole());
+        boolean roleChanged = adminUser.getRole() != UserRole.ROLE_ADMIN;
 
         adminUser.setEmail(adminEmail);
         adminUser.setFullName(adminUser.getFullName() == null || adminUser.getFullName().isBlank()
                 ? "Administrator"
                 : adminUser.getFullName());
-        adminUser.setRole("ROLE_ADMIN");
+        adminUser.setRole(UserRole.ROLE_ADMIN);
+        adminUser.setEmailVerified(true);
         if (passwordChanged) {
             adminUser.setPassword(passwordEncoder.encode(adminPassword));
         }

@@ -1,13 +1,21 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
-import { ApiError, fetchProductDetail, getBackendOrigin, toAssetUrl, type AuthMeResponse, type ProductSummary } from "@/lib/api";
+import {
+  ApiError,
+  fetchProductDetail,
+  getBackendOrigin,
+  toAssetUrl,
+  type AuthMeResponse,
+  type ProductSummary,
+} from "@/lib/api";
 import { formatPriceVnd } from "@/lib/format";
 import { ProductActions } from "@/components/storefront/product-actions";
 
 type ProductDetailPageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ variantId?: string }>;
 };
 
 function AvailabilityBadge({ product }: { product: ProductSummary }) {
@@ -68,8 +76,10 @@ function SpecItem({ label, value }: { label: string; value: string | number | nu
   );
 }
 
-export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+export default async function ProductDetailPage({ params, searchParams }: ProductDetailPageProps) {
   const { id } = await params;
+  const query = await searchParams;
+  const selectedVariantId = query.variantId ? Number.parseInt(query.variantId, 10) : null;
   const cookieStore = await cookies();
   const authState = await resolveAuthState(cookieStore.toString());
   const isAdmin = isAdminRole(authState.role);
@@ -77,7 +87,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
   let detail;
   try {
-    detail = await fetchProductDetail(id);
+    detail = await fetchProductDetail(id, Number.isFinite(selectedVariantId ?? NaN) ? selectedVariantId : null);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       notFound();
@@ -86,6 +96,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   }
 
   const product = detail.product;
+  const heroImage = detail.images.find((image) => image.primary)?.url ?? detail.images[0]?.url ?? product.imageUrl;
 
   return (
     <div className="space-y-6">
@@ -98,15 +109,32 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       </div>
 
       <section className="glass-panel grid gap-6 rounded-3xl p-5 md:grid-cols-2 md:p-8">
-        <div className="overflow-hidden rounded-3xl bg-[var(--color-surface-soft)]">
-          <Image
-            src={toAssetUrl(product.imageUrl)}
-            alt={product.name}
-            width={860}
-            height={860}
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="h-full w-full object-contain p-2"
-          />
+        <div className="space-y-3">
+          <div className="overflow-hidden rounded-3xl bg-[var(--color-surface-soft)]">
+            <Image
+              src={toAssetUrl(heroImage)}
+              alt={product.name}
+              width={860}
+              height={860}
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="h-full w-full object-contain p-2"
+            />
+          </div>
+          {detail.images.length > 1 ? (
+            <div className="grid grid-cols-5 gap-2">
+              {detail.images.map((image) => (
+                <div key={image.id ?? image.url} className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white">
+                  <Image
+                    src={toAssetUrl(image.url)}
+                    alt={`${product.name} image`}
+                    width={160}
+                    height={160}
+                    className="aspect-square w-full object-contain p-1.5"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-4">
@@ -115,17 +143,48 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           <AvailabilityBadge product={product} />
           <p className="text-3xl font-bold text-[var(--color-primary-strong)]">{formatPriceVnd(product.price)}</p>
 
+          {detail.variants.length > 0 ? (
+            <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
+              <h2 className="text-sm font-semibold text-slate-900">Variants</h2>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {detail.variants.map((variant) => {
+                  const active = variant.id === detail.selectedVariantId;
+                  const href = variant.id ? `/products/${id}?variantId=${variant.id}` : `/products/${id}`;
+                  return (
+                    <Link
+                      key={variant.id ?? variant.sku ?? variant.label}
+                      href={href}
+                      className={`rounded-lg border px-3 py-2 text-xs font-medium ${
+                        active
+                          ? "border-black bg-black text-white"
+                          : "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-slate-700"
+                      }`}
+                    >
+                      {variant.label ?? variant.sku ?? "Default"}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
           <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
             <dl className="grid grid-cols-2 gap-3 text-sm">
-              <SpecItem label="Storage" value={product.storage} />
-              <SpecItem label="RAM" value={product.ram} />
-              <SpecItem label="Screen" value={product.size} />
-              <SpecItem label="Resolution" value={product.resolution} />
-              <SpecItem label="Operating System" value={product.os} />
-              <SpecItem label="Chipset" value={product.chipset} />
-              <SpecItem label="CPU Speed" value={product.speed} />
-              <SpecItem label="Battery" value={product.battery} />
-              <SpecItem label="Charging" value={product.charging} />
+              {detail.specs.length > 0 ? (
+                detail.specs.map((spec) => <SpecItem key={spec.id ?? `${spec.key}-${spec.sortOrder}`} label={spec.key} value={spec.value} />)
+              ) : (
+                <>
+                  <SpecItem label="Storage" value={product.storage} />
+                  <SpecItem label="RAM" value={product.ram} />
+                  <SpecItem label="Screen" value={product.size} />
+                  <SpecItem label="Resolution" value={product.resolution} />
+                  <SpecItem label="Operating System" value={product.os} />
+                  <SpecItem label="Chipset" value={product.chipset} />
+                  <SpecItem label="CPU Speed" value={product.speed} />
+                  <SpecItem label="Battery" value={product.battery} />
+                  <SpecItem label="Charging" value={product.charging} />
+                </>
+              )}
               <SpecItem label="Stock" value={product.stock} />
             </dl>
           </div>
@@ -143,6 +202,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           {product.id ? (
             <ProductActions
               productId={product.id}
+              variantId={detail.selectedVariantId}
               isAdmin={isAdmin}
               isAuthenticated={isAuthenticated && !isAdmin}
               editHref="/admin/products"

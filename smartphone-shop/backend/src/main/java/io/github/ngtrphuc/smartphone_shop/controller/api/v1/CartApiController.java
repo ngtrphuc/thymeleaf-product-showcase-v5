@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.github.ngtrphuc.smartphone_shop.api.dto.*;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
+import io.github.ngtrphuc.smartphone_shop.api.dto.CartResponse;
 import io.github.ngtrphuc.smartphone_shop.service.CartService;
 
 @RestController
@@ -39,13 +39,24 @@ public class CartApiController {
         if (productId == null) {
             throw new IllegalArgumentException("Product ID is required.");
         }
-        CartService.AddItemResult result = cartService.addItem(resolveEmail(authentication), null,
-                productId, request.quantity() != null ? request.quantity() : 1);
+        Integer quantity = request.quantity() != null ? request.quantity() : 1;
+        CartService.AddItemResult result = request.variantId() != null
+                ? cartService.addItem(
+                        resolveEmail(authentication),
+                        null,
+                        productId,
+                        request.variantId(),
+                        quantity)
+                : cartService.addItem(
+                        resolveEmail(authentication),
+                        null,
+                        productId,
+                        quantity);
         if (result == CartService.AddItemResult.UNAVAILABLE) {
-            throw new NoSuchElementException("Product not found or unavailable.");
+            throw new NoSuchElementException("Product variant not found or unavailable.");
         }
         if (result == CartService.AddItemResult.LIMIT_REACHED) {
-            throw new IllegalStateException("You've already added the maximum available stock for this product.");
+            throw new IllegalStateException("You've already added the maximum available stock for this item.");
         }
         return currentCart(authentication);
     }
@@ -92,7 +103,6 @@ public class CartApiController {
         return name;
     }
 
-    private record AddItemRequest(Long productId, Integer quantity) {
+    private record AddItemRequest(Long productId, Long variantId, Integer quantity) {
     }
 }
-

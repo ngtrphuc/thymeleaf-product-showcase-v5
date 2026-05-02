@@ -22,6 +22,8 @@ import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 import io.github.ngtrphuc.smartphone_shop.security.JwtTokenProvider;
 import io.github.ngtrphuc.smartphone_shop.service.AuthService;
+import io.github.ngtrphuc.smartphone_shop.service.EmailVerificationService;
+import io.github.ngtrphuc.smartphone_shop.model.UserRole;
 
 @ExtendWith(MockitoExtension.class)
 class AuthApiControllerTest {
@@ -40,10 +42,14 @@ class AuthApiControllerTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private EmailVerificationService emailVerificationService;
+
     @Test
     void me_shouldReturnAnonymousPayloadWhenNotLoggedIn() {
         AuthApiController controller = new AuthApiController(
-                authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider, false);
+                authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider,
+                emailVerificationService, false);
 
         AuthMeResponse response = controller.me(
                 new AnonymousAuthenticationToken("key", "anonymousUser", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
@@ -55,7 +61,8 @@ class AuthApiControllerTest {
     @Test
     void register_shouldReturnConflictWhenEmailExists() {
         AuthApiController controller = new AuthApiController(
-                authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider, false);
+                authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider,
+                emailVerificationService, false);
         when(authService.register("user@example.com", "Tester", "secret123")).thenReturn(false);
 
         ResponseEntity<OperationStatusResponse> response = controller.register(
@@ -70,11 +77,12 @@ class AuthApiControllerTest {
     @Test
     void me_shouldReturnUserPayloadWhenAuthenticated() {
         AuthApiController controller = new AuthApiController(
-                authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider, false);
+                authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider,
+                emailVerificationService, false);
         User user = new User();
         user.setEmail("user@example.com");
         user.setFullName("Tester");
-        user.setRole("ROLE_USER");
+        user.setRole(UserRole.ROLE_USER);
         when(userRepository.findByEmailIgnoreCase("user@example.com")).thenReturn(java.util.Optional.of(user));
 
         AuthMeResponse response = controller.me(

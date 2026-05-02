@@ -233,7 +233,8 @@ export default function ComparePage() {
     setError(null);
     setMessage(null);
     try {
-      await addCartItem(productId, 1);
+      const product = compare?.products.find((item) => item.id === productId) ?? null;
+      await addCartItem(productId, 1, product?.defaultVariantId ?? null);
       setMessage("Added product to cart.");
     } catch (err) {
       if (err instanceof ApiError) {
@@ -766,5 +767,6 @@ export default function ComparePage() {
     </div>
   );
 }
+
 
 

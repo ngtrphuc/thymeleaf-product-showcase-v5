@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -92,11 +92,14 @@ export default function CartPage() {
       ) : (
         <>
           <div className="space-y-3">
-            {items.map((item) => (
-              <article key={item.id} className="glass-panel rounded-2xl p-4">
+            {items.map((item) => {
+              const lineId = item.variantId ?? item.id;
+              return (
+              <article key={`${item.id}-${item.variantId ?? "default"}`} className="glass-panel rounded-2xl p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="font-semibold text-slate-900">{item.name}</p>
+                    {item.variantLabel ? <p className="text-xs text-slate-500">{item.variantLabel}</p> : null}
                     <p className="text-sm text-slate-600">{formatPriceVnd(item.price)} each</p>
                     <p className="text-xs text-slate-500">{item.availabilityLabel}</p>
                   </div>
@@ -104,7 +107,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => void mutate(() => decreaseCartItem(item.id))}
+                      onClick={() => void mutate(() => decreaseCartItem(lineId))}
                       className="ui-btn ui-btn-secondary px-3 py-1.5 text-sm"
                     >
                       -
@@ -113,7 +116,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => void mutate(() => increaseCartItem(item.id))}
+                      onClick={() => void mutate(() => increaseCartItem(lineId))}
                       className="ui-btn ui-btn-secondary px-3 py-1.5 text-sm"
                     >
                       +
@@ -121,7 +124,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       disabled={busy}
-                      onClick={() => void mutate(() => removeCartItem(item.id))}
+                      onClick={() => void mutate(() => removeCartItem(lineId))}
                       className="ui-btn ui-btn-danger ml-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm"
                     >
                       <GriddyIcon name="trash" />
@@ -130,7 +133,7 @@ export default function CartPage() {
                   </div>
                 </div>
               </article>
-            ))}
+            )})}
           </div>
 
           <section className="glass-panel rounded-3xl p-6">

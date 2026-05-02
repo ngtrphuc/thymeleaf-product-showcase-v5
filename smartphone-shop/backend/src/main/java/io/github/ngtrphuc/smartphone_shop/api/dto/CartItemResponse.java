@@ -9,5 +9,8 @@ public record CartItemResponse(
         int availableStock,
         double lineTotal,
         boolean lowStock,
-        String availabilityLabel) {
+        String availabilityLabel,
+        Long variantId,
+        String variantSku,
+        String variantLabel) {
 }

@@ -8,17 +8,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.lang.Nullable;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;
 import io.github.ngtrphuc.smartphone_shop.model.CartItemEntity;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
+import io.github.ngtrphuc.smartphone_shop.model.ProductImage;
+import io.github.ngtrphuc.smartphone_shop.model.ProductVariant;
 import io.github.ngtrphuc.smartphone_shop.repository.CartItemRepository;
+import io.github.ngtrphuc.smartphone_shop.repository.ProductImageRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
+import io.github.ngtrphuc.smartphone_shop.repository.ProductVariantRepository;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CartService {
@@ -31,10 +36,29 @@ public class CartService {
 
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
+    private final ProductVariantRepository productVariantRepository;
+    private final ProductImageRepository productImageRepository;
+    private final ProductCommerceService productCommerceService;
 
-    public CartService(CartItemRepository cartItemRepository, ProductRepository productRepository) {
+    @Autowired
+    public CartService(CartItemRepository cartItemRepository,
+            ProductRepository productRepository,
+            ProductVariantRepository productVariantRepository,
+            ProductImageRepository productImageRepository,
+            ProductCommerceService productCommerceService) {
         this.cartItemRepository = cartItemRepository;
         this.productRepository = productRepository;
+        this.productVariantRepository = productVariantRepository;
+        this.productImageRepository = productImageRepository;
+        this.productCommerceService = productCommerceService;
+    }
+
+    /**
+     * Backward-compatible constructor for existing unit tests.
+     */
+    public CartService(CartItemRepository cartItemRepository,
+            ProductRepository productRepository) {
+        this(cartItemRepository, productRepository, null, null, new ProductCommerceService(null, null, null, null, null));
     }
 
     public List<CartItem> getSessionCart(@Nullable HttpSession session) {
@@ -85,71 +109,63 @@ public class CartService {
         if (sessionCart.isEmpty()) {
             return;
         }
-
-        List<Long> productIds = sessionCart.stream()
+        List<Long> sessionProductIds = sessionCart.stream()
                 .map(CartItem::getId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
-        if (productIds.isEmpty()) {
-            if (session != null) {
-                session.removeAttribute("cart");
-            }
-            syncCartCount(session, email);
-            return;
-        }
-
-        Map<Long, Product> productMap = productRepository.findAllByIdIn(productIds)
+        Map<Long, Product> productMap = productRepository.findAllByIdIn(sessionProductIds)
                 .stream()
-                .filter(p -> p.getId() != null)
-                .collect(Collectors.toMap(Product::getId, p -> p));
+                .filter(product -> product.getId() != null)
+                .collect(Collectors.toMap(Product::getId, product -> product));
 
-        Map<Long, CartItemEntity> existingByProductId = new LinkedHashMap<>();
+        Map<String, CartItemEntity> existingByLineKey = new LinkedHashMap<>();
+        List<CartItemEntity> dirtyEntities = new ArrayList<>();
         for (CartItemEntity existing : cartItemRepository.findByUserEmail(email)) {
-            if (existing.getProductId() != null) {
-                existingByProductId.putIfAbsent(existing.getProductId(), existing);
-            }
+            existingByLineKey.putIfAbsent(buildLineKey(existing.getVariantId(), existing.getProductId()), existing);
         }
 
-        List<CartItemEntity> pendingSaves = new ArrayList<>();
         for (CartItem item : sessionCart) {
-            Long itemId = item.getId();
-            if (itemId == null) {
+            if (item == null) {
                 continue;
             }
-            Product product = productMap.get(itemId);
-            int maxStock = stockOf(product);
-            if (maxStock <= 0) {
+            Product product = item.getId() != null ? productMap.get(item.getId()) : null;
+            if (product == null) {
                 continue;
             }
-
+            LineContext line = resolveLine(product, item.getVariantId());
+            if (!line.available()) {
+                continue;
+            }
+            String lineKey = buildLineKey(line.variantId(), line.product().getId());
+            CartItemEntity existing = existingByLineKey.get(lineKey);
             int requestedQty = Math.max(item.getQuantity(), 0);
-            if (requestedQty == 0) {
+            if (requestedQty <= 0) {
                 continue;
             }
 
-            CartItemEntity existing = existingByProductId.get(itemId);
             if (existing != null) {
-                int mergedQty = Math.min(existing.getQuantity() + requestedQty, maxStock);
-                if (mergedQty != existing.getQuantity()) {
-                    existing.setQuantity(mergedQty);
-                    pendingSaves.add(existing);
-                }
+                int mergedQty = Math.min(existing.getQuantity() + requestedQty, line.stock());
+                existing.setQuantity(Math.max(1, mergedQty));
+                dirtyEntities.add(existing);
             } else {
-                int initialQty = Math.min(requestedQty, maxStock);
+                int initialQty = Math.min(requestedQty, line.stock());
                 if (initialQty > 0) {
-                    CartItemEntity created = new CartItemEntity(email, itemId, initialQty);
-                    pendingSaves.add(created);
-                    existingByProductId.put(itemId, created);
+                    CartItemEntity created = new CartItemEntity(email, line.product().getId(), line.variantId(), initialQty);
+                    dirtyEntities.add(created);
+                    existingByLineKey.put(lineKey, created);
                 }
             }
         }
-        if (!pendingSaves.isEmpty()) {
-            cartItemRepository.saveAll(pendingSaves);
+
+        if (!dirtyEntities.isEmpty()) {
+            cartItemRepository.saveAll(dirtyEntities);
         }
+
         if (session != null) {
             session.removeAttribute("cart");
         }
+        normalizeUserCart(email);
         syncCartCount(session, email);
     }
 
@@ -161,20 +177,44 @@ public class CartService {
     @Transactional(readOnly = true)
     public List<CartItem> getDbCartSnapshot(String email) {
         List<CartItemEntity> entities = cartItemRepository.findByUserEmail(email);
-        if (entities.isEmpty()) {
+        if (entities == null || entities.isEmpty()) {
             return List.of();
         }
 
-        List<Long> productIds = entities.stream().map(CartItemEntity::getProductId).toList();
+        List<Long> productIds = entities.stream()
+                .map(CartItemEntity::getProductId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
         Map<Long, Product> productMap = productRepository.findAllByIdIn(productIds)
                 .stream()
                 .filter(p -> p.getId() != null)
                 .collect(Collectors.toMap(Product::getId, p -> p));
 
-        return entities.stream()
-                .map(e -> toCartItem(e, productMap.get(e.getProductId())))
+        List<Long> variantIds = entities.stream()
+                .map(CartItemEntity::getVariantId)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .distinct()
+                .toList();
+        Map<Long, ProductVariant> variantMap = productVariantRepository == null
+                ? Map.of()
+                : productVariantRepository.findAllByIdIn(variantIds)
+                        .stream()
+                        .filter(v -> v.getId() != null)
+                        .collect(Collectors.toMap(ProductVariant::getId, v -> v));
+
+        Map<Long, String> primaryImageByProductId = buildPrimaryImageMap(productIds);
+
+        List<CartItem> result = new ArrayList<>();
+        for (CartItemEntity entity : entities) {
+            Product product = productMap.get(entity.getProductId());
+            ProductVariant variant = resolveVariant(product, entity.getVariantId(), variantMap);
+            CartItem mapped = toCartItem(entity, product, variant, primaryImageByProductId.get(entity.getProductId()));
+            if (mapped != null) {
+                result.add(mapped);
+            }
+        }
+        return result;
     }
 
     @Transactional
@@ -184,129 +224,172 @@ public class CartService {
         }
         cartItemRepository.deleteUnavailableItemsByUserEmail(email);
         cartItemRepository.clampQuantitiesToAvailableStockByUserEmail(email);
+        normalizeUserCart(email);
     }
 
     @Transactional
     public AddItemResult addItem(String email, @Nullable HttpSession session, long productId) {
-        return addItem(email, session, productId, 1);
+        return addItem(email, session, productId, null, 1);
     }
 
     @Transactional
     public AddItemResult addItem(String email, @Nullable HttpSession session, long productId, int requestedQuantity) {
-        Product p = productRepository.findById(productId).orElse(null);
-        if (p == null) {
-            return AddItemResult.UNAVAILABLE;
-        }
-        int maxStock = stockOf(p);
-        if (maxStock <= 0) {
-            return AddItemResult.UNAVAILABLE;
-        }
-        int quantityToAdd = Math.max(1, requestedQuantity);
-
-        if (isLoggedIn(email)) {
-            Optional<CartItemEntity> existing
-                    = cartItemRepository.findByUserEmailAndProductId(email, productId);
-            if (existing.isPresent()) {
-                CartItemEntity e = existing.get();
-                int currentQuantity = Math.max(0, e.getQuantity());
-                if (currentQuantity >= maxStock) {
-                    return AddItemResult.LIMIT_REACHED;
-                }
-                int targetQuantity = Math.min(maxStock, currentQuantity + quantityToAdd);
-                e.setQuantity(targetQuantity);
-                cartItemRepository.save(e);
-                return AddItemResult.ADDED;
-            } else {
-                int initialQuantity = Math.min(maxStock, quantityToAdd);
-                cartItemRepository.save(new CartItemEntity(email, productId, initialQuantity));
-                return AddItemResult.ADDED;
-            }
-        } else {
-            List<CartItem> cart = getSessionCart(session);
-            CartItem found = cart.stream()
-                    .filter(i -> i.getId() != null && i.getId() == productId)
-                    .findFirst().orElse(null);
-            if (found != null) {
-                int currentQuantity = Math.max(0, found.getQuantity());
-                if (currentQuantity >= maxStock) {
-                    return AddItemResult.LIMIT_REACHED;
-                }
-                int targetQuantity = Math.min(maxStock, currentQuantity + quantityToAdd);
-                found.setQuantity(targetQuantity);
-                return AddItemResult.ADDED;
-            } else {
-                int initialQuantity = Math.min(maxStock, quantityToAdd);
-                cart.add(new CartItem(
-                        productId,
-                        p.getName(),
-                        p.getPrice(),
-                        initialQuantity,
-                        p.getImageUrl(),
-                        maxStock));
-                return AddItemResult.ADDED;
-            }
-        }
+        return addItem(email, session, productId, null, requestedQuantity);
     }
 
     @Transactional
-    public void increaseItem(String email, @Nullable HttpSession session, long productId) {
-        Product p = productRepository.findById(productId).orElse(null);
-        int maxStock = stockOf(p);
-        if (maxStock <= 0) {
+    public AddItemResult addItem(String email,
+            @Nullable HttpSession session,
+            long productId,
+            @Nullable Long variantId,
+            int requestedQuantity) {
+        Product product = productRepository.findById(productId).orElse(null);
+        if (product == null) {
+            return AddItemResult.UNAVAILABLE;
+        }
+
+        LineContext line = resolveLine(product, variantId);
+        if (!line.available()) {
+            return AddItemResult.UNAVAILABLE;
+        }
+
+        int quantityToAdd = Math.max(1, requestedQuantity);
+        if (isLoggedIn(email)) {
+            Optional<CartItemEntity> existing = line.variantId() != null
+                    ? cartItemRepository.findByUserEmailAndVariantId(email, line.variantId())
+                    : cartItemRepository.findByUserEmailAndProductId(email, productId);
+            if (existing.isPresent()) {
+                CartItemEntity entity = existing.get();
+                int currentQuantity = Math.max(0, entity.getQuantity());
+                if (currentQuantity >= line.stock()) {
+                    return AddItemResult.LIMIT_REACHED;
+                }
+                int targetQuantity = Math.min(line.stock(), currentQuantity + quantityToAdd);
+                entity.setQuantity(targetQuantity);
+                cartItemRepository.save(entity);
+                return AddItemResult.ADDED;
+            }
+
+            int initialQuantity = Math.min(line.stock(), quantityToAdd);
+            cartItemRepository.save(new CartItemEntity(email, productId, line.variantId(), initialQuantity));
+            return AddItemResult.ADDED;
+        }
+
+        List<CartItem> cart = getSessionCart(session);
+        CartItem found = cart.stream()
+                .filter(item -> lineMatches(item, line.variantId(), productId))
+                .findFirst()
+                .orElse(null);
+        if (found != null) {
+            int currentQuantity = Math.max(0, found.getQuantity());
+            if (currentQuantity >= line.stock()) {
+                return AddItemResult.LIMIT_REACHED;
+            }
+            int targetQuantity = Math.min(line.stock(), currentQuantity + quantityToAdd);
+            found.setQuantity(targetQuantity);
+            return AddItemResult.ADDED;
+        }
+
+        int initialQuantity = Math.min(line.stock(), quantityToAdd);
+        cart.add(new CartItem(
+                productId,
+                line.variantId(),
+                line.variant() != null ? line.variant().getSku() : null,
+                line.label(),
+                product.getName(),
+                line.price(),
+                initialQuantity,
+                line.imageUrl(),
+                line.stock()));
+        return AddItemResult.ADDED;
+    }
+
+    @Transactional
+    public void increaseItem(String email, @Nullable HttpSession session, long lineId) {
+        if (isLoggedIn(email)) {
+            if (productVariantRepository == null) {
+                Product product = productRepository.findById(lineId).orElse(null);
+                if (product == null || Optional.ofNullable(product.getStock()).orElse(0) <= 0) {
+                    return;
+                }
+                cartItemRepository.findByUserEmailAndProductId(email, lineId).ifPresent(entity -> {
+                    if (entity.getQuantity() < Optional.ofNullable(product.getStock()).orElse(0)) {
+                        entity.setQuantity(entity.getQuantity() + 1);
+                        cartItemRepository.save(entity);
+                    }
+                });
+                return;
+            }
+            cartItemRepository.findByUserEmailAndVariantId(email, lineId).ifPresentOrElse(entity -> {
+                LineContext line = resolveLineByEntity(entity);
+                if (line.available() && entity.getQuantity() < line.stock()) {
+                    entity.setQuantity(entity.getQuantity() + 1);
+                    cartItemRepository.save(entity);
+                }
+            }, () -> cartItemRepository.findByUserEmailAndProductId(email, lineId).ifPresent(entity -> {
+                LineContext line = resolveLineByEntity(entity);
+                if (line.available() && entity.getQuantity() < line.stock()) {
+                    entity.setQuantity(entity.getQuantity() + 1);
+                    cartItemRepository.save(entity);
+                }
+            }));
             return;
         }
-        if (isLoggedIn(email)) {
-            cartItemRepository.findByUserEmailAndProductId(email, productId).ifPresent(e -> {
-                if (e.getQuantity() < maxStock) {
-                    e.setQuantity(e.getQuantity() + 1);
-                    cartItemRepository.save(e);
-                }
-            });
-        } else {
-            getSessionCart(session).stream()
-                    .filter(i -> i.getId() != null && i.getId() == productId)
-                    .findFirst()
-                    .ifPresent(i -> {
-                        if (i.getQuantity() < maxStock) {
-                            i.setQuantity(i.getQuantity() + 1);
-                        }
-                    });
-        }
+
+        getSessionCart(session).stream()
+                .filter(item -> lineMatches(item, lineId, lineId))
+                .findFirst()
+                .ifPresent(item -> {
+                    LineContext line = resolveLineByCartItem(item);
+                    if (line.available() && item.getQuantity() < line.stock()) {
+                        item.setQuantity(item.getQuantity() + 1);
+                    }
+                });
     }
 
     @Transactional
-    public void decreaseItem(String email, @Nullable HttpSession session, long productId) {
+    public void decreaseItem(String email, @Nullable HttpSession session, long lineId) {
         if (isLoggedIn(email)) {
-            cartItemRepository.findByUserEmailAndProductId(email, productId).ifPresent(e -> {
-                if (e.getQuantity() > 1) {
-                    e.setQuantity(e.getQuantity() - 1);
-                    cartItemRepository.save(e);
+            cartItemRepository.findByUserEmailAndVariantId(email, lineId).ifPresentOrElse(entity -> {
+                if (entity.getQuantity() > 1) {
+                    entity.setQuantity(entity.getQuantity() - 1);
+                    cartItemRepository.save(entity);
                 } else {
-                    cartItemRepository.delete(e);
+                    cartItemRepository.delete(entity);
                 }
-            });
-        } else {
-            List<CartItem> cart = getSessionCart(session);
-            CartItem found = cart.stream()
-                    .filter(i -> i.getId() != null && i.getId() == productId)
-                    .findFirst().orElse(null);
-            if (found != null) {
-                if (found.getQuantity() > 1) {
-                    found.setQuantity(found.getQuantity() - 1); 
-                }else {
-                    cart.remove(found);
+            }, () -> cartItemRepository.findByUserEmailAndProductId(email, lineId).ifPresent(entity -> {
+                if (entity.getQuantity() > 1) {
+                    entity.setQuantity(entity.getQuantity() - 1);
+                    cartItemRepository.save(entity);
+                } else {
+                    cartItemRepository.delete(entity);
                 }
+            }));
+            return;
+        }
+
+        List<CartItem> cart = getSessionCart(session);
+        CartItem found = cart.stream()
+                .filter(item -> lineMatches(item, lineId, lineId))
+                .findFirst()
+                .orElse(null);
+        if (found != null) {
+            if (found.getQuantity() > 1) {
+                found.setQuantity(found.getQuantity() - 1);
+            } else {
+                cart.remove(found);
             }
         }
     }
 
     @Transactional
-    public void removeItem(String email, @Nullable HttpSession session, long productId) {
+    public void removeItem(String email, @Nullable HttpSession session, long lineId) {
         if (isLoggedIn(email)) {
-            cartItemRepository.deleteByUserEmailAndProductId(email, productId);
-        } else {
-            getSessionCart(session).removeIf(i -> i.getId() != null && i.getId() == productId);
+            cartItemRepository.deleteByUserEmailAndVariantId(email, lineId);
+            cartItemRepository.deleteByUserEmailAndProductId(email, lineId);
+            return;
         }
+        getSessionCart(session).removeIf(item -> lineMatches(item, lineId, lineId));
     }
 
     @Transactional
@@ -349,36 +432,195 @@ public class CartService {
     public void cleanupDbCartForAllUsers() {
         cartItemRepository.deleteUnavailableItems();
         cartItemRepository.clampQuantitiesToAvailableStock();
+        List<String> userEmails = cartItemRepository.findDistinctUserEmails();
+        if (userEmails == null || userEmails.isEmpty()) {
+            return;
+        }
+        for (String userEmail : userEmails) {
+            normalizeUserCart(userEmail);
+        }
     }
 
     public double calculateTotal(List<CartItem> cart) {
         return cart.stream()
-                .mapToDouble(i -> Optional.ofNullable(i.getPrice()).orElse(0.0) * i.getQuantity())
+                .mapToDouble(item -> Optional.ofNullable(item.getPrice()).orElse(0.0) * item.getQuantity())
                 .sum();
     }
 
-    private CartItem toCartItem(CartItemEntity entity, Product product) {
-        int stock = stockOf(product);
-        if (entity == null || product == null || stock <= 0) {
+    private void normalizeUserCart(String email) {
+        List<CartItemEntity> items = cartItemRepository.findByUserEmail(email);
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+
+        List<Long> productIds = items.stream()
+                .map(CartItemEntity::getProductId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, Product> productMap = productRepository.findAllByIdIn(productIds)
+                .stream()
+                .filter(product -> product.getId() != null)
+                .collect(Collectors.toMap(Product::getId, product -> product));
+
+        for (CartItemEntity entity : items) {
+            Product product = productMap.get(entity.getProductId());
+            LineContext line = product != null
+                    ? resolveLine(product, entity.getVariantId())
+                    : LineContext.unavailable();
+            if (!line.available()) {
+                cartItemRepository.delete(entity);
+                continue;
+            }
+            int safeQty = Math.max(1, Math.min(entity.getQuantity(), line.stock()));
+            if (safeQty != entity.getQuantity()) {
+                entity.setQuantity(safeQty);
+                cartItemRepository.save(entity);
+            }
+        }
+    }
+
+    private CartItem toCartItem(CartItemEntity entity, Product product, ProductVariant variant, String imageUrl) {
+        if (entity == null || product == null) {
             return null;
         }
+        int stock = productCommerceService.resolveEffectiveStock(product, variant);
+        if (stock <= 0) {
+            return null;
+        }
+
         int quantity = Math.max(1, Math.min(entity.getQuantity(), stock));
+        double price = productCommerceService.resolveEffectivePrice(product, variant);
+        String resolvedImage = imageUrl != null && !imageUrl.isBlank() ? imageUrl : product.getImageUrl();
+
         return new CartItem(
-                entity.getProductId(),
+                product.getId(),
+                variant != null ? variant.getId() : entity.getVariantId(),
+                variant != null ? variant.getSku() : null,
+                variant != null ? variant.label() : null,
                 product.getName(),
-                product.getPrice(),
+                price,
                 quantity,
-                product.getImageUrl(),
+                resolvedImage,
                 stock);
     }
 
-    private int stockOf(Product product) {
-        return Optional.ofNullable(product)
-                .map(Product::getStock)
-                .orElse(0);
+    private Map<Long, String> buildPrimaryImageMap(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty() || productImageRepository == null) {
+            return Map.of();
+        }
+        Map<Long, String> map = new LinkedHashMap<>();
+        for (ProductImage image : productImageRepository.findByProductIdsOrdered(productIds)) {
+            if (image.getProduct() == null || image.getProduct().getId() == null) {
+                continue;
+            }
+            map.putIfAbsent(image.getProduct().getId(), image.getUrl());
+        }
+        return map;
+    }
+
+    private boolean lineMatches(CartItem item, Long variantOrLineId, Long productIdFallback) {
+        if (item == null) {
+            return false;
+        }
+        if (item.getVariantId() != null && Objects.equals(item.getVariantId(), variantOrLineId)) {
+            return true;
+        }
+        return item.getId() != null && Objects.equals(item.getId(), productIdFallback);
+    }
+
+    private ProductVariant resolveVariant(Product product,
+            Long variantId,
+            Map<Long, ProductVariant> variantMap) {
+        if (variantId != null) {
+            ProductVariant variant = variantMap.get(variantId);
+            if (variant != null) {
+                return variant;
+            }
+        }
+        if (product == null) {
+            return null;
+        }
+        return productCommerceService.resolveVariantOrDefault(product, variantId);
+    }
+
+    private LineContext resolveLineByEntity(CartItemEntity entity) {
+        Long productId = entity.getProductId();
+        if (productId == null) {
+            return LineContext.unavailable();
+        }
+        Product product = productRepository.findById(productId).orElse(null);
+        if (product == null) {
+            return LineContext.unavailable();
+        }
+        return resolveLine(product, entity.getVariantId());
+    }
+
+    private LineContext resolveLineByCartItem(CartItem item) {
+        if (item == null || item.getId() == null) {
+            return LineContext.unavailable();
+        }
+        long productId = item.getId();
+        Product product = productRepository.findById(productId).orElse(null);
+        if (product == null) {
+            return LineContext.unavailable();
+        }
+        return resolveLine(product, item.getVariantId());
+    }
+
+    private LineContext resolveLine(Product product, @Nullable Long variantId) {
+        ProductVariant variant = productCommerceService.resolveVariantOrDefault(product, variantId);
+        if (variant == null || variant.getId() == null) {
+            int productStock = Math.max(0, Optional.ofNullable(product.getStock()).orElse(0));
+            if (productStock <= 0) {
+                return LineContext.unavailable();
+            }
+            String image = product.getImageUrl();
+            double price = product.getEffectivePrice() != null ? product.getEffectivePrice() : 0.0;
+            return new LineContext(product, null, null, null, productStock, price, image, true);
+        }
+
+        int stock = Math.max(0, Optional.ofNullable(variant.getStock()).orElse(0));
+        if (stock <= 0) {
+            return LineContext.unavailable();
+        }
+
+        String image = productCommerceService.resolvePrimaryImageUrl(product, productCommerceService.loadImages(product.getId()));
+        double price = productCommerceService.resolveEffectivePrice(product, variant);
+        return new LineContext(
+                product,
+                variant,
+                variant.getId(),
+                variant.label(),
+                stock,
+                price,
+                image,
+                true);
     }
 
     private boolean isLoggedIn(String email) {
         return email != null && !email.equals("anonymousUser");
+    }
+
+    private String buildLineKey(Long variantId, Long productId) {
+        if (variantId != null) {
+            return "v:" + variantId;
+        }
+        return "p:" + (productId != null ? productId : -1L);
+    }
+
+    private record LineContext(
+            Product product,
+            ProductVariant variant,
+            Long variantId,
+            String label,
+            int stock,
+            double price,
+            String imageUrl,
+            boolean available) {
+
+        static LineContext unavailable() {
+            return new LineContext(null, null, null, null, 0, 0.0, null, false);
+        }
     }
 }

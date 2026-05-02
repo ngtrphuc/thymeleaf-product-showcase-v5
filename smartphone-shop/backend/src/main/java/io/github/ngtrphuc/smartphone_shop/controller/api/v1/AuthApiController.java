@@ -1,7 +1,5 @@
 package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
-import java.util.Locale;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseCookie;
@@ -14,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.*;
@@ -22,6 +21,7 @@ import io.github.ngtrphuc.smartphone_shop.model.User;
 import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 import io.github.ngtrphuc.smartphone_shop.security.JwtTokenProvider;
 import io.github.ngtrphuc.smartphone_shop.service.AuthService;
+import io.github.ngtrphuc.smartphone_shop.service.EmailVerificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -35,6 +35,7 @@ public class AuthApiController {
     private final ApiMapper apiMapper;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailVerificationService emailVerificationService;
     private final boolean forceSecureJwtCookie;
 
     public AuthApiController(AuthService authService,
@@ -42,12 +43,14 @@ public class AuthApiController {
             ApiMapper apiMapper,
             AuthenticationManager authenticationManager,
             JwtTokenProvider jwtTokenProvider,
+            EmailVerificationService emailVerificationService,
             @Value("${app.jwt.cookie.secure:false}") boolean forceSecureJwtCookie) {
         this.authService = authService;
         this.userRepository = userRepository;
         this.apiMapper = apiMapper;
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.emailVerificationService = emailVerificationService;
         this.forceSecureJwtCookie = forceSecureJwtCookie;
     }
 
@@ -72,7 +75,7 @@ public class AuthApiController {
                 new UsernamePasswordAuthenticationToken(request.email(), request.password()));
         User user = userRepository.findByEmailIgnoreCase(authentication.getName())
                 .orElseThrow(() -> new IllegalArgumentException("User not found."));
-        String normalizedRole = normalizeRole(user.getRole());
+        String normalizedRole = user.getRoleName();
         String token = jwtTokenProvider.generateAccessToken(user.getEmail(), normalizedRole);
         long expiresInSeconds = jwtTokenProvider.getExpiresInSeconds(token);
         httpResponse.addHeader("Set-Cookie", buildJwtCookie(token, expiresInSeconds, httpRequest.isSecure()).toString());
@@ -102,6 +105,21 @@ public class AuthApiController {
                 .body(new OperationStatusResponse(true, "Registration successful."));
     }
 
+    @PostMapping("/verify-email")
+    public OperationStatusResponse verifyEmail(@RequestParam("token") String token) {
+        emailVerificationService.verify(token);
+        return new OperationStatusResponse(true, "Email verified successfully.");
+    }
+
+    @PostMapping("/resend-verification")
+    public OperationStatusResponse resendVerification(Authentication authentication) {
+        if (!isAuthenticatedUser(authentication)) {
+            throw new IllegalArgumentException("Authentication is required.");
+        }
+        emailVerificationService.resendVerification(authentication.getName());
+        return new OperationStatusResponse(true, "Verification email resent.");
+    }
+
     private boolean isAuthenticatedUser(Authentication authentication) {
         return authentication != null
                 && authentication.isAuthenticated()
@@ -123,17 +141,6 @@ public class AuthApiController {
                 .path("/")
                 .maxAge(Math.max(maxAgeSeconds, 0))
                 .build();
-    }
-
-    private String normalizeRole(String role) {
-        String normalized = role == null ? "" : role.trim().toUpperCase(Locale.ROOT);
-        if (normalized.isBlank()) {
-            return "ROLE_USER";
-        }
-        if (normalized.startsWith("ROLE_")) {
-            return normalized;
-        }
-        return "ROLE_" + normalized;
     }
 }
 

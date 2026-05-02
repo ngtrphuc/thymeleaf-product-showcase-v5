@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
@@ -19,9 +20,10 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     @Query("""
         SELECT p FROM Product p
-        WHERE (:keyword IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%'))
-          AND (:priceMin IS NULL OR p.price >= :priceMin)
-          AND (:priceMax IS NULL OR p.price <= :priceMax)
+        WHERE COALESCE(p.active, true) = true
+          AND (:keyword IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%'))
+          AND (:priceMin IS NULL OR COALESCE(p.basePrice, p.price) >= :priceMin)
+          AND (:priceMax IS NULL OR COALESCE(p.basePrice, p.price) <= :priceMax)
         """)
     Page<Product> findWithFilters(
             @Param("keyword") String keyword,
@@ -31,9 +33,10 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     @Query("""
         SELECT p FROM Product p
-        WHERE (:keyword IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%'))
-          AND (:priceMin IS NULL OR p.price >= :priceMin)
-          AND (:priceMax IS NULL OR p.price <= :priceMax)
+        WHERE COALESCE(p.active, true) = true
+          AND (:keyword IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%'))
+          AND (:priceMin IS NULL OR COALESCE(p.basePrice, p.price) >= :priceMin)
+          AND (:priceMax IS NULL OR COALESCE(p.basePrice, p.price) <= :priceMax)
         """)
     List<Product> findAllWithFilters(
             @Param("keyword") String keyword,
@@ -42,6 +45,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     @Query("""
         SELECT p FROM Product p
+        LEFT JOIN p.brand b
         WHERE (
                 :keyword IS NULL
                 OR (:keywordId IS NOT NULL AND p.id = :keywordId)
@@ -51,64 +55,13 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
                 OR LOWER(COALESCE(p.chipset, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
                 OR LOWER(COALESCE(p.storage, '')) LIKE CONCAT('%', LOWER(CAST(:keyword as string)), '%')
               )
-          AND (:minStock IS NULL OR p.stock >= :minStock)
-          AND (:maxStock IS NULL OR p.stock <= :maxStock)
+          AND (:minStock IS NULL OR COALESCE(p.stock, 0) >= :minStock)
+          AND (:maxStock IS NULL OR COALESCE(p.stock, 0) <= :maxStock)
           AND (
                 :brand IS NULL
-                OR (LOWER(CAST(:brand as string)) = 'apple'
-                    AND (LOWER(COALESCE(p.name, '')) LIKE 'apple iphone%'
-                         OR LOWER(COALESCE(p.name, '')) LIKE 'iphone%'))
-                OR (LOWER(CAST(:brand as string)) = 'samsung'
-                    AND (LOWER(COALESCE(p.name, '')) LIKE 'samsung%'
-                         OR LOWER(COALESCE(p.name, '')) LIKE 'galaxy%'))
-                OR (LOWER(CAST(:brand as string)) = 'google'
-                    AND (LOWER(COALESCE(p.name, '')) LIKE 'google%'
-                         OR LOWER(COALESCE(p.name, '')) LIKE 'pixel%'))
-                OR (LOWER(CAST(:brand as string)) = 'oppo'
-                    AND (LOWER(COALESCE(p.name, '')) LIKE 'oppo%'
-                         OR LOWER(COALESCE(p.name, '')) LIKE 'find %'))
-                OR (LOWER(CAST(:brand as string)) = 'vivo'
-                    AND LOWER(COALESCE(p.name, '')) LIKE 'vivo%')
-                OR (LOWER(CAST(:brand as string)) = 'xiaomi'
-                    AND LOWER(COALESCE(p.name, '')) LIKE 'xiaomi%')
-                OR (LOWER(CAST(:brand as string)) = 'sony'
-                    AND (LOWER(COALESCE(p.name, '')) LIKE 'sony%'
-                         OR LOWER(COALESCE(p.name, '')) LIKE 'xperia%'))
-                OR (LOWER(CAST(:brand as string)) = 'asus'
-                    AND (LOWER(COALESCE(p.name, '')) LIKE 'asus%'
-                         OR LOWER(COALESCE(p.name, '')) LIKE 'rog%'))
-                OR (LOWER(CAST(:brand as string)) = 'zte'
-                    AND (LOWER(COALESCE(p.name, '')) LIKE 'zte%'
-                         OR LOWER(COALESCE(p.name, '')) LIKE 'nubia%'
-                         OR LOWER(COALESCE(p.name, '')) LIKE 'redmagic%'))
-                OR (LOWER(CAST(:brand as string)) = 'huawei'
-                    AND LOWER(COALESCE(p.name, '')) LIKE 'huawei%')
-                OR (LOWER(CAST(:brand as string)) = 'honor'
-                    AND LOWER(COALESCE(p.name, '')) LIKE 'honor%')
-                OR (LOWER(CAST(:brand as string)) = 'other'
-                    AND NOT (
-                        LOWER(COALESCE(p.name, '')) LIKE 'apple iphone%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'iphone%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'samsung%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'galaxy%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'google%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'pixel%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'oppo%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'find %'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'vivo%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'xiaomi%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'sony%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'xperia%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'asus%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'rog%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'zte%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'nubia%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'redmagic%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'huawei%'
-                        OR LOWER(COALESCE(p.name, '')) LIKE 'honor%'
-                    ))
-                OR LOWER(COALESCE(p.name, '')) LIKE CONCAT(LOWER(CAST(:brand as string)), '%')
-          )
+                OR LOWER(COALESCE(b.slug, '')) = LOWER(CAST(:brand as string))
+                OR LOWER(COALESCE(b.name, '')) = LOWER(CAST(:brand as string))
+              )
         """)
     Page<Product> findAdminProducts(
             @Param("keyword") String keyword,
@@ -121,6 +74,9 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("SELECT p.name FROM Product p ORDER BY LOWER(p.name), p.id")
     List<String> findAllNamesOrdered();
 
+    @Query("SELECT DISTINCT b.name FROM Product p JOIN p.brand b WHERE COALESCE(p.active, true) = true ORDER BY LOWER(b.name)")
+    List<String> findAllBrandNamesOrdered();
+
     List<Product> findAllByOrderByNameAsc();
 
     List<Product> findByIdNotInOrderByNameAsc(List<Long> ids);
@@ -129,8 +85,13 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     Optional<Product> findFirstByNameIgnoreCase(String name);
 
+    @EntityGraph(attributePaths = {"brand", "category"})
     @Query("SELECT p FROM Product p WHERE p.id IN :ids")
     List<Product> findAllByIdIn(@Param("ids") List<Long> ids);
+
+    @EntityGraph(attributePaths = {"brand", "category"})
+    @Query("SELECT p FROM Product p WHERE p.id = :id")
+    Optional<Product> findWithRefsById(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Product p WHERE p.id IN :ids")
@@ -155,7 +116,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("""
         SELECT p FROM Product p
         WHERE p.id <> :excludeId
-        ORDER BY ABS(COALESCE(p.price, 0) - :targetPrice), LOWER(COALESCE(p.name, '')), p.id
+          AND COALESCE(p.active, true) = true
+        ORDER BY ABS(COALESCE(p.basePrice, p.price, 0) - :targetPrice), LOWER(COALESCE(p.name, '')), p.id
         """)
     List<Product> findRecommendedProducts(
             @Param("excludeId") Long excludeId,

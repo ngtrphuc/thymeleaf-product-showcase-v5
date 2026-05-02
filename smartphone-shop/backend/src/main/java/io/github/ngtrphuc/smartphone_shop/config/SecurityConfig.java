@@ -107,7 +107,11 @@ public class SecurityConfig {
                                 "/favicon.ico")
                         .permitAll()
                         .requestMatchers("/ws", "/ws/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/logout")
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/logout",
+                                "/api/v1/auth/verify-email")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/auth/me").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()

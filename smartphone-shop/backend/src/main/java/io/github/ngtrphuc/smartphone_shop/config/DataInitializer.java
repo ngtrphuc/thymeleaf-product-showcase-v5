@@ -85,6 +85,15 @@ public class DataInitializer {
     private void applySeed(Product product, ProductSeed seed) {
         product.setName(seed.name());
         product.setPrice(seed.price());
+        product.setBasePrice(seed.price());
+        product.setActive(Boolean.TRUE);
+        if (product.getSlug() == null || product.getSlug().isBlank()) {
+            product.setSlug(seed.name().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", ""));
+        }
+        if (product.getSkuPrefix() == null || product.getSkuPrefix().isBlank()) {
+            String prefix = seed.name().replaceAll("[^A-Za-z0-9]", "").toUpperCase(Locale.ROOT);
+            product.setSkuPrefix(prefix.length() >= 6 ? prefix.substring(0, 6) : (prefix.isBlank() ? "SKU" : prefix));
+        }
         if (product.getStock() == null) {
             product.setStock(10);
         }
@@ -262,3 +271,4 @@ public class DataInitializer {
         }
     }
 }
+

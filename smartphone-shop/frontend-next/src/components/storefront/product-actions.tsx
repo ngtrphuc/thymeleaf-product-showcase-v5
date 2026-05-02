@@ -8,6 +8,7 @@ import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 type ProductActionsProps = {
   productId: number;
+  variantId?: number | null;
   isAdmin?: boolean;
   isAuthenticated?: boolean;
   editHref?: string;
@@ -22,6 +23,7 @@ function clampQuantity(nextValue: number, maxQuantity?: number | null): number {
 
 export function ProductActions({
   productId,
+  variantId = null,
   isAdmin = false,
   isAuthenticated = false,
   editHref = "/admin/products",
@@ -50,7 +52,7 @@ export function ProductActions({
     setError(null);
     try {
       if (action === "cart") {
-        await addCartItem(productId, quantity);
+        await addCartItem(productId, quantity, variantId);
         setMessage(`Added ${quantity} item(s) to cart.`);
       } else if (action === "wishlist") {
         await addWishlistItem(productId);
@@ -59,7 +61,7 @@ export function ProductActions({
         const compare = await addCompareItem(productId);
         setMessage(`Added to compare list (${compare.ids.length}/${compare.maxCompare}).`);
       } else {
-        await addCartItem(productId, quantity);
+        await addCartItem(productId, quantity, variantId);
         router.push("/checkout");
         router.refresh();
         return;

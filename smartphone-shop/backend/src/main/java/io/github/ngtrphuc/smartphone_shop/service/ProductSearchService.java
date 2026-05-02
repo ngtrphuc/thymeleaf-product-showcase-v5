@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.github.ngtrphuc.smartphone_shop.common.support.StorefrontSupport;
 import io.github.ngtrphuc.smartphone_shop.config.ProductSearchProperties;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
@@ -228,12 +227,14 @@ public class ProductSearchService {
         ObjectNode document = objectMapper.createObjectNode();
         document.put("id", product.getId());
         document.put("name", safeText(product.getName()));
-        document.put("brand", StorefrontSupport.extractBrand(product.getName()));
+        document.put("brand", product.getBrandNameOrFallback());
         document.put("description", safeText(product.getDescription()));
         document.put("os", safeText(product.getOs()));
         document.put("chipset", safeText(product.getChipset()));
         document.put("storage", safeText(product.getStorage()));
-        if (product.getPrice() != null) {
+        if (product.getBasePrice() != null) {
+            document.put("price", product.getBasePrice());
+        } else if (product.getPrice() != null) {
             document.put("price", product.getPrice());
         } else {
             document.putNull("price");
@@ -322,3 +323,4 @@ public class ProductSearchService {
         }
     }
 }
+

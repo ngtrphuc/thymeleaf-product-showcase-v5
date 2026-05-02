@@ -23,7 +23,13 @@ public record ProductSummary(
         String battery,
         String charging,
         String description,
-        boolean wishlisted) implements Serializable {
+        boolean wishlisted,
+        Long categoryId,
+        String categoryName,
+        String slug,
+        String skuPrefix,
+        Long defaultVariantId,
+        String defaultVariantLabel) implements Serializable {
 
     private static final long serialVersionUID = 1L;
 }

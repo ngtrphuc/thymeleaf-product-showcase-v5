@@ -20,6 +20,39 @@ export type ProductSummary = {
   charging: string | null;
   description: string | null;
   wishlisted: boolean;
+  categoryId: number | null;
+  categoryName: string | null;
+  slug: string | null;
+  skuPrefix: string | null;
+  defaultVariantId: number | null;
+  defaultVariantLabel: string | null;
+};
+
+export type ProductVariantResponse = {
+  id: number | null;
+  sku: string | null;
+  color: string | null;
+  storage: string | null;
+  ram: string | null;
+  price: number | null;
+  stock: number | null;
+  active: boolean;
+  label: string | null;
+  selected: boolean;
+};
+
+export type ProductImageResponse = {
+  id: number | null;
+  url: string | null;
+  sortOrder: number | null;
+  primary: boolean;
+};
+
+export type ProductSpecResponse = {
+  id: number | null;
+  key: string;
+  value: string | null;
+  sortOrder: number | null;
 };
 
 export type CatalogPageResponse = {
@@ -37,6 +70,10 @@ export type ProductDetailResponse = {
   product: ProductSummary;
   recommendedProducts: ProductSummary[];
   wishlisted: boolean;
+  variants: ProductVariantResponse[];
+  images: ProductImageResponse[];
+  specs: ProductSpecResponse[];
+  selectedVariantId: number | null;
 };
 
 export type AuthMeResponse = {
@@ -70,6 +107,9 @@ export type CartItemResponse = {
   lineTotal: number;
   lowStock: boolean;
   availabilityLabel: string;
+  variantId: number | null;
+  variantSku: string | null;
+  variantLabel: string | null;
 };
 
 export type CartResponse = {
@@ -106,6 +146,9 @@ export type OrderItemResponse = {
   productName: string;
   price: number;
   quantity: number;
+  variantId: number | null;
+  variantSku: string | null;
+  variantLabel: string | null;
 };
 
 export type OrderResponse = {
@@ -186,6 +229,7 @@ export type AdminProduct = {
   id: number | null;
   name: string;
   price: number | null;
+  basePrice?: number | null;
   imageUrl: string | null;
   stock: number | null;
   os: string | null;
@@ -198,6 +242,32 @@ export type AdminProduct = {
   battery: string | null;
   charging: string | null;
   description: string | null;
+  slug?: string | null;
+  skuPrefix?: string | null;
+  active?: boolean;
+  brandId?: number | null;
+  brandSlug?: string | null;
+  categoryId?: number | null;
+  categorySlug?: string | null;
+  variants?: Array<{
+    sku?: string | null;
+    color?: string | null;
+    storage?: string | null;
+    ram?: string | null;
+    priceOverride?: number | null;
+    stock?: number | null;
+    active?: boolean | null;
+  }>;
+  images?: Array<{
+    url: string;
+    sortOrder?: number | null;
+    primary?: boolean | null;
+  }>;
+  specs?: Array<{
+    key: string;
+    value?: string | null;
+    sortOrder?: number | null;
+  }>;
 };
 
 export type AdminOrderPageResponse = {
@@ -427,8 +497,9 @@ export async function fetchCatalogPage(searchParams: URLSearchParams): Promise<C
   });
 }
 
-export async function fetchProductDetail(id: string): Promise<ProductDetailResponse> {
-  return requestJson<ProductDetailResponse>(`/api/v1/products/${id}`, {
+export async function fetchProductDetail(id: string, variantId?: number | null): Promise<ProductDetailResponse> {
+  const suffix = variantId ? `?variantId=${variantId}` : "";
+  return requestJson<ProductDetailResponse>(`/api/v1/products/${id}${suffix}`, {
     next: { revalidate: 20 },
     includeCredentials: false,
   });
@@ -507,10 +578,10 @@ export async function fetchCart(): Promise<CartResponse> {
   return requestJson<CartResponse>("/api/v1/cart");
 }
 
-export async function addCartItem(productId: number, quantity = 1): Promise<CartResponse> {
+export async function addCartItem(productId: number, quantity = 1, variantId?: number | null): Promise<CartResponse> {
   return requestJson<CartResponse>("/api/v1/cart/items", {
     method: "POST",
-    body: JSON.stringify({ productId, quantity }),
+    body: JSON.stringify({ productId, quantity, variantId }),
   });
 }
 

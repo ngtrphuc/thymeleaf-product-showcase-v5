@@ -11,6 +11,7 @@ import org.springframework.lang.Nullable;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
@@ -32,6 +33,7 @@ public final class ProductCatalogSpecifications {
             @Nullable String screenSize) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isTrue(cb.coalesce(root.get("active"), true)));
 
             if (candidateIds != null) {
                 if (candidateIds.isEmpty()) {
@@ -41,15 +43,18 @@ public final class ProductCatalogSpecifications {
             }
 
             if (keyword != null && !keyword.isBlank()) {
+                String normalizedKeyword = keyword.trim().toLowerCase(Locale.ROOT);
                 predicates.add(cb.like(
                         cb.lower(cb.coalesce(root.get("name"), "")),
-                        "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%"));
+                        "%" + normalizedKeyword + "%"));
             }
+
+            Expression<Double> priceExpression = cb.coalesce(root.get("basePrice"), root.get("price"));
             if (priceMin != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("price"), priceMin));
+                predicates.add(cb.greaterThanOrEqualTo(priceExpression, priceMin));
             }
             if (priceMax != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("price"), priceMax));
+                predicates.add(cb.lessThanOrEqualTo(priceExpression, priceMax));
             }
 
             if (brand != null && !brand.isBlank()) {
@@ -99,148 +104,38 @@ public final class ProductCatalogSpecifications {
     }
 
     private static Predicate buildBrandPredicate(Root<Product> root, CriteriaBuilder cb, String brand) {
-        Expression<String> nameLower = cb.lower(cb.coalesce(root.get("name"), ""));
-
-        return switch (brand) {
-            case "apple" -> cb.or(like(cb, nameLower, "apple iphone%"), like(cb, nameLower, "iphone%"));
-            case "samsung" -> cb.or(like(cb, nameLower, "samsung%"), like(cb, nameLower, "galaxy%"));
-            case "google" -> cb.or(like(cb, nameLower, "google%"), like(cb, nameLower, "pixel%"));
-            case "oppo" -> cb.or(like(cb, nameLower, "oppo%"), like(cb, nameLower, "find %"));
-            case "vivo" -> like(cb, nameLower, "vivo%");
-            case "xiaomi" -> like(cb, nameLower, "xiaomi%");
-            case "sony" -> cb.or(like(cb, nameLower, "sony%"), like(cb, nameLower, "xperia%"));
-            case "asus" -> cb.or(like(cb, nameLower, "asus%"), like(cb, nameLower, "rog%"));
-            case "zte" -> cb.or(like(cb, nameLower, "zte%"), like(cb, nameLower, "nubia%"), like(cb, nameLower, "redmagic%"));
-            case "huawei" -> like(cb, nameLower, "huawei%");
-            case "honor" -> like(cb, nameLower, "honor%");
-            case "other" -> cb.not(cb.or(
-                    like(cb, nameLower, "apple iphone%"),
-                    like(cb, nameLower, "iphone%"),
-                    like(cb, nameLower, "samsung%"),
-                    like(cb, nameLower, "galaxy%"),
-                    like(cb, nameLower, "google%"),
-                    like(cb, nameLower, "pixel%"),
-                    like(cb, nameLower, "oppo%"),
-                    like(cb, nameLower, "find %"),
-                    like(cb, nameLower, "vivo%"),
-                    like(cb, nameLower, "xiaomi%"),
-                    like(cb, nameLower, "sony%"),
-                    like(cb, nameLower, "xperia%"),
-                    like(cb, nameLower, "asus%"),
-                    like(cb, nameLower, "rog%"),
-                    like(cb, nameLower, "zte%"),
-                    like(cb, nameLower, "nubia%"),
-                    like(cb, nameLower, "redmagic%"),
-                    like(cb, nameLower, "huawei%"),
-                    like(cb, nameLower, "honor%")));
-            default -> like(cb, nameLower, brand + "%");
-        };
+        Join<Object, Object> brandJoin = root.join("brand", jakarta.persistence.criteria.JoinType.LEFT);
+        Expression<String> brandSlug = cb.lower(cb.coalesce(brandJoin.get("slug"), ""));
+        Expression<String> brandName = cb.lower(cb.coalesce(brandJoin.get("name"), ""));
+        Expression<String> productName = cb.lower(cb.coalesce(root.get("name"), ""));
+        return cb.or(
+                cb.equal(brandSlug, brand),
+                cb.equal(brandName, brand),
+                cb.like(productName, brand + "%"));
     }
 
     private static Predicate buildScreenSizePredicate(Root<Product> root, CriteriaBuilder cb, String screenSize) {
         Expression<String> sizeLower = cb.lower(cb.coalesce(root.get("size"), ""));
         return switch (screenSize) {
-            case "6.1to6.3" -> cb.or(
-                    like(cb, sizeLower, "6.1%"),
-                    like(cb, sizeLower, "6.2%"),
-                    like(cb, sizeLower, "6.3%"));
-            case "6.4to6.6" -> cb.or(
-                    like(cb, sizeLower, "6.4%"),
-                    like(cb, sizeLower, "6.5%"),
-                    like(cb, sizeLower, "6.6%"));
-            case "6.7to6.9" -> cb.or(
-                    like(cb, sizeLower, "6.7%"),
-                    like(cb, sizeLower, "6.8%"),
-                    like(cb, sizeLower, "6.9%"));
-            case "over6.6" -> cb.or(
-                    like(cb, sizeLower, "6.7%"),
-                    like(cb, sizeLower, "6.8%"),
-                    like(cb, sizeLower, "6.9%"),
-                    like(cb, sizeLower, "7%"),
-                    like(cb, sizeLower, "8%"),
-                    like(cb, sizeLower, "9%"));
-            case "over7.0" -> cb.or(
-                    like(cb, sizeLower, "7%"),
-                    like(cb, sizeLower, "8%"),
-                    like(cb, sizeLower, "9%"));
+            case "6.1to6.3" -> cb.or(like(cb, sizeLower, "6.1%"), like(cb, sizeLower, "6.2%"), like(cb, sizeLower, "6.3%"));
+            case "6.4to6.6" -> cb.or(like(cb, sizeLower, "6.4%"), like(cb, sizeLower, "6.5%"), like(cb, sizeLower, "6.6%"));
+            case "6.7to6.9" -> cb.or(like(cb, sizeLower, "6.7%"), like(cb, sizeLower, "6.8%"), like(cb, sizeLower, "6.9%"));
+            case "over6.6" -> cb.or(like(cb, sizeLower, "6.7%"), like(cb, sizeLower, "6.8%"), like(cb, sizeLower, "6.9%"), like(cb, sizeLower, "7%"), like(cb, sizeLower, "8%"), like(cb, sizeLower, "9%"));
+            case "over7.0" -> cb.or(like(cb, sizeLower, "7%"), like(cb, sizeLower, "8%"), like(cb, sizeLower, "9%"));
             case "7.0to7.9" -> like(cb, sizeLower, "7%");
-            case "8.0plus" -> cb.or(
-                    like(cb, sizeLower, "8%"),
-                    like(cb, sizeLower, "9%"));
-            case "under6.1" -> cb.or(
-                    like(cb, sizeLower, "0%"),
-                    like(cb, sizeLower, "1%"),
-                    like(cb, sizeLower, "2%"),
-                    like(cb, sizeLower, "3%"),
-                    like(cb, sizeLower, "4%"),
-                    like(cb, sizeLower, "5%"),
-                    like(cb, sizeLower, "6.0%"));
-            case "under6.0" -> cb.or(
-                    like(cb, sizeLower, "0%"),
-                    like(cb, sizeLower, "1%"),
-                    like(cb, sizeLower, "2%"),
-                    like(cb, sizeLower, "3%"),
-                    like(cb, sizeLower, "4%"),
-                    like(cb, sizeLower, "5%"));
-            case "6.0to6.4" -> cb.or(
-                    like(cb, sizeLower, "6.0%"),
-                    like(cb, sizeLower, "6.1%"),
-                    like(cb, sizeLower, "6.2%"),
-                    like(cb, sizeLower, "6.3%"),
-                    like(cb, sizeLower, "6.4%"));
-            case "6.5to6.9" -> cb.or(
-                    like(cb, sizeLower, "6.5%"),
-                    like(cb, sizeLower, "6.6%"),
-                    like(cb, sizeLower, "6.7%"),
-                    like(cb, sizeLower, "6.8%"),
-                    like(cb, sizeLower, "6.9%"));
-            case "7.0to7.4" -> cb.or(
-                    like(cb, sizeLower, "7.0%"),
-                    like(cb, sizeLower, "7.1%"),
-                    like(cb, sizeLower, "7.2%"),
-                    like(cb, sizeLower, "7.3%"),
-                    like(cb, sizeLower, "7.4%"));
-            case "over7.5" -> cb.or(
-                    like(cb, sizeLower, "7.5%"),
-                    like(cb, sizeLower, "7.6%"),
-                    like(cb, sizeLower, "7.7%"),
-                    like(cb, sizeLower, "7.8%"),
-                    like(cb, sizeLower, "7.9%"),
-                    like(cb, sizeLower, "8%"),
-                    like(cb, sizeLower, "9%"));
-            case "6.1to6.4" -> cb.or(
-                    like(cb, sizeLower, "6.1%"),
-                    like(cb, sizeLower, "6.2%"),
-                    like(cb, sizeLower, "6.3%"),
-                    like(cb, sizeLower, "6.4%"));
-            case "6.5to6.6" -> cb.or(
-                    like(cb, sizeLower, "6.5%"),
-                    like(cb, sizeLower, "6.6%"));
-            case "6.7to6.8" -> cb.or(
-                    like(cb, sizeLower, "6.7%"),
-                    like(cb, sizeLower, "6.8%"));
-            case "under6.5" -> cb.or(
-                    like(cb, sizeLower, "0%"),
-                    like(cb, sizeLower, "1%"),
-                    like(cb, sizeLower, "2%"),
-                    like(cb, sizeLower, "3%"),
-                    like(cb, sizeLower, "4%"),
-                    like(cb, sizeLower, "5%"),
-                    like(cb, sizeLower, "6.0%"),
-                    like(cb, sizeLower, "6.1%"),
-                    like(cb, sizeLower, "6.2%"),
-                    like(cb, sizeLower, "6.3%"),
-                    like(cb, sizeLower, "6.4%"));
-            case "6.5to6.8" -> cb.or(
-                    like(cb, sizeLower, "6.5%"),
-                    like(cb, sizeLower, "6.6%"),
-                    like(cb, sizeLower, "6.7%"),
-                    like(cb, sizeLower, "6.8%"));
-            case "over6.8" -> cb.or(
-                    like(cb, sizeLower, "6.9%"),
-                    like(cb, sizeLower, "7%"),
-                    like(cb, sizeLower, "8%"),
-                    like(cb, sizeLower, "9%"));
+            case "8.0plus" -> cb.or(like(cb, sizeLower, "8%"), like(cb, sizeLower, "9%"));
+            case "under6.1" -> cb.or(like(cb, sizeLower, "0%"), like(cb, sizeLower, "1%"), like(cb, sizeLower, "2%"), like(cb, sizeLower, "3%"), like(cb, sizeLower, "4%"), like(cb, sizeLower, "5%"), like(cb, sizeLower, "6.0%"));
+            case "under6.0" -> cb.or(like(cb, sizeLower, "0%"), like(cb, sizeLower, "1%"), like(cb, sizeLower, "2%"), like(cb, sizeLower, "3%"), like(cb, sizeLower, "4%"), like(cb, sizeLower, "5%"));
+            case "6.0to6.4" -> cb.or(like(cb, sizeLower, "6.0%"), like(cb, sizeLower, "6.1%"), like(cb, sizeLower, "6.2%"), like(cb, sizeLower, "6.3%"), like(cb, sizeLower, "6.4%"));
+            case "6.5to6.9" -> cb.or(like(cb, sizeLower, "6.5%"), like(cb, sizeLower, "6.6%"), like(cb, sizeLower, "6.7%"), like(cb, sizeLower, "6.8%"), like(cb, sizeLower, "6.9%"));
+            case "7.0to7.4" -> cb.or(like(cb, sizeLower, "7.0%"), like(cb, sizeLower, "7.1%"), like(cb, sizeLower, "7.2%"), like(cb, sizeLower, "7.3%"), like(cb, sizeLower, "7.4%"));
+            case "over7.5" -> cb.or(like(cb, sizeLower, "7.5%"), like(cb, sizeLower, "7.6%"), like(cb, sizeLower, "7.7%"), like(cb, sizeLower, "7.8%"), like(cb, sizeLower, "7.9%"), like(cb, sizeLower, "8%"), like(cb, sizeLower, "9%"));
+            case "6.1to6.4" -> cb.or(like(cb, sizeLower, "6.1%"), like(cb, sizeLower, "6.2%"), like(cb, sizeLower, "6.3%"), like(cb, sizeLower, "6.4%"));
+            case "6.5to6.6" -> cb.or(like(cb, sizeLower, "6.5%"), like(cb, sizeLower, "6.6%"));
+            case "6.7to6.8" -> cb.or(like(cb, sizeLower, "6.7%"), like(cb, sizeLower, "6.8%"));
+            case "under6.5" -> cb.or(like(cb, sizeLower, "0%"), like(cb, sizeLower, "1%"), like(cb, sizeLower, "2%"), like(cb, sizeLower, "3%"), like(cb, sizeLower, "4%"), like(cb, sizeLower, "5%"), like(cb, sizeLower, "6.0%"), like(cb, sizeLower, "6.1%"), like(cb, sizeLower, "6.2%"), like(cb, sizeLower, "6.3%"), like(cb, sizeLower, "6.4%"));
+            case "6.5to6.8" -> cb.or(like(cb, sizeLower, "6.5%"), like(cb, sizeLower, "6.6%"), like(cb, sizeLower, "6.7%"), like(cb, sizeLower, "6.8%"));
+            case "over6.8" -> cb.or(like(cb, sizeLower, "6.9%"), like(cb, sizeLower, "7%"), like(cb, sizeLower, "8%"), like(cb, sizeLower, "9%"));
             default -> cb.conjunction();
         };
     }
@@ -248,31 +143,15 @@ public final class ProductCatalogSpecifications {
     private static Predicate buildBatteryRangePredicate(CriteriaBuilder cb, Expression<String> batteryValue, String batteryRange) {
         return switch (batteryRange) {
             case "under3500" -> cb.lessThan(batteryValue, paddedNumber(3500));
-            case "3500to3999" -> cb.and(
-                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(3500)),
-                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(3999)));
+            case "3500to3999" -> cb.and(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(3500)), cb.lessThanOrEqualTo(batteryValue, paddedNumber(3999)));
             case "under4000" -> cb.lessThan(batteryValue, paddedNumber(4000));
-            case "4000to4999" -> cb.and(
-                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4000)),
-                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(4999)));
-            case "4000to4499" -> cb.and(
-                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4000)),
-                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(4499)));
-            case "4500to4999" -> cb.and(
-                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4500)),
-                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(4999)));
-            case "5000to5999" -> cb.and(
-                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000)),
-                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(5999)));
-            case "5000to5499" -> cb.and(
-                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000)),
-                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(5499)));
-            case "5500to5999" -> cb.and(
-                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5500)),
-                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(5999)));
-            case "6000to6999" -> cb.and(
-                    cb.greaterThanOrEqualTo(batteryValue, paddedNumber(6000)),
-                    cb.lessThanOrEqualTo(batteryValue, paddedNumber(6999)));
+            case "4000to4999" -> cb.and(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4000)), cb.lessThanOrEqualTo(batteryValue, paddedNumber(4999)));
+            case "4000to4499" -> cb.and(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4000)), cb.lessThanOrEqualTo(batteryValue, paddedNumber(4499)));
+            case "4500to4999" -> cb.and(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(4500)), cb.lessThanOrEqualTo(batteryValue, paddedNumber(4999)));
+            case "5000to5999" -> cb.and(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000)), cb.lessThanOrEqualTo(batteryValue, paddedNumber(5999)));
+            case "5000to5499" -> cb.and(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5000)), cb.lessThanOrEqualTo(batteryValue, paddedNumber(5499)));
+            case "5500to5999" -> cb.and(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5500)), cb.lessThanOrEqualTo(batteryValue, paddedNumber(5999)));
+            case "6000to6999" -> cb.and(cb.greaterThanOrEqualTo(batteryValue, paddedNumber(6000)), cb.lessThanOrEqualTo(batteryValue, paddedNumber(6999)));
             case "over7000" -> cb.greaterThanOrEqualTo(batteryValue, paddedNumber(7000));
             case "over5500" -> cb.greaterThanOrEqualTo(batteryValue, paddedNumber(5500));
             case "under5000" -> cb.lessThan(batteryValue, paddedNumber(5000));

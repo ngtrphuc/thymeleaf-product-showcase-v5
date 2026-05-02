@@ -4,5 +4,8 @@ public record OrderItemResponse(
         Long productId,
         String productName,
         Double price,
-        Integer quantity) {
+        Integer quantity,
+        Long variantId,
+        String variantSku,
+        String variantLabel) {
 }
