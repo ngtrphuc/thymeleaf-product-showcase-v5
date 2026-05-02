@@ -23,11 +23,14 @@ class OrderWorkflowProcessorTest {
     @Mock
     private SimulatedPaymentGateway paymentGateway;
 
+    @Mock
+    private EmailSender emailSender;
+
     private OrderWorkflowProcessor processor;
 
     @BeforeEach
     void setUp() {
-        processor = new OrderWorkflowProcessor(orderService, paymentGateway);
+        processor = new OrderWorkflowProcessor(orderService, paymentGateway, emailSender);
     }
 
     @Test

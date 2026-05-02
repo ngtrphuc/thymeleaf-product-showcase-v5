@@ -2,6 +2,10 @@ package io.github.ngtrphuc.smartphone_shop.controller.api.v1;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.api.dto.OperationStatusResponse;
 import io.github.ngtrphuc.smartphone_shop.api.dto.OrderResponse;
+import io.github.ngtrphuc.smartphone_shop.service.OrderReturnService;
 import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 
 @RestController
@@ -20,10 +25,15 @@ import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 public class AdminOrderApiController {
 
     private final OrderService orderService;
+    private final OrderReturnService orderReturnService;
     private final ApiMapper apiMapper;
 
-    public AdminOrderApiController(OrderService orderService, ApiMapper apiMapper) {
+    public AdminOrderApiController(
+            OrderService orderService,
+            OrderReturnService orderReturnService,
+            ApiMapper apiMapper) {
         this.orderService = orderService;
+        this.orderReturnService = orderReturnService;
         this.apiMapper = apiMapper;
     }
 
@@ -55,6 +65,38 @@ public class AdminOrderApiController {
         return new OperationStatusResponse(true, "Order status updated.");
     }
 
+    @PostMapping("/orders/{id}/ship")
+    public OperationStatusResponse shipOrder(
+            @PathVariable(name = "id") long id,
+            @Valid @RequestBody ShipOrderRequest request) {
+        orderService.shipOrder(id, request.trackingNumber(), request.carrier());
+        return new OperationStatusResponse(true, "Order shipped.");
+    }
+
+    @PostMapping("/orders/{id}/return/approve")
+    public OperationStatusResponse approveReturn(
+            @PathVariable(name = "id") long id,
+            @Valid @RequestBody ApproveReturnRequest request) {
+        orderReturnService.approveReturn(id, request.refundAmount(), request.adminNote());
+        return new OperationStatusResponse(true, "Return approved.");
+    }
+
+    @PostMapping("/orders/{id}/return/reject")
+    public OperationStatusResponse rejectReturn(
+            @PathVariable(name = "id") long id,
+            @Valid @RequestBody RejectReturnRequest request) {
+        orderReturnService.rejectReturn(id, request.adminNote());
+        return new OperationStatusResponse(true, "Return rejected.");
+    }
+
+    @PostMapping("/orders/{id}/return/refund")
+    public OperationStatusResponse refundReturn(
+            @PathVariable(name = "id") long id,
+            @Valid @RequestBody ApproveReturnRequest request) {
+        orderReturnService.markRefunded(id, request.refundAmount(), request.adminNote());
+        return new OperationStatusResponse(true, "Return marked as refunded.");
+    }
+
     public record AdminOrderPageResponse(
             List<OrderResponse> orders,
             int currentPage,
@@ -64,5 +106,26 @@ public class AdminOrderApiController {
     }
 
     public record UpdateOrderStatusRequest(String status) {
+    }
+
+    public record ShipOrderRequest(
+            @NotBlank(message = "Tracking number is required.")
+            @Size(max = 100, message = "Tracking number is too long.")
+            String trackingNumber,
+            @NotBlank(message = "Carrier is required.")
+            @Size(max = 50, message = "Carrier is too long.")
+            String carrier) {
+    }
+
+    public record ApproveReturnRequest(
+            @PositiveOrZero(message = "Refund amount cannot be negative.")
+            Double refundAmount,
+            @Size(max = 500, message = "Admin note is too long.")
+            String adminNote) {
+    }
+
+    public record RejectReturnRequest(
+            @Size(max = 500, message = "Admin note is too long.")
+            String adminNote) {
     }
 }

@@ -8,7 +8,12 @@ const STATUS_CLASS_BY_KEY: Record<string, string> = {
   processing: "border-[rgba(56,189,248,0.45)] bg-[rgba(56,189,248,0.18)] text-[#7dd3fc]",
   shipped: "border-[rgba(167,139,250,0.68)] bg-[rgba(167,139,250,0.32)] text-[#ede9fe]",
   delivered: "border-[rgba(52,211,153,0.45)] bg-[rgba(52,211,153,0.18)] text-[#6ee7b7]",
+  completed: "border-[rgba(34,197,94,0.45)] bg-[rgba(34,197,94,0.18)] text-[#86efac]",
   cancelled: "border-[rgba(251,113,133,0.45)] bg-[rgba(251,113,133,0.18)] text-[#fda4af]",
+  return_requested: "border-[rgba(251,191,36,0.45)] bg-[rgba(251,191,36,0.18)] text-[#fde68a]",
+  return_approved: "border-[rgba(59,130,246,0.45)] bg-[rgba(59,130,246,0.18)] text-[#93c5fd]",
+  return_rejected: "border-[rgba(239,68,68,0.45)] bg-[rgba(239,68,68,0.18)] text-[#fca5a5]",
+  refunded: "border-[rgba(16,185,129,0.45)] bg-[rgba(16,185,129,0.18)] text-[#6ee7b7]",
 };
 
 function normalizeStatus(input: string | null | undefined): string {

@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.lang.Nullable;
 
 import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
 import io.github.ngtrphuc.smartphone_shop.model.Address;
@@ -52,7 +53,7 @@ public class AddressService {
             address.setDefault(true);
         }
 
-        Address saved = addressRepository.save(address);
+        Address saved = requireSavedAddress(addressRepository.save(Objects.requireNonNull(address)));
         syncUserDefaultAddress(user);
         return saved;
     }
@@ -69,7 +70,7 @@ public class AddressService {
             address.setDefault(true);
         }
 
-        Address saved = addressRepository.save(address);
+        Address saved = requireSavedAddress(addressRepository.save(Objects.requireNonNull(address)));
         syncUserDefaultAddress(user);
         return saved;
     }
@@ -89,7 +90,7 @@ public class AddressService {
                 Address promote = remaining.getFirst();
                 addressRepository.clearDefaultForUser(user.getId());
                 promote.setDefault(true);
-                addressRepository.save(promote);
+                requireSavedAddress(addressRepository.save(Objects.requireNonNull(promote)));
             }
         }
         syncUserDefaultAddress(user);
@@ -103,7 +104,7 @@ public class AddressService {
 
         addressRepository.clearDefaultForUser(user.getId());
         target.setDefault(true);
-        Address saved = addressRepository.save(target);
+        Address saved = requireSavedAddress(addressRepository.save(Objects.requireNonNull(target)));
         syncUserDefaultAddress(user);
         return saved;
     }
@@ -146,6 +147,10 @@ public class AddressService {
         String fullAddress = defaultAddress == null ? null : defaultAddress.toFullAddress();
         user.setDefaultAddress(fullAddress);
         userRepository.save(user);
+    }
+
+    private Address requireSavedAddress(@Nullable Address saved) {
+        return Objects.requireNonNull(saved, "Saved address must not be null.");
     }
 
     private String normalizeRequired(String value, String emptyMessage, int maxLength) {

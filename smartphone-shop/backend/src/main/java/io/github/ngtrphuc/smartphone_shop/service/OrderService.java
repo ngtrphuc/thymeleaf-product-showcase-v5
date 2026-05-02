@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.time.LocalDateTime;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -27,9 +28,11 @@ import io.github.ngtrphuc.smartphone_shop.common.exception.UnauthorizedActionExc
 import io.github.ngtrphuc.smartphone_shop.common.support.CacheKeys;
 import io.github.ngtrphuc.smartphone_shop.common.support.ValidationConstants;
 import io.github.ngtrphuc.smartphone_shop.event.OrderCreatedEvent;
+import io.github.ngtrphuc.smartphone_shop.event.OrderStatusChangedEvent;
 import io.github.ngtrphuc.smartphone_shop.model.CartItem;
 import io.github.ngtrphuc.smartphone_shop.model.Order;
 import io.github.ngtrphuc.smartphone_shop.model.OrderItem;
+import io.github.ngtrphuc.smartphone_shop.model.OrderStatus;
 import io.github.ngtrphuc.smartphone_shop.model.Product;
 import io.github.ngtrphuc.smartphone_shop.model.ProductVariant;
 import io.github.ngtrphuc.smartphone_shop.repository.OrderRepository;
@@ -41,8 +44,6 @@ public class OrderService {
 
     private static final String CATALOG_PUBLIC_CACHE = "catalogPublic";
     private static final String PRODUCT_DETAIL_PUBLIC_CACHE = "productDetailPublic";
-    private static final Set<String> ALLOWED_STATUSES = Set.of(
-            "pending", "processing", "shipped", "delivered", "cancelled");
     private static final Set<String> ALLOWED_PAYMENT_METHODS = Set.of(
             "CASH_ON_DELIVERY", "BANK_TRANSFER", "PAYPAY", "MASTERCARD");
     private static final Set<String> ALLOWED_PAYMENT_PLANS = Set.of(
@@ -271,20 +272,48 @@ public class OrderService {
     public void updateStatus(long orderId, String newStatus) {
         Order order = orderRepository.findByIdWithItemsForUpdate(orderId)
                 .orElseThrow(() -> new OrderValidationException("Order not found."));
+        OrderStatus targetStatus = parseStatus(newStatus);
+        applyStatusTransition(order, targetStatus);
+    }
 
-        String oldStatus = normalizeStatus(order.getStatus());
-        String targetStatus = normalizeStatus(newStatus);
-        if (!ALLOWED_STATUSES.contains(targetStatus)) {
-            throw new OrderValidationException("Unsupported order status.");
+    @Transactional
+    public void shipOrder(long orderId, String trackingNumber, String carrier) {
+        String normalizedTrackingNumber = normalizeRequiredText(
+                trackingNumber,
+                "Tracking number is required.",
+                "Tracking number is too long.",
+                100);
+        String normalizedCarrier = normalizeRequiredText(
+                carrier,
+                "Tracking carrier is required.",
+                "Tracking carrier is too long.",
+                50);
+
+        Order order = orderRepository.findByIdWithItemsForUpdate(orderId)
+                .orElseThrow(() -> new OrderValidationException("Order not found."));
+        order.setTrackingNumber(normalizedTrackingNumber);
+        order.setTrackingCarrier(normalizedCarrier);
+        applyStatusTransition(order, OrderStatus.SHIPPED);
+    }
+
+    private void applyStatusTransition(Order order, OrderStatus targetStatus) {
+        if (order == null) {
+            throw new OrderValidationException("Order not found.");
         }
-        if (Objects.equals(oldStatus, targetStatus)) {
+
+        OrderStatus currentStatus = parseStatus(order.getStatus());
+        if (currentStatus == targetStatus) {
             return;
+        }
+        if (!currentStatus.canTransitionTo(targetStatus)) {
+            throw new OrderValidationException(
+                    "Cannot transition from " + currentStatus.value() + " to " + targetStatus.value() + ".");
         }
 
         Map<Long, Integer> variantQuantities = extractOrderVariantQuantities(order.getItems());
         Map<Long, Integer> productQuantities = extractOrderProductQuantities(order.getItems());
         boolean stockChanged = false;
-        if ("cancelled".equals(oldStatus) && !"cancelled".equals(targetStatus)) {
+        if (currentStatus == OrderStatus.CANCELLED && targetStatus != OrderStatus.CANCELLED) {
             Map<Long, ProductVariant> lockedVariants = loadVariantsForUpdate(variantQuantities.keySet());
             Map<Long, Product> lockedProducts = loadProductsForUpdate(productQuantities.keySet());
             validateRequestedStock(variantQuantities, lockedVariants);
@@ -293,7 +322,7 @@ public class OrderService {
             applyProductStockDelta(lockedProducts, productQuantities, -1, false);
             syncProductStockForVariants(lockedVariants.values());
             stockChanged = true;
-        } else if (!"cancelled".equals(oldStatus) && "cancelled".equals(targetStatus)) {
+        } else if (currentStatus != OrderStatus.CANCELLED && targetStatus == OrderStatus.CANCELLED) {
             Map<Long, ProductVariant> lockedVariants = loadVariantsForUpdate(variantQuantities.keySet());
             Map<Long, Product> lockedProducts = loadProductsForUpdate(productQuantities.keySet());
             applyVariantStockDelta(lockedVariants, variantQuantities, 1, true);
@@ -302,11 +331,28 @@ public class OrderService {
             stockChanged = true;
         }
 
-        order.setStatus(targetStatus);
+        LocalDateTime now = LocalDateTime.now();
+        switch (targetStatus) {
+            case SHIPPED -> order.setShippedAt(now);
+            case DELIVERED -> order.setDeliveredAt(now);
+            case COMPLETED, REFUNDED -> order.setCompletedAt(now);
+            default -> {
+            }
+        }
+
+        order.setStatus(targetStatus.value());
         orderRepository.save(order);
         if (stockChanged) {
             evictStorefrontCaches(order.getItems().stream().map(OrderItem::getProductId).filter(Objects::nonNull).toList());
         }
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(
+                order.getId(),
+                order.getOrderCode(),
+                order.getUserEmail(),
+                currentStatus.value(),
+                targetStatus.value(),
+                order.getTrackingNumber(),
+                order.getTrackingCarrier()));
     }
 
     @Transactional
@@ -321,8 +367,8 @@ public class OrderService {
             throw new UnauthorizedActionException("You do not have permission to cancel this order.");
         }
 
-        String status = normalizeStatus(order.getStatus());
-        if (!"pending".equals(status) && !"processing".equals(status)) {
+        OrderStatus status = parseStatus(order.getStatus());
+        if (!status.isCancelableByCustomer()) {
             return false;
         }
 
@@ -334,9 +380,17 @@ public class OrderService {
         applyProductStockDelta(lockedProducts, productQuantities, 1, true);
         syncProductStockForVariants(lockedVariants.values());
 
-        order.setStatus("cancelled");
+        order.setStatus(OrderStatus.CANCELLED.value());
         orderRepository.save(order);
         evictStorefrontCaches(order.getItems().stream().map(OrderItem::getProductId).filter(Objects::nonNull).toList());
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(
+                order.getId(),
+                order.getOrderCode(),
+                order.getUserEmail(),
+                status.value(),
+                OrderStatus.CANCELLED.value(),
+                order.getTrackingNumber(),
+                order.getTrackingCarrier()));
         return true;
     }
 
@@ -644,11 +698,13 @@ public class OrderService {
         return resolvedMonths;
     }
 
-    private String normalizeStatus(String status) {
-        if (status == null || status.isBlank()) {
-            return "pending";
+    private OrderStatus parseStatus(String status) {
+        String normalized = status == null || status.isBlank() ? OrderStatus.PENDING.value() : status;
+        try {
+            return OrderStatus.from(normalized);
+        } catch (IllegalArgumentException ex) {
+            throw new OrderValidationException("Unsupported order status.");
         }
-        return status.trim().toLowerCase(Locale.ROOT);
     }
 
     private String normalizeRequiredText(String value, String emptyMessage, String tooLongMessage, int maxLength) {

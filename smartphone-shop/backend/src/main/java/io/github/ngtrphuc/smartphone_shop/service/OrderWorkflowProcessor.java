@@ -9,6 +9,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import io.github.ngtrphuc.smartphone_shop.event.OrderCreatedEvent;
+import io.github.ngtrphuc.smartphone_shop.event.OrderStatusChangedEvent;
 
 @Component
 @ConditionalOnProperty(prefix = "app.order.workflow", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -18,10 +19,15 @@ public class OrderWorkflowProcessor {
 
     private final OrderService orderService;
     private final SimulatedPaymentGateway paymentGateway;
+    private final EmailSender emailSender;
 
-    public OrderWorkflowProcessor(OrderService orderService, SimulatedPaymentGateway paymentGateway) {
+    public OrderWorkflowProcessor(
+            OrderService orderService,
+            SimulatedPaymentGateway paymentGateway,
+            EmailSender emailSender) {
         this.orderService = orderService;
         this.paymentGateway = paymentGateway;
+        this.emailSender = emailSender;
     }
 
     @Async("orderWorkflowExecutor")
@@ -98,6 +104,7 @@ public class OrderWorkflowProcessor {
     }
 
     private void queueNotification(OrderCreatedEvent event) {
+        emailSender.sendOrderConfirmation(event.userEmail(), event.orderCode(), event.totalAmount());
         log.info("[OrderWorkflow] notification-queued orderId={} user={}",
                 event.orderId(),
                 event.userEmail());
@@ -118,5 +125,20 @@ public class OrderWorkflowProcessor {
                     targetStatus,
                     ex.getMessage());
         }
+    }
+
+    @Async("orderWorkflowExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleOrderStatusChanged(OrderStatusChangedEvent event) {
+        if (event == null || event.orderId() == null) {
+            return;
+        }
+        emailSender.sendOrderStatusUpdate(
+                event.userEmail(),
+                event.orderCode(),
+                event.oldStatus(),
+                event.newStatus(),
+                event.trackingNumber(),
+                event.trackingCarrier());
     }
 }

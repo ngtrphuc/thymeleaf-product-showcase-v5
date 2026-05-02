@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApiError, cancelOrder, fetchOrders, type OrderPageResponse, type OrderResponse } from "@/lib/api";
+import {
+  ApiError,
+  cancelOrder,
+  fetchOrders,
+  requestOrderReturn,
+  type OrderPageResponse,
+  type OrderResponse,
+} from "@/lib/api";
 import { formatDateTime, formatPriceVnd } from "@/lib/format";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge";
@@ -21,6 +28,7 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busyOrderId, setBusyOrderId] = useState<number | null>(null);
+  const [busyReturnOrderId, setBusyReturnOrderId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
 
@@ -69,6 +77,30 @@ export default function OrdersPage() {
       }
     } finally {
       setBusyOrderId(null);
+    }
+  }
+
+  async function onRequestReturn(orderId: number) {
+    const reason = window.prompt("Please enter return reason:");
+    if (!reason || reason.trim().length === 0) {
+      return;
+    }
+
+    setBusyReturnOrderId(orderId);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await requestOrderReturn(orderId, reason.trim());
+      setMessage(result.message);
+      await loadOrders(currentPage);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Failed to submit return request.");
+      }
+    } finally {
+      setBusyReturnOrderId(null);
     }
   }
 
@@ -140,6 +172,12 @@ export default function OrdersPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-slate-700">Shipping: {order.shippingAddress}</p>
+                {order.trackingNumber ? (
+                  <p className="mt-1 text-xs text-slate-600">
+                    Tracking: {order.trackingCarrier ? `${order.trackingCarrier} - ` : ""}
+                    {order.trackingNumber}
+                  </p>
+                ) : null}
                 <p className="mt-2 text-xl font-bold text-slate-900">{formatPriceVnd(order.totalAmount)}</p>
 
                 {installment ? (
@@ -168,17 +206,30 @@ export default function OrdersPage() {
                   ))}
                 </div>
 
-                {order.cancelable ? (
-                  <button
-                    type="button"
-                    disabled={busyOrderId === order.id}
-                    onClick={() => void onCancel(order.id)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
-                  >
-                    <GriddyIcon name="ban" />
-                    {busyOrderId === order.id ? "Cancelling..." : "Cancel Order"}
-                  </button>
-                ) : null}
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  {order.cancelable ? (
+                    <button
+                      type="button"
+                      disabled={busyOrderId === order.id}
+                      onClick={() => void onCancel(order.id)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
+                    >
+                      <GriddyIcon name="ban" />
+                      {busyOrderId === order.id ? "Cancelling..." : "Cancel Order"}
+                    </button>
+                  ) : null}
+                  {order.status === "delivered" ? (
+                    <button
+                      type="button"
+                      disabled={busyReturnOrderId === order.id}
+                      onClick={() => void onRequestReturn(order.id)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 disabled:opacity-60"
+                    >
+                      <GriddyIcon name="clipboard" />
+                      {busyReturnOrderId === order.id ? "Submitting..." : "Request Return"}
+                    </button>
+                  ) : null}
+                </div>
               </article>
             );
           })}

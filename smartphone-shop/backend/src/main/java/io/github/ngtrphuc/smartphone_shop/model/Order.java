@@ -62,6 +62,21 @@ public class Order {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "tracking_number", length = 100)
+    private String trackingNumber;
+
+    @Column(name = "tracking_carrier", length = 50)
+    private String trackingCarrier;
+
+    @Column(name = "shipped_at")
+    private LocalDateTime shippedAt;
+
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -169,6 +184,46 @@ public class Order {
         this.createdAt = createdAt;
     }
 
+    public String getTrackingNumber() {
+        return trackingNumber;
+    }
+
+    public void setTrackingNumber(String trackingNumber) {
+        this.trackingNumber = trackingNumber;
+    }
+
+    public String getTrackingCarrier() {
+        return trackingCarrier;
+    }
+
+    public void setTrackingCarrier(String trackingCarrier) {
+        this.trackingCarrier = trackingCarrier;
+    }
+
+    public LocalDateTime getShippedAt() {
+        return shippedAt;
+    }
+
+    public void setShippedAt(LocalDateTime shippedAt) {
+        this.shippedAt = shippedAt;
+    }
+
+    public LocalDateTime getDeliveredAt() {
+        return deliveredAt;
+    }
+
+    public void setDeliveredAt(LocalDateTime deliveredAt) {
+        this.deliveredAt = deliveredAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
+
     public List<OrderItem> getItems() {
         return items;
     }
@@ -200,20 +255,30 @@ public class Order {
     }
 
     public boolean isCancelable() {
-        String normalizedStatus = status == null ? "" : status.trim().toLowerCase();
-        return "pending".equals(normalizedStatus) || "processing".equals(normalizedStatus);
+        try {
+            return OrderStatus.from(status).isCancelableByCustomer();
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     public String getStatusSummary() {
-        String normalizedStatus = status == null ? "" : status.trim().toLowerCase();
-        return switch (normalizedStatus) {
-            case "pending" -> "Awaiting store confirmation.";
-            case "processing" -> "Your order is being prepared for shipment.";
-            case "shipped" -> "Your package is on the way.";
-            case "delivered" -> "Delivered successfully.";
-            case "cancelled" -> "This order was cancelled.";
-            default -> "Order update pending.";
-        };
+        try {
+            return switch (OrderStatus.from(status)) {
+                case PENDING -> "Awaiting store confirmation.";
+                case PROCESSING -> "Your order is being prepared for shipment.";
+                case SHIPPED -> "Your package is on the way.";
+                case DELIVERED -> "Delivered successfully.";
+                case COMPLETED -> "Order completed.";
+                case CANCELLED -> "This order was cancelled.";
+                case RETURN_REQUESTED -> "Return request submitted and pending review.";
+                case RETURN_APPROVED -> "Return approved. Refund is being processed.";
+                case RETURN_REJECTED -> "Return request was rejected.";
+                case REFUNDED -> "Refund completed.";
+            };
+        } catch (IllegalArgumentException ex) {
+            return "Order update pending.";
+        }
     }
 }
 

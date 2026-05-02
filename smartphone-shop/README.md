@@ -44,7 +44,7 @@ Smartphone Shop models a production-oriented commerce workflow:
 - Cart and checkout flow.
 - Profile and payment methods.
 - Address book management (multi-address with default selection).
-- Order history and cancellation (business-rule based).
+- Order lifecycle tracking, cancellation, and return/refund requests.
 - Wishlist and compare.
 - Customer support chat.
 - Storefront footer with role-aware quick links and social login shortcuts.
@@ -53,7 +53,7 @@ Smartphone Shop models a production-oriented commerce workflow:
 
 - Dashboard overview.
 - Product management.
-- Order management and status updates.
+- Order management with lifecycle status updates and tracking handoff.
 - Chat conversation management.
 
 ### Cross-Cutting Features
@@ -227,6 +227,8 @@ npm run dev
 - `DATASOURCE_URL`, `DATASOURCE_USER`, `DATASOURCE_PASSWORD`.
 - `REDIS_HOST`, `REDIS_PORT`.
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
+- `APP_EMAIL_PROVIDER`, `APP_EMAIL_FROM`.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`.
 
 ### Frontend Variables
 
@@ -302,8 +304,20 @@ Status: production-like local baseline available.
   - `UserRole` enum and `AccountStatus`,
   - email verification fields and token workflow,
   - address book module with default-address management.
+- Order lifecycle upgrade:
+  - enum-based order state transitions,
+  - tracking fields and shipped/delivered/completed timestamps,
+  - return/refund states and moderation flow.
+- Email provider upgrade:
+  - expanded `EmailSender` contract for verify/welcome/order/status emails,
+  - pluggable provider mode (`log` for dev, `smtp` for production),
+  - async status-change notifications via event listener.
 - New customer address APIs:
   - list/create/update/delete/set-default under `/api/v1/addresses`.
+- New return and shipping APIs:
+  - customer `POST /api/v1/orders/{id}/return`,
+  - admin ship endpoint and return approve/reject/refund endpoints under
+    `/api/v1/admin/orders/{id}/...`.
 - Auth APIs extended:
   - verify email and resend verification endpoints.
 - `OrderApiController` now keeps transaction ownership in service layer
@@ -437,7 +451,8 @@ smartphone-shop/
 │       │   │                   │   └── RootController.java
 │       │   │                   ├── event/
 │       │   │                   │   ├── ChatMessageCreatedEvent.java
-│       │   │                   │   └── OrderCreatedEvent.java
+│       │   │                   │   ├── OrderCreatedEvent.java
+│       │   │                   │   └── OrderStatusChangedEvent.java
 │       │   │                   ├── infrastructure/
 │       │   │                   │   └── websocket/
 │       │   │                   │       └── ChatWebSocketNotifier.java
@@ -452,8 +467,10 @@ smartphone-shop/
 │       │   │                   │   ├── CompareItemEntity.java
 │       │   │                   │   ├── EmailVerificationToken.java
 │       │   │                   │   ├── Order.java
+│       │   │                   │   ├── OrderReturn.java
 │       │   │                   │   ├── OrderIdempotencyKey.java
 │       │   │                   │   ├── OrderItem.java
+│       │   │                   │   ├── OrderStatus.java
 │       │   │                   │   ├── PaymentMethod.java
 │       │   │                   │   ├── Product.java
 │       │   │                   │   ├── ProductImage.java
@@ -475,6 +492,7 @@ smartphone-shop/
 │       │   │                   │   ├── EmailVerificationTokenRepository.java
 │       │   │                   │   ├── OrderIdempotencyKeyRepository.java
 │       │   │                   │   ├── OrderRepository.java
+│       │   │                   │   ├── OrderReturnRepository.java
 │       │   │                   │   ├── PaymentMethodRepository.java
 │       │   │                   │   ├── ProductImageRepository.java
 │       │   │                   │   ├── ProductRepository.java
@@ -502,6 +520,7 @@ smartphone-shop/
 │       │   │                   │   ├── EmailVerificationService.java
 │       │   │                   │   ├── LogOnlyEmailSender.java
 │       │   │                   │   ├── OrderIdempotencyService.java
+│       │   │                   │   ├── OrderReturnService.java
 │       │   │                   │   ├── OrderService.java
 │       │   │                   │   ├── OrderWorkflowProcessor.java
 │       │   │                   │   ├── PaymentMethodService.java
@@ -509,6 +528,7 @@ smartphone-shop/
 │       │   │                   │   ├── ProfileService.java
 │       │   │                   │   ├── ProductSearchService.java
 │       │   │                   │   ├── SimulatedPaymentGateway.java
+│       │   │                   │   ├── SmtpEmailSender.java
 │       │   │                   │   └── WishlistService.java
 │       │   │                   ├── DevFrontendBootstrap.java
 │       │   │                   ├── DevInfrastructureBootstrap.java
@@ -523,7 +543,8 @@ smartphone-shop/
 │       │       │       ├── V4__stale_placeholder_cleanup.sql
 │       │       │       ├── V5__commercial_product_model.sql
 │       │       │       ├── V6__user_role_and_address_book.sql
-│       │       │       └── V7__email_verification.sql
+│       │       │       ├── V7__email_verification.sql
+│       │       │       └── V8__order_lifecycle_and_returns.sql
 │       │       ├── application.properties
 │       │       ├── application-dev.properties
 │       │       └── application-prod.properties

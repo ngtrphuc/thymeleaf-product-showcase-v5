@@ -30,6 +30,7 @@ import io.github.ngtrphuc.smartphone_shop.model.Order;
 import io.github.ngtrphuc.smartphone_shop.model.OrderItem;
 import io.github.ngtrphuc.smartphone_shop.service.CartService;
 import io.github.ngtrphuc.smartphone_shop.service.OrderIdempotencyService;
+import io.github.ngtrphuc.smartphone_shop.service.OrderReturnService;
 import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 
 @SpringBootTest
@@ -45,6 +46,9 @@ class OrderApiControllerTest {
 
     @MockitoBean
     private CartService cartService;
+
+    @MockitoBean
+    private OrderReturnService orderReturnService;
 
     @MockitoBean
     private OrderIdempotencyService orderIdempotencyService;

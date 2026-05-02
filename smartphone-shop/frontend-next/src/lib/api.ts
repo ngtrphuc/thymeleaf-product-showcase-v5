@@ -159,12 +159,17 @@ export type OrderResponse = {
   customerName: string;
   phoneNumber: string;
   shippingAddress: string;
+  trackingNumber: string | null;
+  trackingCarrier: string | null;
   totalAmount: number;
   paymentMethod: string;
   paymentPlan: string;
   installmentMonths: number | null;
   installmentMonthlyAmount: number | null;
   createdAt: string;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  completedAt: string | null;
   itemCount: number;
   cancelable: boolean;
   items: OrderItemResponse[];
@@ -631,6 +636,13 @@ export async function cancelOrder(orderId: number): Promise<OperationStatusRespo
   });
 }
 
+export async function requestOrderReturn(orderId: number, reason: string): Promise<OperationStatusResponse> {
+  return requestJson<OperationStatusResponse>(`/api/v1/orders/${orderId}/return`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export async function fetchProfile(): Promise<ProfileResponse> {
   return requestJson<ProfileResponse>("/api/v1/profile");
 }
@@ -789,6 +801,16 @@ export async function updateAdminOrderStatus(id: number, status: string): Promis
   return requestJson<OperationStatusResponse>(`/api/v1/admin/orders/${id}/status`, {
     method: "POST",
     body: JSON.stringify({ status }),
+  });
+}
+
+export async function shipAdminOrder(
+  id: number,
+  payload: { trackingNumber: string; carrier: string },
+): Promise<OperationStatusResponse> {
+  return requestJson<OperationStatusResponse>(`/api/v1/admin/orders/${id}/ship`, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 

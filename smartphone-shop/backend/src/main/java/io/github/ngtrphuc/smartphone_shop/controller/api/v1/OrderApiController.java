@@ -21,6 +21,7 @@ import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
 import io.github.ngtrphuc.smartphone_shop.model.Order;
 import io.github.ngtrphuc.smartphone_shop.service.CartService;
 import io.github.ngtrphuc.smartphone_shop.service.OrderIdempotencyService;
+import io.github.ngtrphuc.smartphone_shop.service.OrderReturnService;
 import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 
 @RestController
@@ -28,15 +29,18 @@ import io.github.ngtrphuc.smartphone_shop.service.OrderService;
 public class OrderApiController {
 
     private final OrderService orderService;
+    private final OrderReturnService orderReturnService;
     private final CartService cartService;
     private final OrderIdempotencyService orderIdempotencyService;
     private final ApiMapper apiMapper;
 
     public OrderApiController(OrderService orderService,
+            OrderReturnService orderReturnService,
             CartService cartService,
             OrderIdempotencyService orderIdempotencyService,
             ApiMapper apiMapper) {
         this.orderService = orderService;
+        this.orderReturnService = orderReturnService;
         this.cartService = cartService;
         this.orderIdempotencyService = orderIdempotencyService;
         this.apiMapper = apiMapper;
@@ -67,6 +71,15 @@ public class OrderApiController {
         return new OperationStatusResponse(
                 success,
                 success ? "Order cancelled successfully." : "Cannot cancel this order.");
+    }
+
+    @PostMapping("/{id}/return")
+    public OperationStatusResponse requestReturn(
+            @PathVariable(name = "id") Long id,
+            @Valid @RequestBody ReturnRequest request,
+            Authentication authentication) {
+        orderReturnService.requestReturn(id, authentication.getName(), request.reason());
+        return new OperationStatusResponse(true, "Return request submitted.");
     }
 
     @PostMapping
@@ -130,6 +143,12 @@ public class OrderApiController {
             int totalPages,
             long totalElements,
             int pageSize) {
+    }
+
+    private record ReturnRequest(
+            @NotBlank(message = "Return reason is required.")
+            @Size(max = 500, message = "Return reason is too long.")
+            String reason) {
     }
 }
 
