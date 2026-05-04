@@ -88,24 +88,24 @@ export default function StorefrontChatPage() {
 
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
-      <section className="glass-panel rounded-3xl p-4">
+      <section className="rounded-3xl border border-white/10 bg-[var(--chat-panel-bg)] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.35)]">
         {messages.length === 0 ? (
-          <div className="flex h-44 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-white text-sm text-slate-600">
+          <div className="chat-grid-paper flex h-44 items-center justify-center rounded-2xl border border-white/10 text-sm text-[var(--chat-meta)]">
             Start a conversation with the shop.
           </div>
         ) : (
-          <div className="max-h-[360px] min-h-[120px] space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-border)] bg-white p-3">
+          <div className="chat-grid-paper max-h-[360px] min-h-[120px] space-y-3 overflow-y-auto rounded-2xl border border-white/10 p-3">
             {messages.map((message) => {
               const isUser = message.senderRole === "USER";
               const sideClass = isUser ? "justify-end" : "justify-start";
               const toneClass = isUser
-                ? "bg-[var(--color-primary)] text-black"
-                : "bg-slate-100 text-slate-800";
-              const metaClass = isUser ? "text-black/60" : "text-slate-500";
+                ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(74,221,225,0.28)]"
+                : "bg-[var(--chat-peer-bg)] text-[#f3f4f6]";
+              const metaClass = "text-[var(--chat-meta)]";
               return (
                 <div key={message.id} className={`flex ${sideClass}`}>
                   <div className={`flex max-w-[88%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
-                    <article className={`inline-block w-fit break-words rounded-xl px-3 py-2 text-sm ${toneClass}`}>
+                    <article className={`inline-block w-fit break-words rounded-2xl px-3 py-2 text-sm ${toneClass}`}>
                       <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                     </article>
                     <p className={`px-1 text-[11px] ${metaClass}`}>
@@ -118,17 +118,17 @@ export default function StorefrontChatPage() {
           </div>
         )}
 
-        <form onSubmit={onSend} className="mt-3 flex gap-2">
+        <form onSubmit={onSend} className="mt-3 flex gap-2 rounded-2xl border border-white/10 bg-black/25 p-2">
           <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Write your message..."
-            className="ui-input flex-1 px-3 py-2 text-sm"
+            className="ui-input flex-1 border-white/12 bg-black/35 px-3 py-2 text-sm text-[var(--color-text)]"
           />
           <button
             type="submit"
             disabled={sending || !draft.trim()}
-            className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm"
+            className="inline-flex items-center gap-2 rounded-xl bg-[var(--chat-accent)] px-4 py-2 text-sm font-semibold text-black transition-[transform,filter] duration-200 hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <GriddyIcon name="chat" />
             {sending ? "Sending..." : "Send"}

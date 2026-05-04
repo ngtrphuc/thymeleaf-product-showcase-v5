@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ArrowUp, ChevronsDown, MessageSquare, X } from "lucide-react";
+import { ArrowDown, ArrowUp, MessageSquare, SendHorizontal, X } from "lucide-react";
 import {
   ApiError,
   fetchAuthMeCached,
@@ -434,9 +434,9 @@ export function StorefrontChatBubble() {
                     const isUser = message.senderRole === "USER";
                     const sideClass = isUser ? "justify-end" : "justify-start";
                     const toneClass = isUser
-                      ? "bg-[var(--color-primary)] text-black shadow-[0_6px_14px_rgba(255,255,255,0.16)]"
-                      : "border border-white/12 bg-black text-[var(--color-text)] shadow-[0_8px_18px_rgba(0,0,0,0.45)]";
-                    const metaClass = isUser ? "text-white/68" : "text-[var(--color-text-muted)]";
+                      ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(74,221,225,0.28)]"
+                      : "border border-white/10 bg-[var(--chat-peer-bg)] text-[#f3f4f6] shadow-[0_8px_18px_rgba(0,0,0,0.45)]";
+                    const metaClass = isUser ? "text-[var(--chat-meta)]" : "text-[var(--chat-meta)]";
                     return (
                       <div key={message.id} className={`flex ${sideClass}`}>
                         <div className={`flex max-w-[88%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
@@ -457,11 +457,10 @@ export function StorefrontChatBubble() {
                     type="button"
                     onClick={() => scrollToLatest("smooth")}
                     aria-label="Jump to latest message"
-                    title="Jump to latest"
-                    className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-white/18 bg-black/65 px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] shadow-[0_10px_22px_rgba(0,0,0,0.35)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-px hover:border-white/24 hover:bg-white hover:text-black"
+                    title="Latest"
+                    className="absolute bottom-3 left-1/2 inline-flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-cyan-300/45 bg-black/78 text-cyan-300 shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[transform,background-color,border-color,color] duration-200 hover:-translate-x-1/2 hover:-translate-y-px hover:border-cyan-200 hover:bg-[#13181f] hover:text-cyan-200"
                   >
-                    Latest
-                    <ChevronsDown className="h-3.5 w-3.5" />
+                    <ArrowDown className="h-4 w-4" />
                   </button>
                 ) : null}
               </div>
@@ -477,9 +476,20 @@ export function StorefrontChatBubble() {
               <button
                 type="submit"
                 disabled={sending || !draft.trim()}
-                className="ui-btn ui-btn-primary inline-flex min-w-[92px] items-center justify-center gap-2 px-4 py-2 text-sm"
+                className={`group inline-flex h-10 items-center justify-center overflow-hidden rounded-xl bg-[var(--chat-accent)] px-3 text-sm font-semibold text-black transition-[width,transform,filter,opacity] duration-700 hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 ${
+                  sending ? "w-28" : "w-10 hover:w-24"
+                }`}
               >
-                {sending ? "Sending..." : "Send"}
+                <SendHorizontal className="h-4 w-4 shrink-0 transition-transform duration-700 group-hover:translate-x-0.5" />
+                <span
+                  className={`overflow-hidden whitespace-nowrap text-xs transition-[max-width,opacity,margin] duration-700 ${
+                    sending
+                      ? "ml-1.5 max-w-16 opacity-100"
+                      : "max-w-0 opacity-0 group-hover:ml-1.5 group-hover:max-w-16 group-hover:opacity-100"
+                  }`}
+                >
+                  {sending ? "Sending..." : "Send"}
+                </span>
               </button>
             </form>
           </div>

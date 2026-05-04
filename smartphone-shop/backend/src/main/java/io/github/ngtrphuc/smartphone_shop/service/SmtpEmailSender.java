@@ -103,16 +103,11 @@ public class SmtpEmailSender implements EmailSender {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            String safeFromAddress = fromAddress;
-            if (safeFromAddress == null || safeFromAddress.isBlank()) {
-                safeFromAddress = "noreply@smartphoneshop.local";
-            }
             String safeToEmail = normalizeEmail(toEmail);
             String safeSubject = subject == null ? "Smartphone Shop notification" : subject;
             String safeHtmlBody = htmlBody == null ? "" : htmlBody;
-            String nonNullFromAddress = Objects.requireNonNull(safeFromAddress);
 
-            helper.setFrom(nonNullFromAddress);
+            helper.setFrom(resolveFromAddress());
             helper.setTo(Objects.requireNonNull(safeToEmail));
             helper.setSubject(safeSubject);
             helper.setText(safeHtmlBody, true);
@@ -130,5 +125,17 @@ public class SmtpEmailSender implements EmailSender {
             throw new IllegalArgumentException("Email recipient must not be empty.");
         }
         return safeEmail;
+    }
+
+    private @NonNull String resolveFromAddress() {
+        String configuredFrom = fromAddress;
+        if (configuredFrom == null) {
+            return "noreply@smartphoneshop.local";
+        }
+        String normalizedFrom = configuredFrom.trim();
+        if (normalizedFrom.isEmpty()) {
+            return "noreply@smartphoneshop.local";
+        }
+        return normalizedFrom;
     }
 }

@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import io.github.ngtrphuc.smartphone_shop.common.exception.ValidationException;
@@ -149,7 +150,7 @@ public class AddressService {
         userRepository.save(user);
     }
 
-    private Address requireSavedAddress(@Nullable Address saved) {
+    private @NonNull Address requireSavedAddress(@Nullable Address saved) {
         return Objects.requireNonNull(saved, "Saved address must not be null.");
     }
 

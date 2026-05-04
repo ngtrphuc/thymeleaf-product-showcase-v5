@@ -17,6 +17,10 @@
 
   --color-primary: #ffffff;
   --color-primary-strong: #ffffff;
+  --chat-accent: #4adde1;
+  --chat-peer-bg: #111111;
+  --chat-panel-bg: #000000;
+  --chat-meta: #a4aab5;
 
   --color-success: #22c55e;
   --color-success-dim: rgba(34, 197, 94, 0.12);
@@ -1282,13 +1286,13 @@ input[type="number"] {
 }
 
 .chat-grid-paper {
-  background-color: rgba(3, 3, 6, 0.66);
+  background-color: #000000;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.09) 1px, transparent 1px);
   background-size:
-    24px 24px,
-    24px 24px;
+    26px 26px,
+    26px 26px;
   background-position:
     -1px -1px,
     -1px -1px;
