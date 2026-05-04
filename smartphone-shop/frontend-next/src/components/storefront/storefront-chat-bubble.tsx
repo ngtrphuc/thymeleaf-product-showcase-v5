@@ -259,6 +259,26 @@ export function StorefrontChatBubble() {
   }, [open, shouldShow]);
 
   useEffect(() => {
+    if (!shouldShow || !open) {
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+      event.preventDefault();
+      pendingOpenScrollRef.current = false;
+      setOpen(false);
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, shouldShow]);
+
+  useEffect(() => {
     if (!open || !messagesEndRef.current || !shouldAutoScrollRef.current) {
       return;
     }

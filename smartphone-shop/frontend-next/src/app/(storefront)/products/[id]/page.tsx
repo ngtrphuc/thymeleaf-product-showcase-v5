@@ -76,6 +76,24 @@ function SpecItem({ label, value }: { label: string; value: string | number | nu
   );
 }
 
+function ProductDetailLoadError({ id, message }: { id: string; message: string }) {
+  return (
+    <div className="space-y-6">
+      <div className="glass-panel rounded-3xl p-8 text-center">
+        <h2 className="text-xl font-semibold text-red-700">Failed to load product</h2>
+        <p className="mt-2 text-sm text-slate-600">{message}</p>
+        <a
+          href={`/products/${id}`}
+          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black transition-[transform,box-shadow,opacity] duration-200 hover:-translate-y-px hover:shadow-[0_10px_22px_rgba(255,255,255,0.18)] active:translate-y-0 active:opacity-90"
+        >
+          <span aria-hidden="true">→</span>
+          Try again
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default async function ProductDetailPage({ params, searchParams }: ProductDetailPageProps) {
   const { id } = await params;
   const query = await searchParams;
@@ -92,11 +110,16 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
     if (error instanceof ApiError && error.status === 404) {
       notFound();
     }
-    throw error;
+    const message = error instanceof ApiError ? error.message : "Unexpected error while loading product.";
+    return <ProductDetailLoadError id={id} message={message} />;
   }
 
   const product = detail.product;
-  const heroImage = detail.images.find((image) => image.primary)?.url ?? detail.images[0]?.url ?? product.imageUrl;
+  const images = Array.isArray(detail.images) ? detail.images : [];
+  const variants = Array.isArray(detail.variants) ? detail.variants : [];
+  const specs = Array.isArray(detail.specs) ? detail.specs : [];
+  const recommendedProducts = Array.isArray(detail.recommendedProducts) ? detail.recommendedProducts : [];
+  const heroImage = images.find((image) => image.primary)?.url ?? images[0]?.url ?? product.imageUrl;
 
   return (
     <div className="space-y-6">
@@ -120,9 +143,9 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
               className="h-full w-full object-contain p-2"
             />
           </div>
-          {detail.images.length > 1 ? (
+          {images.length > 1 ? (
             <div className="grid grid-cols-5 gap-2">
-              {detail.images.map((image) => (
+              {images.map((image) => (
                 <div key={image.id ?? image.url} className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white">
                   <Image
                     src={toAssetUrl(image.url)}
@@ -143,11 +166,11 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
           <AvailabilityBadge product={product} />
           <p className="text-3xl font-bold text-[var(--color-primary-strong)]">{formatPriceVnd(product.price)}</p>
 
-          {detail.variants.length > 0 ? (
+          {variants.length > 0 ? (
             <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
               <h2 className="text-sm font-semibold text-slate-900">Variants</h2>
               <div className="mt-2 flex flex-wrap gap-2">
-                {detail.variants.map((variant) => {
+                {variants.map((variant) => {
                   const active = variant.id === detail.selectedVariantId;
                   const href = variant.id ? `/products/${id}?variantId=${variant.id}` : `/products/${id}`;
                   return (
@@ -170,8 +193,8 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
 
           <div className="rounded-2xl border border-[var(--color-border)] bg-white p-4">
             <dl className="grid grid-cols-2 gap-3 text-sm">
-              {detail.specs.length > 0 ? (
-                detail.specs.map((spec) => <SpecItem key={spec.id ?? `${spec.key}-${spec.sortOrder}`} label={spec.key} value={spec.value} />)
+              {specs.length > 0 ? (
+                specs.map((spec) => <SpecItem key={spec.id ?? `${spec.key}-${spec.sortOrder}`} label={spec.key} value={spec.value} />)
               ) : (
                 <>
                   <SpecItem label="Storage" value={product.storage} />
@@ -215,13 +238,13 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
 
       <section className="space-y-3">
         <h2 className="text-xl font-bold text-slate-900">Recommended Products</h2>
-        {detail.recommendedProducts.length === 0 ? (
+        {recommendedProducts.length === 0 ? (
           <div className="glass-panel rounded-2xl p-5 text-sm text-slate-600">
             No recommendations are available right now.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {detail.recommendedProducts.map((recommended) =>
+            {recommendedProducts.map((recommended) =>
               recommended.id ? (
                 <Link
                   key={recommended.id}

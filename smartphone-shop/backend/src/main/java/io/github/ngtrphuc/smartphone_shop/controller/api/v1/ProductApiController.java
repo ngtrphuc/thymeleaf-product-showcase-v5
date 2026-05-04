@@ -8,6 +8,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -44,6 +46,7 @@ import io.github.ngtrphuc.smartphone_shop.service.WishlistService;
 @RestController
 @RequestMapping("/api/v1/products")
 public class ProductApiController {
+    private static final Logger log = LoggerFactory.getLogger(ProductApiController.class);
 
     private static final int DESKTOP_PAGE_SIZE = 9;
     private static final int COMPACT_PAGE_SIZE = 8;
@@ -122,6 +125,8 @@ public class ProductApiController {
                         filter.screenSize(),
                         filter.pageSize(),
                         filter.resolvedPage()));
+        publicResponse = normalizeCatalogPageResponse(publicResponse);
+
         Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
         if (wishlistedProductIds.isEmpty()) {
             return publicResponse;
@@ -139,11 +144,13 @@ public class ProductApiController {
                 PRODUCT_DETAIL_PUBLIC_CACHE,
                 detailKey,
                 () -> buildProductDetailPublicResponse(id, null));
+        publicResponse = normalizeProductDetailResponse(publicResponse);
 
         ProductDetailResponse resolvedResponse = publicResponse;
         if (variantId != null) {
             resolvedResponse = buildProductDetailPublicResponse(id, variantId);
         }
+        resolvedResponse = normalizeProductDetailResponse(resolvedResponse);
 
         Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
         if (wishlistedProductIds.isEmpty()) {
@@ -320,11 +327,12 @@ public class ProductApiController {
         ProductSummary summary = apiMapper.toProductSummary(product, false);
 
         if (selectedVariant != null && summary != null) {
+            double resolvedVariantPrice = productCommerceService.resolveEffectivePrice(product, selectedVariant);
             summary = new ProductSummary(
                     summary.id(),
                     summary.name(),
                     summary.brand(),
-                    selectedVariant.effectivePrice(),
+                    resolvedVariantPrice,
                     summary.imageUrl(),
                     selectedVariant.getStock(),
                     selectedVariant.getStock() != null && selectedVariant.getStock() > 0,
@@ -334,8 +342,8 @@ public class ProductApiController {
                             : (selectedVariant.getStock() <= 3
                                     ? "Only " + selectedVariant.getStock() + " left"
                                     : "In stock"),
-                    selectedVariant.effectivePrice() != null && selectedVariant.effectivePrice() > 0
-                            ? Math.round(selectedVariant.effectivePrice() / 24.0)
+                    resolvedVariantPrice > 0
+                            ? Math.round(resolvedVariantPrice / 24.0)
                             : 0L,
                     selectedVariant.getStorage() != null ? selectedVariant.getStorage() : summary.storage(),
                     selectedVariant.getRam() != null ? selectedVariant.getRam() : summary.ram(),
@@ -526,6 +534,35 @@ public class ProductApiController {
                 source.selectedVariantId());
     }
 
+    private CatalogPageResponse normalizeCatalogPageResponse(CatalogPageResponse source) {
+        if (source == null) {
+            return new CatalogPageResponse(List.of(), 0, 1, 0, DESKTOP_PAGE_SIZE, List.of(), 0, false);
+        }
+        return new CatalogPageResponse(
+                source.products() == null ? List.of() : source.products(),
+                source.currentPage(),
+                source.totalPages(),
+                source.totalElements(),
+                source.pageSize(),
+                source.brands() == null ? List.of() : source.brands(),
+                source.activeFilterCount(),
+                source.hasActiveFilters());
+    }
+
+    private ProductDetailResponse normalizeProductDetailResponse(ProductDetailResponse source) {
+        if (source == null) {
+            throw new NoSuchElementException("Product detail not found.");
+        }
+        return new ProductDetailResponse(
+                source.product(),
+                source.recommendedProducts() == null ? List.of() : source.recommendedProducts(),
+                source.wishlisted(),
+                source.variants() == null ? List.of() : source.variants(),
+                source.images() == null ? List.of() : source.images(),
+                source.specs() == null ? List.of() : source.specs(),
+                source.selectedVariantId());
+    }
+
     private ProductSummary applyWishlistFlag(ProductSummary product, Set<Long> wishlistedProductIds) {
         if (product == null || product.id() == null) {
             return product;
@@ -569,8 +606,15 @@ public class ProductApiController {
         if (cache == null) {
             return Objects.requireNonNull(valueLoader.get(), "Cache loader must not return null.");
         }
-        T value = cache.get(key, valueLoader::get);
-        return Objects.requireNonNull(value, "Cache value must not be null.");
+        try {
+            T value = cache.get(key, valueLoader::get);
+            return Objects.requireNonNull(value, "Cache value must not be null.");
+        } catch (RuntimeException ex) {
+            log.warn("Cache read failed for {}:{}; evicting poisoned entry and reloading.", cacheName, key, ex);
+            cache.evict(key);
+            T value = valueLoader.get();
+            return Objects.requireNonNull(value, "Cache loader must not return null.");
+        }
     }
 
     private int countActiveFilters(String keyword, String brand, String storage, String priceRange,

@@ -493,21 +493,45 @@ async function requestJson<T>(path: string, init?: RequestOptions): Promise<T> {
   throw new ApiError("Network request failed. Please try again.", 0);
 }
 
+function ensureArray<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function normalizeCatalogPageResponse(response: CatalogPageResponse): CatalogPageResponse {
+  return {
+    ...response,
+    products: ensureArray(response?.products),
+    brands: ensureArray(response?.brands),
+  };
+}
+
+function normalizeProductDetailResponse(response: ProductDetailResponse): ProductDetailResponse {
+  return {
+    ...response,
+    recommendedProducts: ensureArray(response?.recommendedProducts),
+    variants: ensureArray(response?.variants),
+    images: ensureArray(response?.images),
+    specs: ensureArray(response?.specs),
+  };
+}
+
 export async function fetchCatalogPage(searchParams: URLSearchParams): Promise<CatalogPageResponse> {
   const query = searchParams.toString();
   const suffix = query.length > 0 ? `?${query}` : "";
-  return requestJson<CatalogPageResponse>(`/api/v1/products${suffix}`, {
+  const response = await requestJson<CatalogPageResponse>(`/api/v1/products${suffix}`, {
     next: { revalidate: 20 },
     includeCredentials: false,
   });
+  return normalizeCatalogPageResponse(response);
 }
 
 export async function fetchProductDetail(id: string, variantId?: number | null): Promise<ProductDetailResponse> {
   const suffix = variantId ? `?variantId=${variantId}` : "";
-  return requestJson<ProductDetailResponse>(`/api/v1/products/${id}${suffix}`, {
+  const response = await requestJson<ProductDetailResponse>(`/api/v1/products/${id}${suffix}`, {
     next: { revalidate: 20 },
     includeCredentials: false,
   });
+  return normalizeProductDetailResponse(response);
 }
 
 export async function fetchAuthMe(): Promise<AuthMeResponse> {

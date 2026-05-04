@@ -158,67 +158,73 @@ export function CatalogFilters({ brands, initialValues }: CatalogFiltersProps) {
 
   return (
     <section className="glass-panel relative z-20 rounded-3xl p-5">
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Keyword</span>
-          <input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Example: iPhone, Samsung"
-            className="ui-input px-3 py-2 text-sm"
-          />
-        </label>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          applyFilters();
+        }}
+      >
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">Keyword</span>
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="Example: iPhone, Samsung"
+              className="ui-input px-3 py-2 text-sm"
+            />
+          </label>
 
-        <FilterDropdown label="Sort" options={SORT_OPTIONS} value={sort} onChange={onSortChange} />
-        <FilterDropdown label="Brand" options={brandOptions} value={brand} onChange={setBrand} />
-        <FilterDropdown label="Storage" options={STORAGE_OPTIONS} value={storage} onChange={setStorage} />
+          <FilterDropdown label="Sort" options={SORT_OPTIONS} value={sort} onChange={onSortChange} />
+          <FilterDropdown label="Brand" options={brandOptions} value={brand} onChange={setBrand} />
+          <FilterDropdown label="Storage" options={STORAGE_OPTIONS} value={storage} onChange={setStorage} />
 
-        <FilterDropdown label="Price Range" options={PRICE_RANGE_OPTIONS} value={priceRange} onChange={setPriceRange} />
-        <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Price Min</span>
-          <input
-            type="number"
-            min="0"
-            value={priceMin}
-            onChange={(event) => setPriceMin(event.target.value)}
-            placeholder="Min"
-            className="ui-input px-3 py-2 text-sm"
-          />
-        </label>
-        <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-slate-700">Price Max</span>
-          <input
-            type="number"
-            min="0"
-            value={priceMax}
-            onChange={(event) => setPriceMax(event.target.value)}
-            placeholder="Max"
-            className="ui-input px-3 py-2 text-sm"
-          />
-        </label>
+          <FilterDropdown label="Price Range" options={PRICE_RANGE_OPTIONS} value={priceRange} onChange={setPriceRange} />
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">Price Min</span>
+            <input
+              type="number"
+              min="0"
+              value={priceMin}
+              onChange={(event) => setPriceMin(event.target.value)}
+              placeholder="Min"
+              className="ui-input px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-slate-700">Price Max</span>
+            <input
+              type="number"
+              min="0"
+              value={priceMax}
+              onChange={(event) => setPriceMax(event.target.value)}
+              placeholder="Max"
+              className="ui-input px-3 py-2 text-sm"
+            />
+          </label>
 
-        <FilterDropdown label="Battery Range" options={BATTERY_RANGE_OPTIONS} value={batteryRange} onChange={setBatteryRange} />
-        <FilterDropdown label="Screen Size" options={SCREEN_SIZE_OPTIONS} value={screenSize} onChange={setScreenSize} />
-      </div>
+          <FilterDropdown label="Battery Range" options={BATTERY_RANGE_OPTIONS} value={batteryRange} onChange={setBatteryRange} />
+          <FilterDropdown label="Screen Size" options={SCREEN_SIZE_OPTIONS} value={screenSize} onChange={setScreenSize} />
+        </div>
 
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => applyFilters()}
-          className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm"
-        >
-          <GriddyIcon name="check" />
-          Apply Filters
-        </button>
-        <button
-          type="button"
-          onClick={clearFilters}
-          className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-sm"
-        >
-          <GriddyIcon name="close-circle" />
-          Clear
-        </button>
-      </div>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="submit"
+            className="ui-btn ui-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm"
+          >
+            <GriddyIcon name="check" />
+            Apply Filters
+          </button>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="ui-btn ui-btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-sm"
+          >
+            <GriddyIcon name="close-circle" />
+            Clear
+          </button>
+        </div>
+      </form>
     </section>
   );
 }
