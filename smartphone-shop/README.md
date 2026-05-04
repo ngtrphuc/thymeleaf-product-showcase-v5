@@ -189,6 +189,9 @@ macOS/Linux:
 docker compose up -d postgres redis meilisearch
 ```
 
+Note: local Redis now requires a password via `REDIS_PASSWORD`
+(default in `docker-compose.yml` is `smartphone-redis-dev` for local use).
+
 - Run backend:
 
 ```bash
@@ -225,7 +228,7 @@ npm run dev
 - `APP_SEARCH_MEILI_ENABLED`, `APP_SEARCH_MEILI_HOST`,
   `APP_SEARCH_MEILI_API_KEY`.
 - `DATASOURCE_URL`, `DATASOURCE_USER`, `DATASOURCE_PASSWORD`.
-- `REDIS_HOST`, `REDIS_PORT`.
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`.
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`.
 - `APP_EMAIL_PROVIDER`, `APP_EMAIL_FROM`.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`.
@@ -320,6 +323,17 @@ Status: production-like local baseline available.
     `/api/v1/admin/orders/{id}/...`.
 - Auth APIs extended:
   - verify email and resend verification endpoints.
+- Runtime `payment_methods` schema patching at app startup was removed.
+  Flyway is now the single schema owner (see
+  `V9__payment_method_schema_runtime_migration_retirement.sql`).
+- Product catalog query parameters are now bound through
+  `CatalogFilterRequest` (`@ModelAttribute`) for cleaner controller contracts.
+- Security hardening updates:
+  - CORS request headers are explicitly whitelisted (no wildcard `*`).
+  - JWT provider emits a warning when non-prod runs with default secret.
+- Redis hardening updates:
+  - `docker-compose.yml` starts Redis with `--requirepass`.
+  - Spring config now reads `REDIS_PASSWORD` in base/dev/prod profiles.
 - `OrderApiController` now keeps transaction ownership in service layer
   (controller-level `@Transactional` removed from checkout endpoint).
 - API-level request validation added for checkout and profile update payloads.
@@ -391,6 +405,7 @@ smartphone-shop/
 │       │   │                   │   │   ├── AuthTokenResponse.java
 │       │   │                   │   │   ├── CartItemResponse.java
 │       │   │                   │   │   ├── CartResponse.java
+│       │   │                   │   │   ├── CatalogFilterRequest.java
 │       │   │                   │   │   ├── CatalogPageResponse.java
 │       │   │                   │   │   ├── ChatMessageResponse.java
 │       │   │                   │   │   ├── CompareResponse.java
@@ -425,7 +440,6 @@ smartphone-shop/
 │       │   │                   │   ├── AdminAccountInitializer.java
 │       │   │                   │   ├── AsyncExecutionConfig.java
 │       │   │                   │   ├── DataInitializer.java
-│       │   │                   │   ├── PaymentMethodSchemaInitializer.java
 │       │   │                   │   ├── PaymentSimulationProperties.java
 │       │   │                   │   ├── ProductSearchProperties.java
 │       │   │                   │   ├── SecurityConfig.java
@@ -544,7 +558,8 @@ smartphone-shop/
 │       │       │       ├── V5__commercial_product_model.sql
 │       │       │       ├── V6__user_role_and_address_book.sql
 │       │       │       ├── V7__email_verification.sql
-│       │       │       └── V8__order_lifecycle_and_returns.sql
+│       │       │       ├── V8__order_lifecycle_and_returns.sql
+│       │       │       └── V9__payment_method_schema_runtime_migration_retirement.sql
 │       │       ├── application.properties
 │       │       ├── application-dev.properties
 │       │       └── application-prod.properties
@@ -561,7 +576,6 @@ smartphone-shop/
 │           │                   ├── config/
 │           │                   │   ├── ApplicationPropertiesDefaultProfileTest.java
 │           │                   │   ├── DataInitializerTest.java
-│           │                   │   └── PaymentMethodSchemaInitializerTest.java
 │           │                   ├── controller/
 │           │                   │   ├── api/
 │           │                   │   │   └── v1/

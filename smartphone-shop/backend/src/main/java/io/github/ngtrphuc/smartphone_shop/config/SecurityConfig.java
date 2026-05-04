@@ -77,7 +77,13 @@ public class SecurityConfig {
         List<String> origins = resolveAllowedOrigins();
         configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedHeaders(List.of(
+                "Content-Type",
+                "Authorization",
+                "Idempotency-Key",
+                "X-Requested-With",
+                "Accept",
+                "Origin"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
 

@@ -61,7 +61,9 @@ class ProductApiControllerTest {
                 .thenReturn(List.of("Apple iPhone 17 Pro", "Samsung Galaxy S26 Ultra"));
 
         CatalogPageResponse response = controller.products(
-                null, null, "Apple", null, null, null, null, null, null, null, null, 9, 0, null);
+                new CatalogFilterRequest(
+                        null, null, "Apple", null, null, null, null, null, null, null, null, 9, 0),
+                null);
 
         assertEquals(1, response.products().size());
         assertEquals("Apple", response.products().get(0).brand());
@@ -90,11 +92,13 @@ class ProductApiControllerTest {
         when(wishlistService.getWishlistedProductIds("bob@example.com")).thenReturn(Set.of());
 
         CatalogPageResponse aliceResponse = controller.products(
-                null, null, null, null, null, null, null, null, null, null, null, 9, 0,
+                new CatalogFilterRequest(
+                        null, null, null, null, null, null, null, null, null, null, null, 9, 0),
                 new UsernamePasswordAuthenticationToken(
                         "alice@example.com", "password", AuthorityUtils.createAuthorityList("ROLE_USER")));
         CatalogPageResponse bobResponse = controller.products(
-                null, null, null, null, null, null, null, null, null, null, null, 9, 0,
+                new CatalogFilterRequest(
+                        null, null, null, null, null, null, null, null, null, null, null, 9, 0),
                 new UsernamePasswordAuthenticationToken(
                         "bob@example.com", "password", AuthorityUtils.createAuthorityList("ROLE_USER")));
 

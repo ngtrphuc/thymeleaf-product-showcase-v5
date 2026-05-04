@@ -8,6 +8,8 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +22,7 @@ public class JwtTokenProvider {
 
     private static final String ROLE_CLAIM = "role";
     private static final String INSECURE_SECRET_PREFIX = "change-this-secret-in-production";
+    private static final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
 
     private final JwtProperties jwtProperties;
     private final SecretKey signingKey;
@@ -34,6 +37,9 @@ public class JwtTokenProvider {
                 .anyMatch(profile -> "prod".equalsIgnoreCase(profile));
         if (prodProfileActive && secret.startsWith(INSECURE_SECRET_PREFIX)) {
             throw new IllegalStateException("JWT secret must be overridden in production.");
+        }
+        if (!prodProfileActive && secret.startsWith(INSECURE_SECRET_PREFIX)) {
+            log.warn("Using default JWT secret for non-production profile. Set JWT_SECRET for safer local sharing.");
         }
 
         byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);

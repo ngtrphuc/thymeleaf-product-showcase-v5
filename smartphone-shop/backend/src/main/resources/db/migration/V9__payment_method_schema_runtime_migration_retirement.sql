@@ -1,0 +1,2 @@
+-- Runtime schema mutation has been removed.
+-- payment_methods.type is managed via Flyway baseline/migrations only.

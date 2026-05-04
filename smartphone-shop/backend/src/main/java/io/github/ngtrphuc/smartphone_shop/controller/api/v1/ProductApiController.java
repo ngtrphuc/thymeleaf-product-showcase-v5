@@ -18,12 +18,14 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.github.ngtrphuc.smartphone_shop.api.ApiMapper;
+import io.github.ngtrphuc.smartphone_shop.api.dto.CatalogFilterRequest;
 import io.github.ngtrphuc.smartphone_shop.api.dto.CatalogPageResponse;
 import io.github.ngtrphuc.smartphone_shop.api.dto.ProductDetailResponse;
 import io.github.ngtrphuc.smartphone_shop.api.dto.ProductImageResponse;
@@ -87,51 +89,39 @@ public class ProductApiController {
 
     @GetMapping
     public CatalogPageResponse products(
-            @RequestParam(name = "keyword", required = false) String keyword,
-            @RequestParam(name = "sort", required = false) String sort,
-            @RequestParam(name = "brand", required = false) String brand,
-            @RequestParam(name = "storage", required = false) String storage,
-            @RequestParam(name = "priceRange", required = false) String priceRange,
-            @RequestParam(name = "priceMin", required = false) Double priceMin,
-            @RequestParam(name = "priceMax", required = false) Double priceMax,
-            @RequestParam(name = "batteryRange", required = false) String batteryRange,
-            @RequestParam(name = "batteryMin", required = false) Integer batteryMin,
-            @RequestParam(name = "batteryMax", required = false) Integer batteryMax,
-            @RequestParam(name = "screenSize", required = false) String screenSize,
-            @RequestParam(name = "pageSize", required = false) Integer pageSize,
-            @RequestParam(name = "page", defaultValue = "0") int page,
+            @ModelAttribute CatalogFilterRequest filter,
             Authentication authentication) {
         String cacheKey = Objects.requireNonNull(CacheKeys.catalog(
-                keyword,
-                sort,
-                brand,
-                storage,
-                priceRange,
-                priceMin,
-                priceMax,
-                batteryRange,
-                batteryMin,
-                batteryMax,
-                screenSize,
-                pageSize,
-                page));
+                filter.keyword(),
+                filter.sort(),
+                filter.brand(),
+                filter.storage(),
+                filter.priceRange(),
+                filter.priceMin(),
+                filter.priceMax(),
+                filter.batteryRange(),
+                filter.batteryMin(),
+                filter.batteryMax(),
+                filter.screenSize(),
+                filter.pageSize(),
+                filter.resolvedPage()));
         CatalogPageResponse publicResponse = getOrLoadCache(
                 CATALOG_PUBLIC_CACHE,
                 cacheKey,
                 () -> buildCatalogPublicResponse(
-                        keyword,
-                        sort,
-                        brand,
-                        storage,
-                        priceRange,
-                        priceMin,
-                        priceMax,
-                        batteryRange,
-                        batteryMin,
-                        batteryMax,
-                        screenSize,
-                        pageSize,
-                        page));
+                        filter.keyword(),
+                        filter.sort(),
+                        filter.brand(),
+                        filter.storage(),
+                        filter.priceRange(),
+                        filter.priceMin(),
+                        filter.priceMax(),
+                        filter.batteryRange(),
+                        filter.batteryMin(),
+                        filter.batteryMax(),
+                        filter.screenSize(),
+                        filter.pageSize(),
+                        filter.resolvedPage()));
         Set<Long> wishlistedProductIds = resolveWishlistedProductIds(authentication);
         if (wishlistedProductIds.isEmpty()) {
             return publicResponse;
