@@ -15,10 +15,31 @@ import {
 } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 
+function normalizeConversationEmail(email: string | null | undefined): string | null {
+  if (!email) {
+    return null;
+  }
+  const normalized = email.trim().toLowerCase();
+  return normalized.length > 0 ? normalized : null;
+}
+
 function formatChatClock(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return formatDateTime(value);
+  }
+  const now = new Date();
+  const isSameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  if (!isSameDay) {
+    return date.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
   return date.toLocaleTimeString("en-GB", {
     hour: "2-digit",
@@ -44,20 +65,32 @@ function parseAdminChatEvent(data: string): ChatMessageResponse | null {
 }
 
 function upsertChatMessage(messages: ChatMessageResponse[], incoming: ChatMessageResponse): ChatMessageResponse[] {
+  const compareByTimeline = (left: ChatMessageResponse, right: ChatMessageResponse): number => {
+    const leftTime = new Date(left.createdAt).getTime();
+    const rightTime = new Date(right.createdAt).getTime();
+    const leftTimestamp = Number.isNaN(leftTime) ? 0 : leftTime;
+    const rightTimestamp = Number.isNaN(rightTime) ? 0 : rightTime;
+    if (leftTimestamp !== rightTimestamp) {
+      return leftTimestamp - rightTimestamp;
+    }
+    return (left.id ?? 0) - (right.id ?? 0);
+  };
+
   if (incoming.id == null) {
-    return [...messages, incoming].slice(-50);
+    return [...messages, incoming].sort(compareByTimeline).slice(-50);
   }
   const existingIndex = messages.findIndex((message) => message.id === incoming.id);
   if (existingIndex === -1) {
-    return [...messages, incoming].slice(-50);
+    return [...messages, incoming].sort(compareByTimeline).slice(-50);
   }
   const next = [...messages];
   next[existingIndex] = incoming;
-  return next;
+  return next.sort(compareByTimeline).slice(-50);
 }
 
 export default function AdminChatPage() {
   const selectedEmailRef = useRef<string | null>(null);
+  const historyRequestSequenceRef = useRef(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -97,9 +130,17 @@ export default function AdminChatPage() {
     try {
       const data = await fetchAdminConversations();
       setConversations(data);
-      if (!selectedEmailRef.current && data.emails.length > 0) {
-        setSelectedEmail(data.emails[0]);
-      }
+      setSelectedEmail((current) => {
+        const normalizedCurrent = normalizeConversationEmail(current);
+        const normalizedEmails = data.emails.map((email) => normalizeConversationEmail(email)).filter(Boolean) as string[];
+        if (data.emails.length === 0) {
+          return null;
+        }
+        if (normalizedCurrent && normalizedEmails.includes(normalizedCurrent)) {
+          return normalizedCurrent;
+        }
+        return normalizeConversationEmail(data.emails[0]);
+      });
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -114,11 +155,23 @@ export default function AdminChatPage() {
   }
 
   async function loadHistory(email: string, options?: { markRead?: boolean }) {
+    const requestSequence = ++historyRequestSequenceRef.current;
     setError(null);
     try {
       const history = await fetchAdminChatHistory(email);
-      setMessages(history);
-      if (options?.markRead !== false) {
+      if (
+        requestSequence !== historyRequestSequenceRef.current ||
+        normalizeConversationEmail(selectedEmailRef.current) !== normalizeConversationEmail(email)
+      ) {
+        return;
+      }
+      setMessages(
+        history.reduce<ChatMessageResponse[]>((current, message) => upsertChatMessage(current, message), []),
+      );
+      if (
+        options?.markRead !== false &&
+        normalizeConversationEmail(selectedEmailRef.current) === normalizeConversationEmail(email)
+      ) {
         await markAdminConversationRead(email);
       }
     } catch (err) {
@@ -145,6 +198,7 @@ export default function AdminChatPage() {
 
   useEffect(() => {
     if (!selectedEmail) {
+      historyRequestSequenceRef.current += 1;
       setMessages([]);
       setShowJumpToLatest(false);
       return;
@@ -164,7 +218,7 @@ export default function AdminChatPage() {
       }
 
       void loadConversations();
-      if (selectedEmailRef.current !== incoming.userEmail) {
+      if (normalizeConversationEmail(selectedEmailRef.current) !== normalizeConversationEmail(incoming.userEmail)) {
         return;
       }
       setMessages((current) => upsertChatMessage(current, incoming));
@@ -200,9 +254,9 @@ export default function AdminChatPage() {
     setError(null);
     try {
       shouldAutoScrollRef.current = true;
-      await sendAdminChatMessage(selectedEmail, draft.trim());
+      const sent = await sendAdminChatMessage(selectedEmail, draft.trim());
+      setMessages((current) => upsertChatMessage(current, sent));
       setDraft("");
-      await loadHistory(selectedEmail);
       await loadConversations();
     } catch (err) {
       if (err instanceof ApiError) {
@@ -229,7 +283,7 @@ export default function AdminChatPage() {
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
       <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-        <aside className="glass-panel flex h-[min(72vh,760px)] min-h-[520px] flex-col rounded-3xl p-4">
+        <aside className="glass-panel admin-chat-sidebar flex h-[clamp(420px,calc(100dvh-22rem),760px)] min-h-0 flex-col overflow-hidden rounded-3xl p-4">
           <h2 className="text-sm font-semibold text-slate-900">Conversations</h2>
           {!conversations || conversations.emails.length === 0 ? (
             <p className="mt-3 text-sm text-slate-600">No conversations yet.</p>
@@ -237,23 +291,21 @@ export default function AdminChatPage() {
             <ul className="mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
               {conversations.emails.map((email) => {
                 const unread = conversations.unreadCounts[email] ?? 0;
-                const active = selectedEmail === email;
+                const normalizedEmail = normalizeConversationEmail(email);
+                const active = selectedEmail === normalizedEmail;
                 return (
                   <li key={email}>
                     <button
                       type="button"
-                      onClick={() => setSelectedEmail(email)}
-                      className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
-                        active ? "bg-[var(--chat-accent)] text-black" : "bg-[var(--chat-peer-bg)] text-[#f3f4f6]"
-                      }`}
+                      onClick={() => setSelectedEmail(normalizedEmail)}
+                      aria-current={active ? "true" : "false"}
+                      className={`admin-chat-conversation ${active ? "is-active" : "is-inactive"} w-full rounded-xl px-3 py-2 text-left text-sm`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate">{email}</span>
                         {unread > 0 ? (
                           <span
-                            className={`rounded-full px-2 py-0.5 text-xs ${
-                              active ? "bg-black/10 text-black" : "bg-black/30 text-[#d1d5db]"
-                            }`}
+                            className={`admin-chat-unread rounded-full px-2 py-0.5 text-xs ${active ? "is-active" : "is-inactive"}`}
                           >
                             {unread}
                           </span>
@@ -267,14 +319,14 @@ export default function AdminChatPage() {
           )}
         </aside>
 
-        <section className="flex h-[min(72vh,760px)] min-h-[520px] flex-col rounded-3xl border border-white/10 bg-black p-4 shadow-[0_12px_28px_rgba(0,0,0,0.35)]">
+        <section className="admin-chat-panel flex h-[clamp(420px,calc(100dvh-22rem),760px)] min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black p-4 shadow-[0_12px_28px_rgba(0,0,0,0.35)]">
           {!selectedEmail ? (
             <div className="flex flex-1 items-center justify-center text-sm text-slate-600">
               Select a conversation.
             </div>
           ) : (
             <>
-              <div className="mb-3 rounded-xl border border-white/10 bg-[var(--chat-peer-bg)] px-3 py-2 text-sm font-semibold text-[#f3f4f6]">
+              <div className="admin-chat-selected mb-3 rounded-xl border border-white/10 bg-[var(--chat-peer-bg)] px-3 py-2 text-sm font-semibold text-[#f3f4f6]">
                 {selectedEmail}
               </div>
 
@@ -282,23 +334,33 @@ export default function AdminChatPage() {
                 <div
                   ref={messagesViewportRef}
                   onScroll={syncScrollModeFromViewport}
-                  className="chat-grid-paper h-full space-y-2 overflow-y-auto rounded-xl border border-white/10 p-3"
+                  className="admin-chat-messages chat-grid-paper h-full min-w-0 space-y-2 overflow-x-hidden overflow-y-auto rounded-xl border border-white/10 p-3"
                 >
                   {messages.length === 0 ? (
                     <p className="text-sm text-[var(--chat-meta)]">No messages yet.</p>
                   ) : (
-                    messages.map((message) => {
+                    messages.map((message, index) => {
                       const isAdmin = message.senderRole === "ADMIN";
                       const sideClass = isAdmin ? "justify-end" : "justify-start";
                       const toneClass = isAdmin
                         ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(74,221,225,0.28)]"
-                        : "bg-[var(--chat-peer-bg)] text-[#f3f4f6]";
+                        : "admin-chat-peer border border-white/10 bg-[var(--chat-peer-bg)] text-[var(--color-text)]";
                       const metaClass = "text-[var(--chat-meta)]";
                       return (
-                        <div key={message.id} className={`flex ${sideClass}`}>
-                          <div className={`flex max-w-[88%] flex-col gap-1 ${isAdmin ? "items-end" : "items-start"}`}>
-                            <article className={`inline-block w-fit break-words rounded-2xl p-2 text-sm ${toneClass}`}>
-                              <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                        <div
+                          key={message.id ?? `${message.userEmail}:${message.createdAt}:${message.senderRole}:${index}`}
+                          className={`flex w-full min-w-0 ${sideClass}`}
+                        >
+                          <div
+                            className={`flex max-w-[88%] min-w-0 flex-col gap-1 ${isAdmin ? "items-end" : "items-start"}`}
+                          >
+                            <article
+                              className={`inline-block max-w-full break-words rounded-2xl p-2 text-sm ${toneClass}`}
+                              style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
+                            >
+                              <p className="whitespace-pre-wrap leading-relaxed" style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>
+                                {message.content}
+                              </p>
                             </article>
                             <p className={`px-1 text-[11px] ${metaClass}`}>
                               {message.senderRole} | {formatChatClock(message.createdAt)}
@@ -316,19 +378,19 @@ export default function AdminChatPage() {
                     onClick={() => scrollToLatest("smooth")}
                     aria-label="Jump to latest message"
                     title="Latest"
-                    className="absolute bottom-3 left-1/2 inline-flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-cyan-300/45 bg-black/78 text-cyan-300 shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[transform,background-color,border-color,color] duration-200 hover:-translate-x-1/2 hover:-translate-y-px hover:border-cyan-200 hover:bg-[#13181f] hover:text-cyan-200"
+                    className="admin-chat-jump absolute bottom-3 left-1/2 inline-flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-cyan-300/45 bg-black/78 text-cyan-300 shadow-[0_10px_24px_rgba(0,0,0,0.45)] transition-[transform,background-color,border-color,color] duration-200 hover:-translate-x-1/2 hover:-translate-y-px hover:border-cyan-200 hover:bg-[#13181f] hover:text-cyan-200"
                   >
                     <ArrowDown className="h-4 w-4" />
                   </button>
                 ) : null}
               </div>
 
-              <form onSubmit={onSend} className="mt-3 flex gap-2 rounded-2xl border border-white/10 bg-black/25 p-2">
+              <form onSubmit={onSend} className="admin-chat-form mt-3 flex gap-2 rounded-2xl border border-white/10 bg-black/25 p-2">
                 <input
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder="Type a reply..."
-                  className="ui-input flex-1 border-white/12 bg-black/35 px-3 py-2 text-sm text-[var(--color-text)]"
+                  className="admin-chat-input ui-input flex-1 border-white/12 bg-black/35 px-3 py-2 text-sm text-[var(--color-text)]"
                 />
                 <button
                   type="submit"

@@ -15,6 +15,7 @@ import {
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 import { AuthMotionIcon } from "@/components/ui/auth-motion-icon";
 import { PaymentMethodBadge } from "@/components/storefront/payment-method-badge";
+import { ThemeToggle } from "@/components/storefront/theme-toggle";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -172,15 +173,18 @@ export default function ProfilePage() {
             <h1 className="text-2xl font-bold text-slate-900">Profile</h1>
             <p className="mt-1 text-sm text-slate-600">{profile.email}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => void logout()}
-            disabled={saving}
-            className="ui-btn ui-btn-logout inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-          >
-            <AuthMotionIcon variant="logout" className="h-4 w-4" />
-            Sign Out
-          </button>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => void logout()}
+              disabled={saving}
+              className="ui-btn ui-btn-logout inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+            >
+              <AuthMotionIcon variant="logout" className="h-4 w-4" />
+              Sign Out
+            </button>
+          </div>
         </div>
       </header>
 
@@ -237,7 +241,7 @@ export default function ProfilePage() {
         <button
           type="submit"
           disabled={saving}
-          className="profile-save-add-btn inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black"
+          className="profile-save-add-btn inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-page)]"
         >
           <GriddyIcon name="check" />
           {saving ? "Saving..." : "Save Profile"}
@@ -318,7 +322,7 @@ export default function ProfilePage() {
             type="button"
             disabled={saving}
             onClick={() => void addPayment()}
-            className="profile-save-add-btn mt-3 inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-black"
+            className="profile-save-add-btn mt-3 inline-flex items-center gap-2 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-page)]"
           >
             <GriddyIcon name="credit-card" />
             Add Method

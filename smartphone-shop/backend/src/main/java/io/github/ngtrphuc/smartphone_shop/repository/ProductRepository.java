@@ -74,7 +74,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Query("SELECT p.name FROM Product p ORDER BY LOWER(p.name), p.id")
     List<String> findAllNamesOrdered();
 
-    @Query("SELECT DISTINCT b.name FROM Product p JOIN p.brand b WHERE COALESCE(p.active, true) = true ORDER BY LOWER(b.name)")
+    @Query("SELECT b.name FROM Product p JOIN p.brand b WHERE COALESCE(p.active, true) = true GROUP BY b.name ORDER BY LOWER(b.name)")
     List<String> findAllBrandNamesOrdered();
 
     List<Product> findAllByOrderByNameAsc();

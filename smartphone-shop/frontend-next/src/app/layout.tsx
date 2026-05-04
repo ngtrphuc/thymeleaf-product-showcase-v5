@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Sans } from "next/font/google";
+import { THEME_INIT_SCRIPT } from "@/lib/theme-init-script";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -28,9 +29,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${dmMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      data-theme="light"
+      suppressHydrationWarning
+      className={`${dmSans.variable} ${dmMono.variable} h-full antialiased`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="page-bg-grid min-h-full bg-[var(--color-page)] text-[var(--color-text)]">
-        <div className="pointer-events-none fixed inset-0 -z-10 bg-black" />
+        <div className="pointer-events-none fixed inset-0 -z-10 bg-[var(--color-page)]" />
         {children}
       </body>
     </html>

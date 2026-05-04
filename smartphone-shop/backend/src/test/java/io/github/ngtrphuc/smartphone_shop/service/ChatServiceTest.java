@@ -95,7 +95,7 @@ class ChatServiceTest {
         ChatMessage latest = chat(2L, "user@example.com", "latest", LocalDateTime.of(2026, 4, 18, 13, 0));
         ChatMessage older = chat(1L, "user@example.com", "older", LocalDateTime.of(2026, 4, 18, 12, 0));
 
-        when(chatMessageRepository.findByUserEmailOrderByCreatedAtDesc(
+        when(chatMessageRepository.findByUserEmailOrderByCreatedAtDescIdDesc(
                 eq("user@example.com"),
                 eq(PageRequest.of(0, 50))))
                 .thenReturn(new PageImpl<>(Objects.requireNonNull(List.of(latest, older))));

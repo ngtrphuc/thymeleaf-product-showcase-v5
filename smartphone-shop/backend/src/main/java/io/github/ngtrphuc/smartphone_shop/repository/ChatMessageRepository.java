@@ -19,7 +19,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     }
 
     List<ChatMessage> findByUserEmailOrderByCreatedAtAsc(String userEmail);
-    Page<ChatMessage> findByUserEmailOrderByCreatedAtDesc(String userEmail, Pageable pageable);
+    Page<ChatMessage> findByUserEmailOrderByCreatedAtDescIdDesc(String userEmail, Pageable pageable);
 
     @Query(value = """
             SELECT user_email FROM chat_messages

@@ -87,7 +87,7 @@ public class ChatService {
     @Transactional(readOnly = true)
     public List<ChatMessage> getHistory(String email) {
         List<ChatMessage> latestFirst = new ArrayList<>(chatMessageRepository
-                .findByUserEmailOrderByCreatedAtDesc(
+                .findByUserEmailOrderByCreatedAtDescIdDesc(
                         normalizeConversationEmail(email),
                         PageRequest.of(0, DEFAULT_HISTORY_LIMIT))
                 .getContent());

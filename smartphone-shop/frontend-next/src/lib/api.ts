@@ -296,6 +296,7 @@ const DEFAULT_RETRY_COUNT = Number.parseInt(process.env.NEXT_PUBLIC_API_RETRY_CO
 const DEFAULT_RETRY_BASE_DELAY_MS = Number.parseInt(process.env.NEXT_PUBLIC_API_RETRY_BASE_DELAY_MS ?? "250", 10);
 const DEFAULT_AUTH_ME_CACHE_TTL_MS = Number.parseInt(process.env.NEXT_PUBLIC_AUTH_ME_CACHE_TTL_MS ?? "30000", 10);
 const COMPARE_UPDATED_EVENT = "storefront:compare-updated";
+const CURRENT_THEME_ACCOUNT_EMAIL_STORAGE_KEY = "smartphone-shop-theme:current-account-email";
 
 let authMeCache: AuthMeResponse | null = null;
 let authMeCacheAt = 0;
@@ -581,6 +582,13 @@ export async function authLogin(email: string, password: string): Promise<AuthTo
     skipAuthRedirect: true,
     body: JSON.stringify({ email, password }),
   });
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(CURRENT_THEME_ACCOUNT_EMAIL_STORAGE_KEY, response.email.trim().toLowerCase());
+    } catch {
+      // Ignore storage access issues.
+    }
+  }
   invalidateAuthMeCache();
   return response;
 }
@@ -599,6 +607,13 @@ export async function authLogout(): Promise<OperationStatusResponse> {
   const response = await requestJson<OperationStatusResponse>("/api/v1/auth/logout", {
     method: "POST",
   });
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem(CURRENT_THEME_ACCOUNT_EMAIL_STORAGE_KEY);
+    } catch {
+      // Ignore storage access issues.
+    }
+  }
   invalidateAuthMeCache();
   return response;
 }

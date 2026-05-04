@@ -107,7 +107,9 @@ public class AdminProductApiController {
                 normalizedBrand,
                 PageRequest.of(safePage, safeSize, requestedSort));
 
-        List<Product> items = result.getContent();
+        List<AdminProductResponse> items = result.getContent().stream()
+                .map(this::toAdminProductResponse)
+                .toList();
         int totalPages = result.getTotalPages();
         int currentPage = totalPages == 0 ? 0 : Math.max(0, Math.min(result.getNumber(), totalPages - 1));
 
@@ -133,7 +135,7 @@ public class AdminProductApiController {
     @PostMapping("/products")
     @Transactional
     @CacheEvict(value = { "catalogPublic", "productDetailPublic", "brandList" }, allEntries = true)
-    public Product createProduct(@RequestBody AdminProductUpsertRequest request) {
+    public AdminProductResponse createProduct(@RequestBody AdminProductUpsertRequest request) {
         Product product = new Product();
         applyProductInput(product, request);
         Product saved = productRepository.save(product);
@@ -144,13 +146,13 @@ public class AdminProductApiController {
         if (productSearchService != null) {
             productSearchService.syncProduct(updated);
         }
-        return updated;
+        return toAdminProductResponse(updated);
     }
 
     @PutMapping("/products/{id}")
     @Transactional
     @CacheEvict(value = { "catalogPublic", "productDetailPublic", "brandList" }, allEntries = true)
-    public Product updateProduct(@PathVariable(name = "id") long id, @RequestBody AdminProductUpsertRequest request) {
+    public AdminProductResponse updateProduct(@PathVariable(name = "id") long id, @RequestBody AdminProductUpsertRequest request) {
         Product existing = productRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Product not found."));
         applyProductInput(existing, request);
@@ -162,7 +164,38 @@ public class AdminProductApiController {
         if (productSearchService != null) {
             productSearchService.syncProduct(updated);
         }
-        return updated;
+        return toAdminProductResponse(updated);
+    }
+
+    private AdminProductResponse toAdminProductResponse(Product product) {
+        if (product == null) {
+            return null;
+        }
+        Double resolvedPrice = product.getBasePrice() != null ? product.getBasePrice() : product.getPrice();
+        return new AdminProductResponse(
+                product.getId(),
+                product.getName(),
+                resolvedPrice,
+                product.getBasePrice(),
+                product.getImageUrl(),
+                product.getStock(),
+                product.getOs(),
+                product.getChipset(),
+                product.getSpeed(),
+                product.getRam(),
+                product.getStorage(),
+                product.getSize(),
+                product.getResolution(),
+                product.getBattery(),
+                product.getCharging(),
+                product.getDescription(),
+                product.getSlug(),
+                product.getSkuPrefix(),
+                product.getActive(),
+                null,
+                null,
+                null,
+                null);
     }
 
     @DeleteMapping("/products/{id}")
@@ -505,12 +538,38 @@ public class AdminProductApiController {
     }
 
     public record AdminProductPageResponse(
-            List<Product> products,
+            List<AdminProductResponse> products,
             int currentPage,
             int totalPages,
             long totalElements,
             int pageSize,
             List<String> brands) {
+    }
+
+    public record AdminProductResponse(
+            Long id,
+            String name,
+            Double price,
+            Double basePrice,
+            String imageUrl,
+            Integer stock,
+            String os,
+            String chipset,
+            String speed,
+            String ram,
+            String storage,
+            String size,
+            String resolution,
+            String battery,
+            String charging,
+            String description,
+            String slug,
+            String skuPrefix,
+            Boolean active,
+            Long brandId,
+            String brandSlug,
+            Long categoryId,
+            String categorySlug) {
     }
 
     public record AdminProductUpsertRequest(

@@ -136,14 +136,14 @@ export function CatalogPagedGrid({
     const isDisabled = item.disabled || pendingHref !== null;
     const isActivePage = !edge && Boolean(item.active);
     const className = edge
-      ? `ui-btn pagination-rail-edge inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] text-sm transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ${
+        ? `ui-btn pagination-rail-edge inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] text-sm transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ${
           isDisabled
             ? "pointer-events-none opacity-45"
             : "hover:border-white/12 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(0,0,0,0.32)]"
         }`
       : `ui-btn pagination-rail-link inline-flex h-11 min-w-11 items-center justify-center rounded-xl border px-3 py-1.5 text-sm transition-[transform,background-color,color,border-color,box-shadow,opacity] duration-200 ${
           isActivePage
-            ? "pointer-events-none cursor-default border-black/80 bg-[var(--color-primary)] font-semibold text-black"
+            ? "pointer-events-none cursor-default border-black/80 bg-[var(--color-primary)] font-semibold text-[var(--color-page)]"
             : "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)] hover:border-white/12 hover:bg-white hover:text-black hover:shadow-[0_8px_18px_rgba(0,0,0,0.32)]"
         } ${isDisabled ? "pointer-events-none opacity-55" : ""}`;
 

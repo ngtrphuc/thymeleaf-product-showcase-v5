@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminHeaderNav } from "@/components/admin/admin-header-nav";
 import { AdminSessionActions } from "@/components/admin/admin-session-actions";
+import { ThemeToggle } from "@/components/storefront/theme-toggle";
 import { GriddyIcon } from "@/components/ui/griddy-icon";
 
 export default function AdminLayout({
@@ -17,6 +18,7 @@ export default function AdminLayout({
             <AdminHeaderNav />
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <ThemeToggle scope="admin" />
             <Link
               href="/products"
               className="admin-home-btn ui-btn ui-btn-secondary ui-header-contrast ui-negative-hover inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
