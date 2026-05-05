@@ -2,11 +2,13 @@ package io.github.ngtrphuc.smartphone_shop.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +28,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.CompareItemRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class CompareServiceTest {
 
     @Mock
@@ -49,7 +52,7 @@ class CompareServiceTest {
         CompareService.AddResult result = compareService.addItem("user@example.com", null, 99L);
 
         assertEquals(CompareService.AddResult.UNAVAILABLE, result);
-        verify(compareItemRepository, never()).save(MockitoNullSafety.anyNonNull(CompareItemEntity.class));
+        verify(compareItemRepository, never()).save(any(CompareItemEntity.class));
     }
 
     @Test
@@ -70,8 +73,8 @@ class CompareServiceTest {
         assertIterableEquals(List.of(10L), compareService.getCompareIds("user@example.com", session));
 
         ArgumentCaptor<CompareItemEntity> savedCaptor = ArgumentCaptor.forClass(CompareItemEntity.class);
-        verify(compareItemRepository).save(MockitoNullSafety.captureNonNull(savedCaptor));
-        CompareItemEntity saved = MockitoNullSafety.capturedValue(savedCaptor);
+        verify(compareItemRepository).save(savedCaptor.capture());
+        CompareItemEntity saved = Objects.requireNonNull(savedCaptor.getValue());
         assertEquals("user@example.com", saved.getUserEmail());
         assertEquals(10L, saved.getProductId());
     }
@@ -86,7 +89,7 @@ class CompareServiceTest {
 
         assertEquals(CompareService.AddResult.LIMIT_REACHED, result);
         assertIterableEquals(List.of(1L, 2L, 3L), compareService.getCompareIds(null, session));
-        verify(compareItemRepository, never()).save(MockitoNullSafety.anyNonNull(CompareItemEntity.class));
+        verify(compareItemRepository, never()).save(any(CompareItemEntity.class));
     }
 
     @Test
@@ -120,8 +123,8 @@ class CompareServiceTest {
         compareService.mergeSessionCompareToDb(session, "user@example.com");
 
         ArgumentCaptor<CompareItemEntity> captor = ArgumentCaptor.forClass(CompareItemEntity.class);
-        verify(compareItemRepository).save(MockitoNullSafety.captureNonNull(captor));
-        CompareItemEntity saved = MockitoNullSafety.capturedValue(captor);
+        verify(compareItemRepository).save(captor.capture());
+        CompareItemEntity saved = Objects.requireNonNull(captor.getValue());
         assertEquals("user@example.com", saved.getUserEmail());
         assertEquals(3L, saved.getProductId());
         assertIterableEquals(List.of(3L, 2L, 1L), compareService.getCompareIds("user@example.com", session));

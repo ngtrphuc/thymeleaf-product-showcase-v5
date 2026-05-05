@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -26,6 +27,23 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT pv FROM ProductVariant pv WHERE pv.id IN :ids")
     List<ProductVariant> findAllByIdInForUpdate(@Param("ids") Collection<Long> ids);
+
+    @Modifying
+    @Query("""
+        UPDATE ProductVariant pv
+        SET pv.stock = pv.stock - :quantity
+        WHERE pv.id = :id
+          AND pv.stock >= :quantity
+        """)
+    int decrementStockIfAvailable(@Param("id") Long id, @Param("quantity") int quantity);
+
+    @Modifying
+    @Query("""
+        UPDATE ProductVariant pv
+        SET pv.stock = pv.stock + :quantity
+        WHERE pv.id = :id
+        """)
+    int incrementStock(@Param("id") Long id, @Param("quantity") int quantity);
 
     @Query("SELECT pv FROM ProductVariant pv WHERE pv.id = :id AND pv.active = true")
     Optional<ProductVariant> findActiveById(@Param("id") Long id);

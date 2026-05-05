@@ -23,6 +23,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.UserRepository;
 import io.github.ngtrphuc.smartphone_shop.security.JwtTokenProvider;
 import io.github.ngtrphuc.smartphone_shop.service.AuthService;
 import io.github.ngtrphuc.smartphone_shop.service.EmailVerificationService;
+import io.github.ngtrphuc.smartphone_shop.service.RefreshTokenService;
 import io.github.ngtrphuc.smartphone_shop.model.UserRole;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,11 +46,14 @@ class AuthApiControllerTest {
     @Mock
     private EmailVerificationService emailVerificationService;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @Test
     void me_shouldReturnAnonymousPayloadWhenNotLoggedIn() {
         AuthApiController controller = new AuthApiController(
                 authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider,
-                emailVerificationService, false);
+                emailVerificationService, refreshTokenService, false);
 
         AuthMeResponse response = controller.me(
                 new AnonymousAuthenticationToken("key", "anonymousUser", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
@@ -62,7 +66,7 @@ class AuthApiControllerTest {
     void register_shouldReturnConflictWhenEmailExists() {
         AuthApiController controller = new AuthApiController(
                 authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider,
-                emailVerificationService, false);
+                emailVerificationService, refreshTokenService, false);
         when(authService.register("user@example.com", "Tester", "secret123")).thenReturn(false);
 
         ResponseEntity<OperationStatusResponse> response = controller.register(
@@ -78,7 +82,7 @@ class AuthApiControllerTest {
     void me_shouldReturnUserPayloadWhenAuthenticated() {
         AuthApiController controller = new AuthApiController(
                 authService, userRepository, API_MAPPER, authenticationManager, jwtTokenProvider,
-                emailVerificationService, false);
+                emailVerificationService, refreshTokenService, false);
         User user = new User();
         user.setEmail("user@example.com");
         user.setFullName("Tester");

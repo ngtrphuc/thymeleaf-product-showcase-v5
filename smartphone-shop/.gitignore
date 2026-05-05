@@ -4,6 +4,14 @@
 # Runtime local data
 /.data/
 
+# Local secrets
+.env
+.env.*
+!.env.example
+!frontend-next/.env.example
+frontend-next/.env.local
+frontend-next/.env.*.local
+
 # Runtime logs (local only)
 *.log
 *.err

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -26,6 +27,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.OrderIdempotencyKeyReposito
 import io.github.ngtrphuc.smartphone_shop.repository.OrderRepository;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class OrderIdempotencyServiceTest {
 
     @Mock
@@ -123,15 +125,15 @@ class OrderIdempotencyServiceTest {
                 }));
 
         assertEquals("checkout failure", ex.getMessage());
-        verify(orderIdempotencyKeyRepository).saveAndFlush(MockitoNullSafety.anyNonNull(OrderIdempotencyKey.class));
-        verify(orderIdempotencyKeyRepository).delete(MockitoNullSafety.anyNonNull(OrderIdempotencyKey.class));
+        verify(orderIdempotencyKeyRepository).saveAndFlush(any(OrderIdempotencyKey.class));
+        verify(orderIdempotencyKeyRepository).delete(any(OrderIdempotencyKey.class));
     }
 
     @Test
     void cleanupStalePlaceholders_shouldDeletePendingRowsBeforeCutoff() {
         orderIdempotencyService.cleanupStalePlaceholders();
 
-        verify(orderIdempotencyKeyRepository).deleteStalePlaceholders(MockitoNullSafety.anyNonNull(LocalDateTime.class));
+        verify(orderIdempotencyKeyRepository).deleteStalePlaceholders(any(LocalDateTime.class));
     }
 
     @Test

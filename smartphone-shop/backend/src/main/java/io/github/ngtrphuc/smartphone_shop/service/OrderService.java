@@ -562,22 +562,21 @@ public class OrderService {
                 throw new OrderValidationException("One of the variants in this order is no longer available.");
             }
 
+            int quantity = entry.getValue();
             int currentStock = Optional.ofNullable(variant.getStock()).orElse(0);
-            int nextStock = currentStock + (entry.getValue() * direction);
+            int nextStock = currentStock + (quantity * direction);
             if (nextStock < 0) {
                 String productName = variant.getProduct() != null ? variant.getProduct().getName() : "Product";
                 throw new OrderValidationException(productName + " variant " + variant.label() + " does not have enough stock to continue.");
             }
-            variant.setStock(nextStock);
-        }
-        List<ProductVariant> variantsToSave = new ArrayList<>();
-        for (ProductVariant variant : variants.values()) {
-            if (variant != null) {
-                variantsToSave.add(variant);
+            int rowsUpdated = direction < 0
+                    ? productVariantRepository.decrementStockIfAvailable(entry.getKey(), quantity)
+                    : productVariantRepository.incrementStock(entry.getKey(), quantity);
+            if (rowsUpdated == 0) {
+                String productName = variant.getProduct() != null ? variant.getProduct().getName() : "Product";
+                throw new OrderValidationException(productName + " variant " + variant.label() + " does not have enough stock to continue.");
             }
-        }
-        if (!variantsToSave.isEmpty()) {
-            productVariantRepository.saveAll(variantsToSave);
+            variant.setStock(nextStock);
         }
     }
 
@@ -593,23 +592,19 @@ public class OrderService {
                 }
                 throw new OrderValidationException("One of the products in this order is no longer available.");
             }
+            int quantity = entry.getValue();
             int currentStock = Optional.ofNullable(product.getStock()).orElse(0);
-            int nextStock = currentStock + (entry.getValue() * direction);
+            int nextStock = currentStock + (quantity * direction);
             if (nextStock < 0) {
                 throw new OrderValidationException(product.getName() + " does not have enough stock to continue.");
             }
+            int rowsUpdated = direction < 0
+                    ? productRepository.decrementStockIfAvailable(entry.getKey(), quantity)
+                    : productRepository.incrementStock(entry.getKey(), quantity);
+            if (rowsUpdated == 0) {
+                throw new OrderValidationException(product.getName() + " does not have enough stock to continue.");
+            }
             product.setStock(nextStock);
-        }
-        if (!products.isEmpty()) {
-            List<Product> productsToSave = new ArrayList<>();
-            for (Product product : products.values()) {
-                if (product != null) {
-                    productsToSave.add(product);
-                }
-            }
-            if (!productsToSave.isEmpty()) {
-                productRepository.saveAll(productsToSave);
-            }
         }
     }
 

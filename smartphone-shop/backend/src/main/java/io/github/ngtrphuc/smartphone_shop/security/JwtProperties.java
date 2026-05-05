@@ -7,6 +7,7 @@ public class JwtProperties {
 
     private String secret = "change-this-secret-in-production-change-this-secret-in-production";
     private long accessTokenMinutes = 120L;
+    private long refreshTokenDays = 30L;
 
     public String getSecret() {
         return secret;
@@ -22,5 +23,13 @@ public class JwtProperties {
 
     public void setAccessTokenMinutes(long accessTokenMinutes) {
         this.accessTokenMinutes = accessTokenMinutes;
+    }
+
+    public long getRefreshTokenDays() {
+        return refreshTokenDays;
+    }
+
+    public void setRefreshTokenDays(long refreshTokenDays) {
+        this.refreshTokenDays = refreshTokenDays;
     }
 }

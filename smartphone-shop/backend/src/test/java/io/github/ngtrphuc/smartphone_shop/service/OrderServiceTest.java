@@ -2,7 +2,10 @@ package io.github.ngtrphuc.smartphone_shop.service;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -26,6 +29,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.OrderRepository;
 import io.github.ngtrphuc.smartphone_shop.repository.ProductRepository;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class OrderServiceTest {
 
     @Mock
@@ -90,7 +94,8 @@ class OrderServiceTest {
 
         CartItem staleCartItem = new CartItem(1L, "Phone A", 100.0, 2);
         when(productRepository.findAllByIdInForUpdate(anyCollection())).thenReturn(List.of(product));
-        when(orderRepository.save(MockitoNullSafety.anyNonNull(Order.class)))
+        when(productRepository.decrementStockIfAvailable(anyLong(), anyInt())).thenReturn(1);
+        when(orderRepository.save(any(Order.class)))
                 .thenAnswer(invocation -> {
                     Order saved = invocation.getArgument(0);
                     saved.setId(101L);
@@ -104,7 +109,7 @@ class OrderServiceTest {
         assertEquals("Phone A Updated", created.getItems().getFirst().getProductName());
         assertEquals(250.0, created.getItems().getFirst().getPrice());
         assertEquals(3, product.getStock());
-        verify(eventPublisher).publishEvent(MockitoNullSafety.anyNonNull(OrderCreatedEvent.class));
+        verify(eventPublisher).publishEvent(any(OrderCreatedEvent.class));
     }
 
     @Test
@@ -132,8 +137,9 @@ class OrderServiceTest {
 
         CartItem item = new CartItem(1L, "Phone A", 100.0, 1);
         when(productRepository.findAllByIdInForUpdate(anyCollection())).thenReturn(List.of(product));
-        when(orderRepository.save(MockitoNullSafety.anyNonNull(Order.class)))
-                .thenAnswer(MockitoNullSafety.returnsFirstArgument(Order.class));
+        when(productRepository.decrementStockIfAvailable(anyLong(), anyInt())).thenReturn(1);
+        when(orderRepository.save(any(Order.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, Order.class));
 
         Order created = orderService.createOrder(
                 "user@example.com",
@@ -158,8 +164,9 @@ class OrderServiceTest {
 
         CartItem item = new CartItem(1L, "Phone A", 240000.0, 1);
         when(productRepository.findAllByIdInForUpdate(anyCollection())).thenReturn(List.of(product));
-        when(orderRepository.save(MockitoNullSafety.anyNonNull(Order.class)))
-                .thenAnswer(MockitoNullSafety.returnsFirstArgument(Order.class));
+        when(productRepository.decrementStockIfAvailable(anyLong(), anyInt())).thenReturn(1);
+        when(orderRepository.save(any(Order.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, Order.class));
 
         Order created = orderService.createOrder(
                 "user@example.com",

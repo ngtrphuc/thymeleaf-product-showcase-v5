@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +24,7 @@ import io.github.ngtrphuc.smartphone_shop.model.PaymentMethod;
 import io.github.ngtrphuc.smartphone_shop.repository.PaymentMethodRepository;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class PaymentMethodServiceTest {
 
     @Mock
@@ -34,8 +36,8 @@ class PaymentMethodServiceTest {
     @Test
     void addPaymentMethod_shouldSetFirstMethodAsDefault() {
         when(paymentMethodRepository.countActiveByUser("user@example.com")).thenReturn(0L);
-        when(paymentMethodRepository.save(MockitoNullSafety.anyNonNull(PaymentMethod.class)))
-                .thenAnswer(MockitoNullSafety.returnsFirstArgument(PaymentMethod.class));
+        when(paymentMethodRepository.save(any(PaymentMethod.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, PaymentMethod.class));
 
         PaymentMethod created = paymentMethodService.addPaymentMethod(
                 "User@Example.com",
@@ -64,8 +66,8 @@ class PaymentMethodServiceTest {
     @Test
     void addPaymentMethod_shouldAllowMasterCardWithoutDetail() {
         when(paymentMethodRepository.countActiveByUser("user@example.com")).thenReturn(1L);
-        when(paymentMethodRepository.save(MockitoNullSafety.anyNonNull(PaymentMethod.class)))
-                .thenAnswer(MockitoNullSafety.returnsFirstArgument(PaymentMethod.class));
+        when(paymentMethodRepository.save(any(PaymentMethod.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0, PaymentMethod.class));
 
         PaymentMethod created = paymentMethodService.addPaymentMethod(
                 "user@example.com",

@@ -10,6 +10,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.github.ngtrphuc.smartphone_shop.api.dto.ErrorResponse;
 import io.github.ngtrphuc.smartphone_shop.common.exception.ResourceNotFoundException;
@@ -89,6 +90,14 @@ public class ApiExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnreadableBody() {
         return ResponseEntity.badRequest()
                 .body(new ErrorResponse("INVALID_BODY", "Request body is missing or invalid."));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException ex) {
+        String reason = ex.getReason();
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(new ErrorResponse(ex.getStatusCode().toString(),
+                        reason == null || reason.isBlank() ? "Request failed." : reason));
     }
 }
 

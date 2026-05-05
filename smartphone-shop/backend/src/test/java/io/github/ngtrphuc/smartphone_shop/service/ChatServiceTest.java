@@ -8,6 +8,7 @@ import java.util.Objects;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,7 @@ import io.github.ngtrphuc.smartphone_shop.model.ChatMessage;
 import io.github.ngtrphuc.smartphone_shop.repository.ChatMessageRepository;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class ChatServiceTest {
 
     @Mock
@@ -46,7 +48,7 @@ class ChatServiceTest {
 
     @Test
     void saveUserMessage_shouldNormalizeAndPublishEvent() {
-        when(chatMessageRepository.save(MockitoNullSafety.anyNonNull(ChatMessage.class)))
+        when(chatMessageRepository.save(any(ChatMessage.class)))
                 .thenAnswer(invocation -> {
                     ChatMessage saved = invocation.getArgument(0, ChatMessage.class);
                     saved.setId(11L);
@@ -64,8 +66,8 @@ class ChatServiceTest {
         assertEquals(true, saved.isReadByUser());
 
         ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
-        verify(eventPublisher).publishEvent(MockitoNullSafety.captureNonNull(eventCaptor));
-        Object published = MockitoNullSafety.capturedValue(eventCaptor);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        Object published = Objects.requireNonNull(eventCaptor.getValue());
         assertTrue(published instanceof ChatMessageCreatedEvent);
         ChatMessageCreatedEvent event = (ChatMessageCreatedEvent) published;
         assertEquals("user@example.com", event.conversationEmail());
@@ -74,7 +76,7 @@ class ChatServiceTest {
 
     @Test
     void saveAdminMessage_shouldSetAdminFlagsAndPublishEvent() {
-        when(chatMessageRepository.save(MockitoNullSafety.anyNonNull(ChatMessage.class)))
+        when(chatMessageRepository.save(any(ChatMessage.class)))
                 .thenAnswer(invocation -> {
                     ChatMessage saved = invocation.getArgument(0, ChatMessage.class);
                     saved.setId(12L);
@@ -87,7 +89,7 @@ class ChatServiceTest {
         assertEquals("ADMIN", saved.getSenderRole());
         assertEquals(true, saved.isReadByAdmin());
         assertEquals(false, saved.isReadByUser());
-        verify(eventPublisher).publishEvent(MockitoNullSafety.anyNonNull(ChatMessageCreatedEvent.class));
+        verify(eventPublisher).publishEvent(any(ChatMessageCreatedEvent.class));
     }
 
     @Test

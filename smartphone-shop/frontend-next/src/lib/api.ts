@@ -301,6 +301,7 @@ const CURRENT_THEME_ACCOUNT_EMAIL_STORAGE_KEY = "smartphone-shop-theme:current-a
 let authMeCache: AuthMeResponse | null = null;
 let authMeCacheAt = 0;
 let authMeInFlight: Promise<AuthMeResponse> | null = null;
+let authRefreshInFlight: Promise<boolean> | null = null;
 
 type CompareUpdatedListener = (compare: CompareResponse) => void;
 
@@ -413,6 +414,42 @@ function shouldRedirectToLogin(status: number, options?: RequestOptions): boolea
   );
 }
 
+function shouldAttemptRefresh(path: string, status: number, options?: RequestOptions): boolean {
+  return (
+    status === 401 &&
+    options?.skipAuthRedirect !== true &&
+    options?.includeCredentials !== false &&
+    !path.startsWith("/api/v1/auth/login") &&
+    !path.startsWith("/api/v1/auth/register") &&
+    !path.startsWith("/api/v1/auth/refresh") &&
+    typeof window !== "undefined"
+  );
+}
+
+async function refreshAuthSession(): Promise<boolean> {
+  if (authRefreshInFlight) {
+    return authRefreshInFlight;
+  }
+
+  authRefreshInFlight = fetch(`${getBackendOrigin()}/api/v1/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+  })
+    .then((response) => {
+      if (response.ok) {
+        invalidateAuthMeCache();
+        return true;
+      }
+      return false;
+    })
+    .catch(() => false)
+    .finally(() => {
+      authRefreshInFlight = null;
+    });
+
+  return authRefreshInFlight;
+}
+
 function redirectToLoginPage(options?: { reauth?: boolean }): void {
   if (typeof window === "undefined") {
     return;
@@ -452,7 +489,9 @@ async function requestJson<T>(path: string, init?: RequestOptions): Promise<T> {
   const method = normalizeMethod(init?.method);
   const maxRetries = resolveRetryCount();
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  let attempt = 0;
+  let refreshTried = false;
+  while (attempt <= maxRetries) {
     try {
       const response = await fetch(`${getBackendOrigin()}${path}`, {
         ...init,
@@ -468,6 +507,14 @@ async function requestJson<T>(path: string, init?: RequestOptions): Promise<T> {
         return (await response.json()) as T;
       }
 
+      if (!refreshTried && shouldAttemptRefresh(path, response.status, init)) {
+        refreshTried = true;
+        const refreshed = await refreshAuthSession();
+        if (refreshed) {
+          continue;
+        }
+      }
+
       if (shouldRedirectToLogin(response.status, init)) {
         invalidateAuthMeCache();
         redirectToLoginPage({ reauth: response.status === 403 });
@@ -475,6 +522,7 @@ async function requestJson<T>(path: string, init?: RequestOptions): Promise<T> {
 
       if (shouldRetryRequest(response.status, method, attempt, maxRetries)) {
         await delay(resolveRetryDelay(attempt));
+        attempt += 1;
         continue;
       }
 
@@ -485,6 +533,7 @@ async function requestJson<T>(path: string, init?: RequestOptions): Promise<T> {
       }
       if (shouldRetryNetworkError(method, attempt, maxRetries)) {
         await delay(resolveRetryDelay(attempt));
+        attempt += 1;
         continue;
       }
       throw new ApiError("Network request failed. Please try again.", 0);

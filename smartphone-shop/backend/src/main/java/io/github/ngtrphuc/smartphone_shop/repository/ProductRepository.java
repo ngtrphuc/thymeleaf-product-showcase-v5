@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -96,6 +97,23 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Product p WHERE p.id IN :ids")
     List<Product> findAllByIdInForUpdate(@Param("ids") Collection<Long> ids);
+
+    @Modifying
+    @Query("""
+        UPDATE Product p
+        SET p.stock = COALESCE(p.stock, 0) - :quantity
+        WHERE p.id = :id
+          AND COALESCE(p.stock, 0) >= :quantity
+        """)
+    int decrementStockIfAvailable(@Param("id") Long id, @Param("quantity") int quantity);
+
+    @Modifying
+    @Query("""
+        UPDATE Product p
+        SET p.stock = COALESCE(p.stock, 0) + :quantity
+        WHERE p.id = :id
+        """)
+    int incrementStock(@Param("id") Long id, @Param("quantity") int quantity);
 
     @Query("""
         SELECT oi2.productId
