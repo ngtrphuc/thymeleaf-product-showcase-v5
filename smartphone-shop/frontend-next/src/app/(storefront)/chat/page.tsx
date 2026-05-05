@@ -88,19 +88,19 @@ export default function StorefrontChatPage() {
 
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
-      <section className="rounded-3xl border border-white/10 bg-[var(--chat-panel-bg)] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.35)]">
+      <section className="storefront-chat-page-panel rounded-3xl p-4">
         {messages.length === 0 ? (
-          <div className="chat-grid-paper flex h-44 items-center justify-center rounded-2xl border border-white/10 text-sm text-[var(--chat-meta)]">
+          <div className="storefront-chat-state chat-grid-paper flex h-44 items-center justify-center rounded-2xl text-sm text-[var(--chat-meta)]">
             Start a conversation with the shop.
           </div>
         ) : (
-          <div className="chat-grid-paper max-h-[360px] min-h-[120px] space-y-3 overflow-y-auto rounded-2xl border border-white/10 p-3">
+          <div className="storefront-chat-messages chat-grid-paper max-h-[360px] min-h-[120px] space-y-3 overflow-y-auto rounded-2xl p-3">
             {messages.map((message) => {
               const isUser = message.senderRole === "USER";
               const sideClass = isUser ? "justify-end" : "justify-start";
               const toneClass = isUser
-                ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(74,221,225,0.28)]"
-                : "bg-[var(--chat-peer-bg)] text-[#f3f4f6]";
+                ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(0,0,0,0.12)]"
+                : "storefront-chat-peer bg-[var(--chat-peer-bg)] text-[var(--color-text)]";
               const metaClass = "text-[var(--chat-meta)]";
               return (
                 <div key={message.id} className={`flex ${sideClass}`}>
@@ -118,12 +118,12 @@ export default function StorefrontChatPage() {
           </div>
         )}
 
-        <form onSubmit={onSend} className="mt-3 flex gap-2 rounded-2xl border border-white/10 bg-black/25 p-2">
+        <form onSubmit={onSend} className="storefront-chat-form mt-3 flex gap-2 rounded-2xl p-2">
           <input
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Write your message..."
-            className="ui-input flex-1 border-white/12 bg-black/35 px-3 py-2 text-sm text-[var(--color-text)]"
+            className="storefront-chat-input ui-input flex-1 px-3 py-2 text-sm text-[var(--color-text)]"
           />
           <button
             type="submit"

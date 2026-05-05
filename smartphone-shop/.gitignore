@@ -1,4 +1,4 @@
-﻿# Maven
+# Maven
 /target/
 
 # Runtime local data
@@ -6,6 +6,7 @@
 
 # Runtime logs (local only)
 *.log
+*.err
 
 # STS / Eclipse
 .apt_generated/

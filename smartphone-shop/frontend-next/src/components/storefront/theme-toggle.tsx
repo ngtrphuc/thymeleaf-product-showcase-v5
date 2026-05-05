@@ -126,8 +126,9 @@ export function ThemeToggle({ scope = "storefront" }: ThemeToggleProps) {
           return;
         }
         setAccountEmail(null);
-        setTheme("light");
-        applyTheme("light", false);
+        const guestTheme = getStoredTheme(scope, null);
+        setTheme(guestTheme);
+        applyTheme(guestTheme, false);
       });
 
     return () => {

@@ -410,9 +410,9 @@ export function StorefrontChatBubble() {
       {open ? (
         <section
           ref={chatPanelRef}
-          className="storefront-chat-panel fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.4rem] border border-white/12 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(5,5,5,0.98))] shadow-[0_14px_30px_rgba(0,0,0,0.38)] sm:bottom-6 sm:right-6"
+          className="storefront-chat-panel fixed bottom-5 right-5 z-40 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.4rem] sm:bottom-6 sm:right-6"
         >
-          <header className="storefront-chat-header flex items-center justify-between border-b border-white/10 bg-black/25 px-4 py-3">
+          <header className="storefront-chat-header flex items-center justify-between px-4 py-3">
             <div>
               <h2 className="text-sm font-semibold text-[var(--color-text)]">Chat With Shop</h2>
               <p className="text-xs text-[var(--color-text-muted)]">Ask about products, orders, or shipping.</p>
@@ -425,7 +425,7 @@ export function StorefrontChatBubble() {
                   setOpen(false);
                 }}
                 aria-label="Close chat"
-                className="storefront-chat-close inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/14 bg-black/35 text-[var(--color-text-muted)] transition-[background-color,color,border-color,transform] duration-200 hover:-translate-y-px hover:border-white/18 hover:bg-white hover:text-black"
+                className="storefront-chat-close inline-flex h-8 w-8 items-center justify-center rounded-full transition-[background-color,color,border-color,transform] duration-200 hover:-translate-y-px"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -436,11 +436,11 @@ export function StorefrontChatBubble() {
             {error ? <p className="mb-3 text-sm text-red-700">{error}</p> : null}
 
             {loadingChat ? (
-              <div className="storefront-chat-state flex h-72 items-center justify-center rounded-2xl border border-white/10 bg-black/30 text-sm text-[var(--color-text-muted)]">
+              <div className="storefront-chat-state flex h-72 items-center justify-center rounded-2xl text-sm text-[var(--color-text-muted)]">
                 Loading chat...
               </div>
             ) : messages.length === 0 ? (
-              <div className="storefront-chat-state flex h-72 items-center justify-center rounded-2xl border border-white/10 bg-black/30 text-sm text-[var(--color-text-muted)]">
+              <div className="storefront-chat-state flex h-72 items-center justify-center rounded-2xl text-sm text-[var(--color-text-muted)]">
                 Start a conversation with the shop.
               </div>
             ) : (
@@ -448,14 +448,14 @@ export function StorefrontChatBubble() {
                 <div
                   ref={messagesViewportRef}
                   onScroll={syncScrollModeFromViewport}
-                  className="storefront-chat-messages chat-grid-paper max-h-[20rem] min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl border border-white/10 p-3.5"
+                  className="storefront-chat-messages chat-grid-paper max-h-[20rem] min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl p-3.5"
                 >
                   {messages.map((message) => {
                     const isUser = message.senderRole === "USER";
                     const sideClass = isUser ? "justify-end" : "justify-start";
                     const toneClass = isUser
-                      ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(74,221,225,0.28)]"
-                      : "storefront-chat-peer border border-white/10 bg-[var(--chat-peer-bg)] text-[var(--color-text)] shadow-[0_8px_18px_rgba(0,0,0,0.45)]";
+                      ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(0,0,0,0.12)]"
+                      : "storefront-chat-peer bg-[var(--chat-peer-bg)] text-[var(--color-text)]";
                     const metaClass = isUser ? "text-[var(--chat-meta)]" : "text-[var(--chat-meta)]";
                     return (
                       <div key={message.id} className={`flex ${sideClass}`}>
@@ -486,12 +486,12 @@ export function StorefrontChatBubble() {
               </div>
             )}
 
-            <form onSubmit={onSend} className="storefront-chat-form mt-3 flex gap-2 rounded-2xl border border-white/10 bg-black/25 p-2">
+            <form onSubmit={onSend} className="storefront-chat-form mt-3 flex gap-2 rounded-2xl p-2">
               <input
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder="Write your message..."
-                className="storefront-chat-input ui-input flex-1 border-white/12 bg-black/35 px-3 py-2 text-sm"
+                className="storefront-chat-input ui-input flex-1 px-3 py-2 text-sm"
               />
               <button
                 type="submit"
@@ -523,7 +523,7 @@ export function StorefrontChatBubble() {
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             aria-label="Scroll to top"
             title="Scroll to top"
-            className="storefront-chat-scrolltop fixed bottom-3 right-5 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/14 bg-[var(--color-surface-soft)] text-[var(--color-text)] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-px hover:border-white/10 hover:bg-white hover:text-black sm:bottom-3 sm:right-6"
+            className="storefront-chat-scrolltop fixed bottom-3 right-5 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition-[transform,background-color,color,border-color] duration-200 hover:-translate-y-px sm:bottom-3 sm:right-6"
           >
             <ArrowUp className="h-4 w-4" />
           </button>
@@ -536,7 +536,7 @@ export function StorefrontChatBubble() {
           onClick={() => void openChat()}
           aria-label="Open chat"
           title="Open chat"
-          className={`storefront-chat-trigger fixed right-5 z-40 inline-flex min-h-14 items-center justify-center gap-2 rounded-full border border-white/16 bg-[var(--color-surface-soft)] px-4 text-[var(--color-text)] shadow-[0_12px_24px_rgba(0,0,0,0.36)] transition-[transform,background-color,color,border-color,opacity] duration-200 hover:-translate-y-px hover:border-white/10 hover:bg-white hover:text-black sm:right-6 ${
+          className={`storefront-chat-trigger fixed right-5 z-40 inline-flex min-h-14 items-center justify-center gap-2 rounded-full px-4 shadow-[0_12px_24px_rgba(0,0,0,0.36)] transition-[transform,background-color,color,border-color,opacity] duration-200 hover:-translate-y-px sm:right-6 ${
             showScrollTop ? "bottom-16 sm:bottom-16" : "bottom-5 sm:bottom-6"
           } ${
             hasUnreadPulse ? "ui-notify-pulse" : ""

@@ -26,7 +26,7 @@ PowerShell note:
 
 ## Environment
 
-Create `frontend-next/.env.local` from `.env.example` and set:
+Create `frontend-next/.env.local` and set:
 
 - `NEXT_PUBLIC_API_BASE_URL=http://localhost:8080`
 

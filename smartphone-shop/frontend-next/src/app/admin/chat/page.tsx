@@ -139,7 +139,10 @@ export default function AdminChatPage() {
         if (normalizedCurrent && normalizedEmails.includes(normalizedCurrent)) {
           return normalizedCurrent;
         }
-        return normalizeConversationEmail(data.emails[0]);
+        if (!normalizedCurrent) {
+          return normalizeConversationEmail(data.emails[0]);
+        }
+        return null;
       });
     } catch (err) {
       if (err instanceof ApiError) {
@@ -319,14 +322,14 @@ export default function AdminChatPage() {
           )}
         </aside>
 
-        <section className="admin-chat-panel flex h-[clamp(420px,calc(100dvh-22rem),760px)] min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border border-white/10 bg-black p-4 shadow-[0_12px_28px_rgba(0,0,0,0.35)]">
+        <section className="admin-chat-panel flex h-[clamp(420px,calc(100dvh-22rem),760px)] min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl p-4">
           {!selectedEmail ? (
             <div className="flex flex-1 items-center justify-center text-sm text-slate-600">
               Select a conversation.
             </div>
           ) : (
             <>
-              <div className="admin-chat-selected mb-3 rounded-xl border border-white/10 bg-[var(--chat-peer-bg)] px-3 py-2 text-sm font-semibold text-[#f3f4f6]">
+              <div className="admin-chat-selected mb-3 rounded-xl border border-white/10 bg-[var(--chat-peer-bg)] px-3 py-2 text-sm font-semibold text-[var(--color-text)]">
                 {selectedEmail}
               </div>
 
@@ -334,7 +337,7 @@ export default function AdminChatPage() {
                 <div
                   ref={messagesViewportRef}
                   onScroll={syncScrollModeFromViewport}
-                  className="admin-chat-messages chat-grid-paper h-full min-w-0 space-y-2 overflow-x-hidden overflow-y-auto rounded-xl border border-white/10 p-3"
+                  className="admin-chat-messages chat-grid-paper h-full min-w-0 space-y-2 overflow-x-hidden overflow-y-auto rounded-xl p-3"
                 >
                   {messages.length === 0 ? (
                     <p className="text-sm text-[var(--chat-meta)]">No messages yet.</p>
@@ -343,7 +346,7 @@ export default function AdminChatPage() {
                       const isAdmin = message.senderRole === "ADMIN";
                       const sideClass = isAdmin ? "justify-end" : "justify-start";
                       const toneClass = isAdmin
-                        ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(74,221,225,0.28)]"
+                        ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(0,0,0,0.12)]"
                         : "admin-chat-peer border border-white/10 bg-[var(--chat-peer-bg)] text-[var(--color-text)]";
                       const metaClass = "text-[var(--chat-meta)]";
                       return (
@@ -385,12 +388,12 @@ export default function AdminChatPage() {
                 ) : null}
               </div>
 
-              <form onSubmit={onSend} className="admin-chat-form mt-3 flex gap-2 rounded-2xl border border-white/10 bg-black/25 p-2">
+              <form onSubmit={onSend} className="admin-chat-form mt-3 flex gap-2 rounded-2xl p-2">
                 <input
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder="Type a reply..."
-                  className="admin-chat-input ui-input flex-1 border-white/12 bg-black/35 px-3 py-2 text-sm text-[var(--color-text)]"
+                  className="admin-chat-input ui-input flex-1 px-3 py-2 text-sm text-[var(--color-text)]"
                 />
                 <button
                   type="submit"

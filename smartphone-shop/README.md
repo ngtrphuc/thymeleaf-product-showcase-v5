@@ -1,4 +1,4 @@
-﻿# Smartphone Shop
+# Smartphone Shop
 
 A full-stack smartphone e-commerce platform built with an API-first backend
 and a Next.js App Router frontend.
@@ -366,7 +366,7 @@ npm run test:e2e
 The tree below is file-level for code/config files.
 For image and SVG assets, it intentionally shows only the folder level.
 
-- Scope includes current workspace files.
+- Scope includes version-controlled files in this repository.
 - Excludes generated/runtime directories: `.next`, `node_modules`, `target`,
   `.data`.
 - Excludes local ephemeral files: `.env.local`, Playwright last-run cache.
@@ -376,20 +376,11 @@ For image and SVG assets, it intentionally shows only the folder level.
 ```text
 smartphone-shop/
 ├── .github/
-│   ├── java-upgrade/
-│   │   ├── hooks/
-│   │   │   └── scripts/
-│   │   │       ├── recordToolUse.ps1
-│   │   │       └── recordToolUse.sh
-│   │   └── .gitignore
 │   └── workflows/
 │       └── smartphone-shop-ci.yml
 ├── .mvn/
 │   └── wrapper/
 │       └── maven-wrapper.properties
-├── .vscode/
-│   ├── launch.json
-│   └── tasks.json
 ├── backend/
 │   └── src/
 │       ├── main/
@@ -706,7 +697,8 @@ smartphone-shop/
 │   │   │   │   ├── storefront-chat-bubble.tsx
 │   │   │   │   ├── storefront-compare-banner.tsx
 │   │   │   │   ├── storefront-footer.tsx
-│   │   │   │   └── storefront-header-dock-nav.tsx
+│   │   │   │   ├── storefront-header-dock-nav.tsx
+│   │   │   │   └── theme-toggle.tsx
 │   │   │   └── ui/
 │   │   │       ├── auth-motion-icon.tsx
 │   │   │       ├── dock.tsx
@@ -717,18 +709,18 @@ smartphone-shop/
 │   │   ├── lib/
 │   │   │   ├── api.ts
 │   │   │   ├── format.ts
-│   │   │   └── order-status.ts
+│   │   │   ├── navigation.ts
+│   │   │   ├── order-status.ts
+│   │   │   └── theme-init-script.ts
 │   │   └── proxy.ts
 │   ├── tests/
 │   │   ├── auth.spec.ts
 │   │   └── checkout.spec.ts
-│   ├── .env.example
 │   ├── .gitignore
 │   ├── AGENTS.md
 │   ├── CLAUDE.md
 │   ├── eslint.config.mjs
 │   ├── next.config.ts
-│   ├── next-env.d.ts
 │   ├── package.json
 │   ├── package-lock.json
 │   ├── playwright.config.ts
@@ -770,5 +762,7 @@ smartphone-shop/
 
 - Follow `.editorconfig` conventions.
 - Do not commit secrets or local-only credentials.
+- Do not commit runtime artifacts (`*.log`, `*.err`, `.next`, `target`,
+  local IDE folders).
 - Prefer service-layer business logic over controller-level shortcuts.
 - Keep API contracts backward compatible unless intentionally versioned.

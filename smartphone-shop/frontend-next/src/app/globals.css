@@ -134,7 +134,16 @@
   --bg-white-90-override: rgba(255, 255, 255, 0.92);
   --slate-800: #111111;
   --slate-700: #1f1f1f;
-
+  --color-success: #16a34a;
+  --color-success-dim: rgba(22, 163, 74, 0.08);
+  --color-warning: #d97706;
+  --color-warning-dim: rgba(217, 119, 6, 0.08);
+  --color-danger: #dc2626;
+  --color-danger-dim: rgba(220, 38, 38, 0.08);
+  --color-info: #2563eb;
+  --color-info-dim: rgba(37, 99, 235, 0.08);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="light"] .border-white\/10 {
@@ -153,6 +162,77 @@
 [data-theme="light"] .border-white\/18,
 [data-theme="light"] .border-white\/20 {
   border-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+.storefront-chat-panel {
+  border: 1px solid var(--color-border);
+  background: linear-gradient(180deg, var(--color-surface-soft), var(--chat-panel-bg));
+  box-shadow: var(--shadow-hover);
+}
+
+.storefront-chat-page-panel {
+  border: 1px solid var(--color-border);
+  background: var(--chat-panel-bg);
+  box-shadow: var(--shadow-card);
+}
+
+.storefront-chat-header {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--chat-panel-bg);
+}
+
+.storefront-chat-close {
+  border: 1px solid var(--color-border-2);
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+}
+
+.storefront-chat-close:hover,
+.storefront-chat-close:focus-visible {
+  border-color: var(--btn-active-border);
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
+}
+
+.storefront-chat-state,
+.storefront-chat-messages {
+  border: 1px solid var(--color-border);
+  background: var(--chat-grid-bg);
+  color: var(--color-text);
+}
+
+.storefront-chat-form {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+}
+
+.storefront-chat-input {
+  border: 1px solid var(--color-border-2);
+  background: var(--color-surface-3);
+  color: var(--color-text);
+}
+
+.storefront-chat-peer {
+  border: 1px solid var(--color-border);
+  background: var(--chat-peer-bg);
+  color: var(--color-text);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+.storefront-chat-trigger,
+.storefront-chat-scrolltop {
+  border: 1px solid var(--color-border-2);
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+}
+
+.storefront-chat-trigger:hover,
+.storefront-chat-trigger:focus-visible,
+.storefront-chat-scrolltop:hover,
+.storefront-chat-scrolltop:focus-visible {
+  border-color: var(--btn-active-border);
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
 }
 
 [data-theme="light"] .storefront-chat-panel {
@@ -289,8 +369,9 @@
 }
 
 .admin-chat-panel {
+  border: 1px solid var(--color-border) !important;
   background: var(--chat-panel-bg) !important;
-  border-color: var(--color-border) !important;
+  box-shadow: var(--shadow-hover);
 }
 
 .admin-chat-selected {
@@ -299,7 +380,7 @@
 }
 
 .admin-chat-messages {
-  border-color: var(--color-border) !important;
+  border: 1px solid var(--color-border) !important;
   overflow-x: hidden;
 }
 
@@ -310,6 +391,17 @@
 .admin-chat-conversation {
   border: 1px solid var(--color-border) !important;
   background: var(--chat-peer-bg) !important;
+  color: var(--color-text) !important;
+}
+
+.admin-chat-form {
+  border: 1px solid var(--color-border) !important;
+  background: var(--color-surface-soft) !important;
+}
+
+.admin-chat-input {
+  border: 1px solid var(--color-border-2) !important;
+  background: var(--color-surface-3) !important;
   color: var(--color-text) !important;
 }
 
@@ -443,17 +535,6 @@ textarea {
     background-color var(--motion-fast) var(--ease-micro),
     border-color var(--motion-fast) var(--ease-micro),
     box-shadow var(--motion-normal) var(--ease-out-expo);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important;
-    scroll-behavior: auto !important;
-  }
 }
 
 .page-enter {
