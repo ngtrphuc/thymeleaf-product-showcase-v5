@@ -15,6 +15,12 @@ import {
 } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 
+const MESSAGE_HISTORY_CAP = 50;
+const CONVERSATION_REFRESH_THROTTLE_MS = 1500;
+const SSE_RECONNECT_BACKOFF_MS = 5000;
+
+type ConversationRefreshOptions = { initial?: boolean; force?: boolean };
+
 function normalizeConversationEmail(email: string | null | undefined): string | null {
   if (!email) {
     return null;
@@ -64,28 +70,28 @@ function parseAdminChatEvent(data: string): ChatMessageResponse | null {
   }
 }
 
-function upsertChatMessage(messages: ChatMessageResponse[], incoming: ChatMessageResponse): ChatMessageResponse[] {
-  const compareByTimeline = (left: ChatMessageResponse, right: ChatMessageResponse): number => {
-    const leftTime = new Date(left.createdAt).getTime();
-    const rightTime = new Date(right.createdAt).getTime();
-    const leftTimestamp = Number.isNaN(leftTime) ? 0 : leftTime;
-    const rightTimestamp = Number.isNaN(rightTime) ? 0 : rightTime;
-    if (leftTimestamp !== rightTimestamp) {
-      return leftTimestamp - rightTimestamp;
-    }
-    return (left.id ?? 0) - (right.id ?? 0);
-  };
+function compareMessagesByTimeline(left: ChatMessageResponse, right: ChatMessageResponse): number {
+  const leftTime = new Date(left.createdAt).getTime();
+  const rightTime = new Date(right.createdAt).getTime();
+  const leftTimestamp = Number.isNaN(leftTime) ? 0 : leftTime;
+  const rightTimestamp = Number.isNaN(rightTime) ? 0 : rightTime;
+  if (leftTimestamp !== rightTimestamp) {
+    return leftTimestamp - rightTimestamp;
+  }
+  return (left.id ?? 0) - (right.id ?? 0);
+}
 
+function upsertChatMessage(messages: ChatMessageResponse[], incoming: ChatMessageResponse): ChatMessageResponse[] {
   if (incoming.id == null) {
-    return [...messages, incoming].sort(compareByTimeline).slice(-50);
+    return [...messages, incoming].sort(compareMessagesByTimeline).slice(-MESSAGE_HISTORY_CAP);
   }
   const existingIndex = messages.findIndex((message) => message.id === incoming.id);
   if (existingIndex === -1) {
-    return [...messages, incoming].sort(compareByTimeline).slice(-50);
+    return [...messages, incoming].sort(compareMessagesByTimeline).slice(-MESSAGE_HISTORY_CAP);
   }
   const next = [...messages];
   next[existingIndex] = incoming;
-  return next.sort(compareByTimeline).slice(-50);
+  return next.sort(compareMessagesByTimeline).slice(-MESSAGE_HISTORY_CAP);
 }
 
 export default function AdminChatPage() {
@@ -94,6 +100,11 @@ export default function AdminChatPage() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const shouldAutoScrollRef = useRef(true);
+  const lastConversationsFetchRef = useRef(0);
+  const conversationsFetchTimerRef = useRef<number | null>(null);
+  const requestConversationsRefreshRef = useRef<((options?: ConversationRefreshOptions) => void) | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
   const [conversations, setConversations] = useState<AdminConversationsResponse | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessageResponse[]>([]);
@@ -102,6 +113,9 @@ export default function AdminChatPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [pageVisible, setPageVisible] = useState(
+    () => typeof document === "undefined" || document.visibilityState === "visible",
+  );
 
   const syncScrollModeFromViewport = useCallback(() => {
     const viewport = messagesViewportRef.current;
@@ -122,27 +136,84 @@ export default function AdminChatPage() {
     messagesEndRef.current?.scrollIntoView({ block: "end", behavior });
   }
 
-  async function loadConversations(options?: { initial?: boolean }) {
+  const markConversationReadLocally = useCallback((email: string) => {
+    const normalizedEmail = normalizeConversationEmail(email);
+    if (!normalizedEmail) {
+      return;
+    }
+
+    setConversations((current) => {
+      if (!current) {
+        return current;
+      }
+
+      let changed = false;
+      const unreadCounts = { ...current.unreadCounts };
+      for (const key of Object.keys(unreadCounts)) {
+        if (normalizeConversationEmail(key) === normalizedEmail && unreadCounts[key] !== 0) {
+          unreadCounts[key] = 0;
+          changed = true;
+        }
+      }
+
+      if (!changed && unreadCounts[normalizedEmail] !== 0) {
+        unreadCounts[normalizedEmail] = 0;
+        changed = true;
+      }
+
+      return changed ? { ...current, unreadCounts } : current;
+    });
+  }, []);
+
+  const requestConversationsRefresh = useCallback(async (options?: ConversationRefreshOptions) => {
+    const now = Date.now();
+    const elapsed = now - lastConversationsFetchRef.current;
+
+    if (!options?.force && !options?.initial && elapsed < CONVERSATION_REFRESH_THROTTLE_MS) {
+      if (conversationsFetchTimerRef.current === null) {
+        conversationsFetchTimerRef.current = window.setTimeout(() => {
+          conversationsFetchTimerRef.current = null;
+          requestConversationsRefreshRef.current?.({ force: true });
+        }, CONVERSATION_REFRESH_THROTTLE_MS - elapsed);
+      }
+      return;
+    }
+
+    if (conversationsFetchTimerRef.current !== null) {
+      window.clearTimeout(conversationsFetchTimerRef.current);
+      conversationsFetchTimerRef.current = null;
+    }
+    lastConversationsFetchRef.current = now;
+
     if (options?.initial) {
       setLoading(true);
       setError(null);
     }
+
     try {
       const data = await fetchAdminConversations();
       setConversations(data);
       setSelectedEmail((current) => {
         const normalizedCurrent = normalizeConversationEmail(current);
-        const normalizedEmails = data.emails.map((email) => normalizeConversationEmail(email)).filter(Boolean) as string[];
-        if (data.emails.length === 0) {
+        const normalizedEmails = new Set<string>();
+        let firstEmail: string | null = null;
+
+        for (const email of data.emails) {
+          const normalizedEmail = normalizeConversationEmail(email);
+          if (!normalizedEmail) {
+            continue;
+          }
+          normalizedEmails.add(normalizedEmail);
+          firstEmail ??= normalizedEmail;
+        }
+
+        if (!firstEmail) {
           return null;
         }
-        if (normalizedCurrent && normalizedEmails.includes(normalizedCurrent)) {
+        if (normalizedCurrent && normalizedEmails.has(normalizedCurrent)) {
           return normalizedCurrent;
         }
-        if (!normalizedCurrent) {
-          return normalizeConversationEmail(data.emails[0]);
-        }
-        return null;
+        return normalizedCurrent ? null : firstEmail;
       });
     } catch (err) {
       if (err instanceof ApiError) {
@@ -155,49 +226,70 @@ export default function AdminChatPage() {
         setLoading(false);
       }
     }
-  }
+  }, []);
 
-  async function loadHistory(email: string, options?: { markRead?: boolean }) {
-    const requestSequence = ++historyRequestSequenceRef.current;
-    setError(null);
-    try {
-      const history = await fetchAdminChatHistory(email);
-      if (
-        requestSequence !== historyRequestSequenceRef.current ||
-        normalizeConversationEmail(selectedEmailRef.current) !== normalizeConversationEmail(email)
-      ) {
+  const loadHistory = useCallback(
+    async (email: string) => {
+      const normalizedEmail = normalizeConversationEmail(email);
+      if (!normalizedEmail) {
         return;
       }
-      setMessages(
-        history.reduce<ChatMessageResponse[]>((current, message) => upsertChatMessage(current, message), []),
-      );
-      if (
-        options?.markRead !== false &&
-        normalizeConversationEmail(selectedEmailRef.current) === normalizeConversationEmail(email)
-      ) {
-        await markAdminConversationRead(email);
+
+      const requestSequence = ++historyRequestSequenceRef.current;
+      setError(null);
+      try {
+        const history = await fetchAdminChatHistory(normalizedEmail);
+        if (
+          requestSequence !== historyRequestSequenceRef.current ||
+          normalizeConversationEmail(selectedEmailRef.current) !== normalizedEmail
+        ) {
+          return;
+        }
+        setMessages(
+          history.reduce<ChatMessageResponse[]>((current, message) => upsertChatMessage(current, message), []),
+        );
+        await markAdminConversationRead(normalizedEmail);
+        markConversationReadLocally(normalizedEmail);
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setError(err.message);
+        } else {
+          setError("Failed to load message history.");
+        }
       }
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError("Failed to load message history.");
-      }
-    }
-  }
+    },
+    [markConversationReadLocally],
+  );
 
   useEffect(() => {
     selectedEmailRef.current = selectedEmail;
   }, [selectedEmail]);
 
   useEffect(() => {
-    void loadConversations({ initial: true });
-    const timer = window.setInterval(() => {
-      void loadConversations();
-    }, 15000);
+    requestConversationsRefreshRef.current = requestConversationsRefresh;
+  }, [requestConversationsRefresh]);
 
-    return () => window.clearInterval(timer);
+  useEffect(() => {
+    function onVisibilityChange() {
+      setPageVisible(document.visibilityState === "visible");
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, []);
+
+  useEffect(() => {
+    void requestConversationsRefresh({ force: true, initial: true });
+  }, [requestConversationsRefresh]);
+
+  useEffect(() => {
+    if (!pageVisible) {
+      return;
+    }
+    void requestConversationsRefresh({ force: true });
+  }, [pageVisible, requestConversationsRefresh]);
 
   useEffect(() => {
     if (!selectedEmail) {
@@ -207,31 +299,77 @@ export default function AdminChatPage() {
       return;
     }
     shouldAutoScrollRef.current = true;
-    void loadHistory(selectedEmail).finally(() => {
-      void loadConversations();
-    });
-  }, [selectedEmail]);
+    void loadHistory(selectedEmail);
+  }, [selectedEmail, loadHistory]);
 
   useEffect(() => {
-    const eventSource = openAdminChatEventStream();
-    eventSource.addEventListener("message", (event) => {
-      const incoming = parseAdminChatEvent(event.data);
-      if (!incoming) {
+    if (!pageVisible) {
+      return;
+    }
+
+    let cancelled = false;
+
+    function connect() {
+      if (cancelled) {
         return;
       }
 
-      void loadConversations();
-      if (normalizeConversationEmail(selectedEmailRef.current) !== normalizeConversationEmail(incoming.userEmail)) {
-        return;
-      }
-      setMessages((current) => upsertChatMessage(current, incoming));
-      if (incoming.senderRole === "USER") {
-        void markAdminConversationRead(incoming.userEmail);
-      }
-    });
+      const eventSource = openAdminChatEventStream();
+      eventSourceRef.current = eventSource;
+
+      eventSource.addEventListener("message", (event) => {
+        const incoming = parseAdminChatEvent(event.data);
+        if (!incoming) {
+          return;
+        }
+
+        void requestConversationsRefresh();
+
+        if (normalizeConversationEmail(selectedEmailRef.current) !== normalizeConversationEmail(incoming.userEmail)) {
+          return;
+        }
+
+        setMessages((current) => upsertChatMessage(current, incoming));
+        if (incoming.senderRole === "USER") {
+          markConversationReadLocally(incoming.userEmail);
+          void markAdminConversationRead(incoming.userEmail).catch(() => undefined);
+        }
+      });
+
+      eventSource.addEventListener("error", () => {
+        eventSource.close();
+        eventSourceRef.current = null;
+        if (cancelled) {
+          return;
+        }
+        if (reconnectTimerRef.current !== null) {
+          window.clearTimeout(reconnectTimerRef.current);
+        }
+        reconnectTimerRef.current = window.setTimeout(() => {
+          reconnectTimerRef.current = null;
+          connect();
+        }, SSE_RECONNECT_BACKOFF_MS);
+      });
+    }
+
+    connect();
 
     return () => {
-      eventSource.close();
+      cancelled = true;
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+    };
+  }, [markConversationReadLocally, pageVisible, requestConversationsRefresh]);
+
+  useEffect(() => {
+    return () => {
+      if (conversationsFetchTimerRef.current !== null) {
+        window.clearTimeout(conversationsFetchTimerRef.current);
+      }
     };
   }, []);
 
@@ -249,7 +387,8 @@ export default function AdminChatPage() {
 
   async function onSend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedEmail || !draft.trim()) {
+    const content = draft.trim();
+    if (!selectedEmail || !content) {
       return;
     }
 
@@ -257,10 +396,9 @@ export default function AdminChatPage() {
     setError(null);
     try {
       shouldAutoScrollRef.current = true;
-      const sent = await sendAdminChatMessage(selectedEmail, draft.trim());
+      const sent = await sendAdminChatMessage(selectedEmail, content);
       setMessages((current) => upsertChatMessage(current, sent));
       setDraft("");
-      await loadConversations();
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -285,8 +423,8 @@ export default function AdminChatPage() {
 
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
-      <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-        <aside className="glass-panel admin-chat-sidebar flex h-[clamp(420px,calc(100dvh-22rem),760px)] min-h-0 flex-col overflow-hidden rounded-3xl p-4">
+      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <aside className="glass-panel admin-chat-sidebar flex h-[clamp(420px,calc(100dvh-22rem),760px)] min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl p-4">
           <h2 className="text-sm font-semibold text-slate-900">Conversations</h2>
           {!conversations || conversations.emails.length === 0 ? (
             <p className="mt-3 text-sm text-slate-600">No conversations yet.</p>
@@ -304,11 +442,11 @@ export default function AdminChatPage() {
                       aria-current={active ? "true" : "false"}
                       className={`admin-chat-conversation ${active ? "is-active" : "is-inactive"} w-full rounded-xl px-3 py-2 text-left text-sm`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate">{email}</span>
+                      <div className="flex min-w-0 items-center justify-between gap-2">
+                        <span className="min-w-0 truncate">{email}</span>
                         {unread > 0 ? (
                           <span
-                            className={`admin-chat-unread rounded-full px-2 py-0.5 text-xs ${active ? "is-active" : "is-inactive"}`}
+                            className={`admin-chat-unread shrink-0 rounded-full px-2 py-0.5 text-xs ${active ? "is-active" : "is-inactive"}`}
                           >
                             {unread}
                           </span>
@@ -329,11 +467,11 @@ export default function AdminChatPage() {
             </div>
           ) : (
             <>
-              <div className="admin-chat-selected mb-3 rounded-xl border border-white/10 bg-[var(--chat-peer-bg)] px-3 py-2 text-sm font-semibold text-[var(--color-text)]">
+              <div className="admin-chat-selected mb-3 truncate rounded-xl border border-white/10 bg-[var(--chat-peer-bg)] px-3 py-2 text-sm font-semibold text-[var(--color-text)]">
                 {selectedEmail}
               </div>
 
-              <div className="relative flex-1">
+              <div className="relative min-h-0 min-w-0 flex-1">
                 <div
                   ref={messagesViewportRef}
                   onScroll={syncScrollModeFromViewport}
@@ -348,24 +486,26 @@ export default function AdminChatPage() {
                       const toneClass = isAdmin
                         ? "bg-[var(--chat-accent)] text-black shadow-[0_6px_14px_rgba(0,0,0,0.12)]"
                         : "admin-chat-peer border border-white/10 bg-[var(--chat-peer-bg)] text-[var(--color-text)]";
-                      const metaClass = "text-[var(--chat-meta)]";
                       return (
                         <div
                           key={message.id ?? `${message.userEmail}:${message.createdAt}:${message.senderRole}:${index}`}
                           className={`flex w-full min-w-0 ${sideClass}`}
                         >
                           <div
-                            className={`flex max-w-[88%] min-w-0 flex-col gap-1 ${isAdmin ? "items-end" : "items-start"}`}
+                            className={`flex max-w-[82%] min-w-0 flex-col gap-1 sm:max-w-[75%] ${isAdmin ? "items-end" : "items-start"}`}
                           >
                             <article
-                              className={`inline-block max-w-full break-words rounded-2xl p-2 text-sm ${toneClass}`}
+                              className={`inline-block max-w-full rounded-2xl px-3 py-2 text-sm ${toneClass}`}
                               style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
                             >
-                              <p className="whitespace-pre-wrap leading-relaxed" style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>
+                              <p
+                                className="whitespace-pre-wrap leading-relaxed"
+                                style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
+                              >
                                 {message.content}
                               </p>
                             </article>
-                            <p className={`px-1 text-[11px] ${metaClass}`}>
+                            <p className="px-1 text-[11px] text-[var(--chat-meta)]">
                               {message.senderRole} | {formatChatClock(message.createdAt)}
                             </p>
                           </div>
@@ -393,12 +533,12 @@ export default function AdminChatPage() {
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder="Type a reply..."
-                  className="admin-chat-input ui-input flex-1 px-3 py-2 text-sm text-[var(--color-text)]"
+                  className="admin-chat-input ui-input min-w-0 flex-1 px-3 py-2 text-sm text-[var(--color-text)]"
                 />
                 <button
                   type="submit"
                   disabled={sending || !draft.trim()}
-                  className={`group inline-flex h-10 items-center justify-center overflow-hidden rounded-xl bg-[var(--chat-accent)] px-3 text-sm font-semibold text-black transition-[width,transform,filter,opacity] duration-700 hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 ${
+                  className={`group inline-flex h-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--chat-accent)] px-3 text-sm font-semibold text-black transition-[width,transform,filter,opacity] duration-700 hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 ${
                     sending ? "w-28" : "w-10 hover:w-24"
                   }`}
                 >

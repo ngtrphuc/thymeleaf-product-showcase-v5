@@ -10,19 +10,24 @@ export const THEME_INIT_SCRIPT = `
 
     if (typeof currentAccount === 'string' && currentAccount.trim().length > 0) {
       var normalizedEmail = currentAccount.trim().toLowerCase();
-      var accountScopedKey = prefix + ':' + scope + ':user:' + normalizedEmail;
-      var accountTheme = localStorage.getItem(accountScopedKey);
-      if (accountTheme === 'light' || accountTheme === 'dark') {
-        theme = accountTheme;
+      var accountGlobalKey = prefix + ':user:' + normalizedEmail;
+      var accountGlobalTheme = localStorage.getItem(accountGlobalKey);
+      if (accountGlobalTheme === 'light' || accountGlobalTheme === 'dark') {
+        theme = accountGlobalTheme;
+      } else {
+        var accountScopedKey = prefix + ':' + scope + ':user:' + normalizedEmail;
+        var accountScopedTheme = localStorage.getItem(accountScopedKey);
+        if (accountScopedTheme === 'light' || accountScopedTheme === 'dark') {
+          theme = accountScopedTheme;
+        } else {
+          var fallbackScope = scope === 'admin' ? 'storefront' : 'admin';
+          var fallbackScopedKey = prefix + ':' + fallbackScope + ':user:' + normalizedEmail;
+          var fallbackScopedTheme = localStorage.getItem(fallbackScopedKey);
+          theme = (fallbackScopedTheme === 'light' || fallbackScopedTheme === 'dark') ? fallbackScopedTheme : 'light';
+        }
       }
-    }
-
-    if (theme === null) {
-      var guestScopedKey = prefix + ':' + scope + ':guest';
-      var guestTheme = localStorage.getItem(guestScopedKey);
-      if (guestTheme === 'light' || guestTheme === 'dark') {
-        theme = guestTheme;
-      }
+    } else {
+      theme = 'light';
     }
 
     if (theme !== 'light' && theme !== 'dark') {

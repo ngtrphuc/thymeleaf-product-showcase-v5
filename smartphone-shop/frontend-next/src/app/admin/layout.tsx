@@ -12,20 +12,14 @@ export default function AdminLayout({
       <header className="glass-panel mb-6 rounded-2xl px-5 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/admin" className="text-lg font-bold text-slate-900">
-              Admin Panel
+            <Link href="/products" className="brand-glow-link text-lg font-bold text-slate-900">
+              <GriddyIcon name="spark" className="h-[1.15rem] w-[1.15rem]" />
+              Smartphone Shop
             </Link>
             <AdminHeaderNav />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <ThemeToggle scope="admin" />
-            <Link
-              href="/products"
-              className="admin-home-btn ui-btn ui-btn-secondary ui-header-contrast ui-negative-hover inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium"
-            >
-              <GriddyIcon name="home" />
-              HOME
-            </Link>
             <AdminSessionActions />
           </div>
         </div>

@@ -43,20 +43,31 @@ function parseChatEvent(data: string): ChatMessageResponse | null {
   }
 }
 
+function compareMessagesByTimeline(left: ChatMessageResponse, right: ChatMessageResponse): number {
+  const leftTime = new Date(left.createdAt).getTime();
+  const rightTime = new Date(right.createdAt).getTime();
+  const leftTimestamp = Number.isNaN(leftTime) ? 0 : leftTime;
+  const rightTimestamp = Number.isNaN(rightTime) ? 0 : rightTime;
+  if (leftTimestamp !== rightTimestamp) {
+    return leftTimestamp - rightTimestamp;
+  }
+  return (left.id ?? 0) - (right.id ?? 0);
+}
+
 function upsertChatMessage(
   messages: ChatMessageResponse[],
   incoming: ChatMessageResponse,
 ): ChatMessageResponse[] {
   if (incoming.id == null) {
-    return [...messages, incoming].slice(-50);
+    return [...messages, incoming].sort(compareMessagesByTimeline).slice(-50);
   }
   const existingIndex = messages.findIndex((message) => message.id === incoming.id);
   if (existingIndex === -1) {
-    return [...messages, incoming].slice(-50);
+    return [...messages, incoming].sort(compareMessagesByTimeline).slice(-50);
   }
   const next = [...messages];
   next[existingIndex] = incoming;
-  return next;
+  return next.sort(compareMessagesByTimeline).slice(-50);
 }
 
 export function StorefrontChatBubble() {
@@ -65,6 +76,7 @@ export function StorefrontChatBubble() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesViewportRef = useRef<HTMLDivElement | null>(null);
   const unreadCountRef = useRef(0);
+  const openRef = useRef(false);
   const pulseTimerRef = useRef<number | null>(null);
   const shouldAutoScrollRef = useRef(true);
   const pendingOpenScrollRef = useRef(false);
@@ -163,6 +175,10 @@ export function StorefrontChatBubble() {
   }, []);
 
   useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
+  useEffect(() => {
     if (!shouldShow || !pageVisible) {
       return;
     }
@@ -171,12 +187,12 @@ export function StorefrontChatBubble() {
 
     async function syncChat() {
       try {
-        if (open) {
+        if (openRef.current) {
           const history = await fetchChatHistory();
           if (!alive) {
             return;
           }
-          setMessages(history);
+          setMessages(history.reduce<ChatMessageResponse[]>((current, message) => upsertChatMessage(current, message), []));
           await markChatRead();
           if (!alive) {
             return;
@@ -216,7 +232,7 @@ export function StorefrontChatBubble() {
         return;
       }
 
-      if (open) {
+      if (openRef.current) {
         setMessages((current) => upsertChatMessage(current, incoming));
         unreadCountRef.current = 0;
         setUnreadCount(0);
@@ -234,7 +250,7 @@ export function StorefrontChatBubble() {
       alive = false;
       eventSource.close();
     };
-  }, [open, pageVisible, shouldShow, triggerUnreadPulse]);
+  }, [pageVisible, shouldShow, triggerUnreadPulse]);
 
   useEffect(() => {
     if (!shouldShow || !open) {
@@ -353,7 +369,7 @@ export function StorefrontChatBubble() {
 
     try {
       const history = await fetchChatHistory();
-      setMessages(history);
+      setMessages(history.reduce<ChatMessageResponse[]>((current, message) => upsertChatMessage(current, message), []));
       await markChatRead();
       unreadCountRef.current = 0;
       setUnreadCount(0);
@@ -381,10 +397,9 @@ export function StorefrontChatBubble() {
     shouldAutoScrollRef.current = true;
     setShowJumpToLatest(false);
     try {
-      await sendChatMessage(content);
+      const sent = await sendChatMessage(content);
+      setMessages((current) => upsertChatMessage(current, sent));
       setDraft("");
-      const history = await fetchChatHistory();
-      setMessages(history);
       await markChatRead();
       unreadCountRef.current = 0;
       setUnreadCount(0);
@@ -448,9 +463,9 @@ export function StorefrontChatBubble() {
                 <div
                   ref={messagesViewportRef}
                   onScroll={syncScrollModeFromViewport}
-                  className="storefront-chat-messages chat-grid-paper max-h-[20rem] min-h-[18rem] space-y-3 overflow-y-auto rounded-2xl p-3.5"
+                  className="storefront-chat-messages chat-grid-paper max-h-[20rem] min-h-[18rem] min-w-0 space-y-3 overflow-x-hidden overflow-y-auto rounded-2xl p-3.5"
                 >
-                  {messages.map((message) => {
+                  {messages.map((message, index) => {
                     const isUser = message.senderRole === "USER";
                     const sideClass = isUser ? "justify-end" : "justify-start";
                     const toneClass = isUser
@@ -458,10 +473,23 @@ export function StorefrontChatBubble() {
                       : "storefront-chat-peer bg-[var(--chat-peer-bg)] text-[var(--color-text)]";
                     const metaClass = isUser ? "text-[var(--chat-meta)]" : "text-[var(--chat-meta)]";
                     return (
-                      <div key={message.id} className={`flex ${sideClass}`}>
-                        <div className={`flex max-w-[88%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
-                          <article className={`inline-block w-fit break-words rounded-2xl px-3 py-2.5 text-sm ${toneClass}`}>
-                            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                      <div
+                        key={message.id ?? `${message.userEmail}:${message.createdAt}:${message.senderRole}:${index}`}
+                        className={`flex min-w-0 ${sideClass}`}
+                      >
+                        <div
+                          className={`flex max-w-[82%] min-w-0 flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}
+                        >
+                          <article
+                            className={`inline-block max-w-full rounded-2xl px-3 py-2.5 text-sm ${toneClass}`}
+                            style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
+                          >
+                            <p
+                              className="whitespace-pre-wrap leading-relaxed"
+                              style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
+                            >
+                              {message.content}
+                            </p>
                           </article>
                           <p className={`px-1 text-[11px] ${metaClass}`}>
                             {isUser ? "You" : "Shop"} - {formatChatClock(message.createdAt)}
@@ -491,12 +519,12 @@ export function StorefrontChatBubble() {
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder="Write your message..."
-                className="storefront-chat-input ui-input flex-1 px-3 py-2 text-sm"
+                className="storefront-chat-input ui-input min-w-0 flex-1 px-3 py-2 text-sm"
               />
               <button
                 type="submit"
                 disabled={sending || !draft.trim()}
-                className={`group inline-flex h-10 items-center justify-center overflow-hidden rounded-xl bg-[var(--chat-accent)] px-3 text-sm font-semibold text-black transition-[width,transform,filter,opacity] duration-700 hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`group inline-flex h-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--chat-accent)] px-3 text-sm font-semibold text-black transition-[width,transform,filter,opacity] duration-700 hover:-translate-y-px hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 ${
                   sending ? "w-28" : "w-10 hover:w-24"
                 }`}
               >

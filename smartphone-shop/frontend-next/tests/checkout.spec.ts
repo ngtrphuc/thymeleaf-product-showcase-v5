@@ -139,10 +139,11 @@ test("checkout submits order successfully for authenticated user", async ({ cont
 
   await page.goto("/checkout");
 
-  await expect(page.getByRole("heading", { name: "Checkout" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Checkout", exact: true })).toBeVisible();
 
   await page.getByLabel("Phone Number").fill("0901111111");
-  await page.getByLabel("Shipping Address").fill("Osaka, Naniwa");
+  await page.getByRole("button", { name: "Ship to new address" }).click();
+  await page.getByLabel("New Shipping Address").fill("Osaka, Naniwa");
   await page.getByRole("button", { name: "Place Order" }).click();
 
   await expect(page).toHaveURL(/\/checkout\/success\?code=ORDER-9001/);

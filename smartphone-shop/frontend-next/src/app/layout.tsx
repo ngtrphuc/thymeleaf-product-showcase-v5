@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Sans } from "next/font/google";
+import { ThemeManager } from "@/components/theme-manager";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-init-script";
 import "./globals.css";
 
@@ -39,6 +40,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="page-bg-grid min-h-full bg-[var(--color-page)] text-[var(--color-text)]">
+        <ThemeManager />
         <div className="pointer-events-none fixed inset-0 -z-10 bg-[var(--color-page)]" />
         {children}
       </body>

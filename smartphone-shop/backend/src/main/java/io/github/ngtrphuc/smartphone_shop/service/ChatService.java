@@ -26,7 +26,7 @@ import io.github.ngtrphuc.smartphone_shop.repository.ChatMessageRepository;
 @Service
 public class ChatService {
     private static final long SSE_TIMEOUT_MS = 300_000L;
-    private static final long SSE_HEARTBEAT_MS = 60_000L;
+    private static final long SSE_HEARTBEAT_MS = 25_000L;
     private static final int DEFAULT_HISTORY_LIMIT = 50;
     private static final int MAX_MESSAGE_LENGTH = 1000;
     private static final int MAX_EMAIL_LENGTH = 100;

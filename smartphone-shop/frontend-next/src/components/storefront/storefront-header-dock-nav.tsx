@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ClipboardList,
   Heart,
-  LayoutDashboard,
   ShoppingCart,
   SlidersHorizontal,
   UserRound,
@@ -44,7 +43,6 @@ const guestDockItems: NavItem[] = [
 
 const adminDockItems: NavItem[] = [
   { key: "compare", label: "Compare", href: "/compare", icon: SlidersHorizontal },
-  { key: "admin-panel", label: "Admin Panel", href: "/admin", icon: LayoutDashboard },
   { key: "logout", label: "Sign Out", icon: LogoutDockIcon },
 ];
 

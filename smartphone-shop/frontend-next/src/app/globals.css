@@ -219,6 +219,23 @@
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
 }
 
+.storefront-chat-panel,
+.storefront-chat-panel * {
+  min-width: 0;
+}
+
+.storefront-chat-messages {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.storefront-chat-messages pre,
+.storefront-chat-messages code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 .storefront-chat-trigger,
 .storefront-chat-scrolltop {
   border: 1px solid var(--color-border-2);
@@ -382,6 +399,20 @@
 .admin-chat-messages {
   border: 1px solid var(--color-border) !important;
   overflow-x: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.admin-chat-panel,
+.admin-chat-panel * {
+  min-width: 0;
+}
+
+.admin-chat-messages pre,
+.admin-chat-messages code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .admin-chat-peer {

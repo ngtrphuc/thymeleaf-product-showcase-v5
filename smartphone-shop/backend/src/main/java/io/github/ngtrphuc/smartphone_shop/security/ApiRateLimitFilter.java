@@ -38,7 +38,7 @@ public class ApiRateLimitFilter extends OncePerRequestFilter {
             @Value("${app.security.api-rate-limit.max-requests:180}") int maxRequests,
             @Value("${app.security.api-rate-limit.window-seconds:60}") long windowSeconds,
             @Value("${app.security.api-rate-limit.max-clients:200000}") long maxClients,
-            @Value("${app.security.api-rate-limit.excluded-paths:/api/v1/auth/login,/api/v1/auth/register,/api/v1/auth/logout,/api/v1/auth/me}") String excludedPaths,
+            @Value("${app.security.api-rate-limit.excluded-paths:/api/v1/auth/login,/api/v1/auth/register,/api/v1/auth/logout,/api/v1/auth/me,/api/v1/chat/stream,/api/v1/admin/chat/stream}") String excludedPaths,
             ClientIpResolver clientIpResolver) {
         if (maxRequests < 1) {
             throw new IllegalStateException("app.security.api-rate-limit.max-requests must be greater than 0.");

@@ -19,6 +19,7 @@ inventory at file level.
 - [Refactor Progress](#refactor-progress)
 - [Recent UI Updates](#recent-ui-updates)
 - [Recent Backend/API Updates](#recent-backendapi-updates)
+- [Optimization Roadmap](#optimization-roadmap)
 - [Testing and Quality](#testing-and-quality)
 - [Repository Structure (Detailed)](#repository-structure-detailed)
 - [Contributor Notes](#contributor-notes)
@@ -289,6 +290,22 @@ Latest storefront UI refinements in `frontend-next`:
     - authenticated admin: admin panel link (no customer cart/orders),
   - SNS icon buttons (Facebook, Instagram, X, LINE, TikTok, YouTube)
     with hover tooltip labels and external login links.
+- Theme system hardening:
+  - root `ThemeManager` keeps `<html data-theme>` synchronized across
+    route changes, auth changes, and cross-tab storage events,
+  - unauthenticated sessions always resolve to light mode,
+  - light/dark preference is stored per account and shared across storefront
+    and admin routes, with fallback reads for old scoped keys.
+- Admin header navigation refresh:
+  - admin users see `Admin Panel` in the storefront brand position,
+  - admin pages use `Smartphone Shop` as the left brand link back to
+    storefront,
+  - the duplicated `HOME` button was removed from admin headers.
+- Chat UI hardening:
+  - admin chat no longer stacks interval polling on top of SSE,
+  - conversation refreshes are throttled during message bursts,
+  - admin and customer chat bubbles protect long words, pasted code,
+    and unbroken URLs from overflowing the chat viewport.
 
 ### Observability and Operations
 
@@ -342,6 +359,33 @@ Status: production-like local baseline available.
 - Profile business logic extracted to dedicated `ProfileService`.
 - Shared validation utility added:
   `common/support/ValidationConstants.java`.
+- Chat SSE hardening:
+  - API rate limiting excludes long-lived customer/admin chat streams,
+  - SSE heartbeat interval is tuned to keep browser/proxy connections alive,
+  - dead emitters are pruned on IO and completed-emitter state failures.
+
+## Optimization Roadmap
+
+Recommended next production-hardening steps:
+
+- Realtime consolidation: keep SSE as fallback, but route chat, order status,
+  and dashboard updates through one WebSocket/STOMP contract.
+- Frontend data layer: move repeated client fetch/dedup/retry logic for
+  cart, wishlist, compare, profile, and chat into TanStack Query or a similar
+  query cache.
+- Server rendering: convert read-heavy catalog/product pages to Server
+  Components with cache tags or short revalidation windows.
+- Database performance: run `EXPLAIN ANALYZE` on catalog filters, order
+  history, and chat history; add/adjust composite indexes from the measured
+  query plans.
+- Cache correctness: use event-driven invalidation for product/category/brand
+  changes and keep user overlays (wishlist/cart) composed outside public cache.
+- Security: add refresh-token rotation and per-user login/request limits in
+  addition to per-IP throttles.
+- Observability: add business metrics such as order conversion, chat response
+  latency, checkout idempotency collisions, and cart abandonment.
+- Tests: expand Playwright coverage for theme persistence, login/logout theme
+  transitions, admin chat realtime delivery, and long-message overflow.
 
 ## Testing and Quality
 
@@ -694,11 +738,13 @@ smartphone-shop/
 │   │   │   │   ├── product-detail-skeleton.tsx
 │   │   │   │   ├── product-grid-skeleton.tsx
 │   │   │   │   ├── quick-product-actions.tsx
+│   │   │   │   ├── storefront-brand-link.tsx
 │   │   │   │   ├── storefront-chat-bubble.tsx
 │   │   │   │   ├── storefront-compare-banner.tsx
 │   │   │   │   ├── storefront-footer.tsx
 │   │   │   │   ├── storefront-header-dock-nav.tsx
 │   │   │   │   └── theme-toggle.tsx
+│   │   │   ├── theme-manager.tsx
 │   │   │   └── ui/
 │   │   │       ├── auth-motion-icon.tsx
 │   │   │       ├── dock.tsx
@@ -711,7 +757,8 @@ smartphone-shop/
 │   │   │   ├── format.ts
 │   │   │   ├── navigation.ts
 │   │   │   ├── order-status.ts
-│   │   │   └── theme-init-script.ts
+│   │   │   ├── theme-init-script.ts
+│   │   │   └── theme.ts
 │   │   └── proxy.ts
 │   ├── tests/
 │   │   ├── auth.spec.ts

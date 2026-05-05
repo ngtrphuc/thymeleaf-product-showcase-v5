@@ -128,7 +128,7 @@ test("customer login preserves next path for protected checkout route", async ({
   await page.getByRole("button", { name: "Sign In" }).click();
 
   await expect(page).toHaveURL(/\/checkout/);
-  await expect(page.getByRole("heading", { name: "Checkout" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Checkout", exact: true })).toBeVisible();
 });
 
 test("admin login redirects to homepage", async ({ context, page }) => {

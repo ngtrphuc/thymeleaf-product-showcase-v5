@@ -64,7 +64,7 @@ public class ChatSseRegistry {
         for (SseEmitter emitter : emitters) {
             try {
                 sender.send(emitter);
-            } catch (IOException exception) {
+            } catch (IOException | IllegalStateException exception) {
                 emitter.complete();
                 deadEmitters.add(emitter);
             }

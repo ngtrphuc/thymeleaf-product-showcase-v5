@@ -49,6 +49,23 @@ Create `frontend-next/.env.local` and set:
     - authenticated customer: adds cart + orders,
     - authenticated admin: admin panel link,
   - SNS icon buttons with external login links and tooltip labels shown on hover.
+- Theme system:
+  - `src/components/theme-manager.tsx` is mounted once in root layout and
+    keeps `<html data-theme>` synchronized.
+  - `src/lib/theme.ts` is the shared source for account-scoped theme keys,
+    theme application, and auth/theme browser events.
+  - No-account state resolves to light mode; account preferences are isolated
+    between users and shared across storefront/admin routes.
+- Admin navigation:
+  - `src/components/storefront/storefront-brand-link.tsx` swaps the left
+    storefront brand to `Admin Panel` for admin users.
+  - Admin pages use `Smartphone Shop` as the left brand link back to the
+    storefront, with the duplicated header `HOME` button removed.
+- Chat hardening:
+  - Admin chat relies on SSE plus throttled sidebar refresh instead of stacked
+    polling/refetch loops.
+  - Customer and admin chat message panes guard against long URLs, long words,
+    and pasted code overflowing the visible chat frame.
 
 ## Route protection and proxy
 
